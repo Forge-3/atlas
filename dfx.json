@@ -1,0 +1,38 @@
+{
+  "canisters": {
+    "atlas_backend": {
+      "candid": "src/atlas_backend/atlas_backend.did",
+      "package": "atlas_backend",
+      "type": "rust"
+    },
+    "atlas_frontend": {
+      "dependencies": [
+        "atlas_backend"
+      ],
+      "source": [
+        "src/atlas_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "atlas_frontend"
+    },
+    "internet_identity": {
+      "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
+      "frontend": {},
+      "remote": {
+        "id": {
+          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
