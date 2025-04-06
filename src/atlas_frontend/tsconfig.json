@@ -1,4 +1,7 @@
 {
+  "extends": "astro/tsconfigs/strict",
+  "include": [".astro/types.d.ts", "src"],
+  "exclude": ["dist"],
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,
@@ -9,13 +12,16 @@
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "module": "ESNext",
-    "moduleResolution": "Node",
+    "module": "node16",
+    "moduleResolution": "node16",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["vite/client"]
-  },
-  "include": ["src"]
+    "types": ["vite/client"],
+    "experimentalDecorators": true,
+    "strictPropertyInitialization": false,
+    "outDir": "HACK_BECAUSE_OF_ALLOW_JS",
+    "jsxImportSource": "react"
+  }
 }

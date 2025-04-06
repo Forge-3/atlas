@@ -4,18 +4,33 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "setup": "npm i && dfx canister create atlas_backend && dfx generate atlas_backend && dfx deploy",
-    "start": "vite --port 3000",
-    "prebuild": "dfx generate",
-    "build": "tsc && vite build",
-    "format": "prettier --write \"src/**/*.{json,js,jsx,ts,tsx,css,scss}\""
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "check_for_errors": "astro check --minimumSeverity warning"
   },
   "dependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@astrojs/react": "^4.2.3",
+    "@astrojs/tailwind": "^6.0.2",
+    "@dfinity/agent": "^2.4.0",
+    "@dfinity/auth-client": "^2.4.0",
+    "@dfinity/candid": "^2.4.0",
+    "@dfinity/identity": "^2.4.0",
+    "@dfinity/ledger-icp": "^2.6.11",
+    "@dfinity/principal": "^2.4.0",
+    "@dfinity/utils": "^2.11.0",
+    "@nfid/identitykit": "^1.0.10",
+    "framer-motion": "^12.6.2",
+    "husky": "^9.1.7",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "@dfinity/agent": "^2.1.3",
-    "@dfinity/candid": "^2.1.3",
-    "@dfinity/principal": "^2.1.3"
+    "react-hot-toast": "^2.5.2",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^7.4.1",
+    "tailwindcss": "^4.0.17"
   },
   "devDependencies": {
     "@types/react": "^18.2.14",

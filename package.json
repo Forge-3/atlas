@@ -5,11 +5,15 @@
   },
   "name": "atlas",
   "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "start": "npm run start --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
-    "prebuild": "npm run prebuild --workspaces --if-present",
-    "pretest": "npm run prebuild --workspaces --if-present",
-    "start": "npm start --workspaces --if-present",
-    "test": "npm test --workspaces --if-present"
+    "preview": "npm run preview --workspaces --if-present",
+    "astro": "npm run astro --workspaces --if-present",
+    "check_for_errors": "npm run check_for_errors --workspaces --if-present",
+    "pre-commit": "npm run lint-staged && npm run check_for_errors",
+    "lint-staged": "eslint ./src/**/*.tsx",
+    "prepare": "husky"
   },
   "type": "module",
   "workspaces": [
