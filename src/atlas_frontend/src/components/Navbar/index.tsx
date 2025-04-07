@@ -10,9 +10,12 @@ import { motion } from "framer-motion";
 
 const ConnectButton = (props: ConnectWalletButtonProps) => (
   <Button
-    onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => props.onClick!(event)}
-    content={"Join"}
-  />
+    onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) =>
+      props.onClick!(event)
+    }
+  >
+    Join
+  </Button>
 );
 
 const DropdownMenuComponent = ({
@@ -87,9 +90,13 @@ const Navbar = () => {
         <div className="flex items-center justify-center gap-4">
           {user && (
             <div className="flex items-center justify-center gap-4">
-              <Button content="Misson" light={location?.pathname !== "/app"} />
-              <Button content="Leaderboard" light={location?.pathname !== "/app/leaderboard"} />
-              <Button content="Referrals" light={location?.pathname !== "/app/referrals"} />
+              <Button light={location?.pathname !== "/app"}>Misson</Button>
+              <Button light={location?.pathname !== "/app/leaderboard"}>
+                Leaderboard
+              </Button>
+              <Button light={location?.pathname !== "/app/referrals"}>
+                Referrals
+              </Button>
             </div>
           )}
           <ConnectWallet connectButtonComponent={ConnectButton} dropdownMenuComponent={DropdownMenuComponent} />
