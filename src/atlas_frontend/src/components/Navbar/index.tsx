@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { ConnectWallet, useAuth, type ConnectWalletButtonProps } from "@nfid/identitykit/react";
+import {
+  ConnectWallet,
+  useAuth,
+  type ConnectWalletButtonProps,
+} from "@nfid/identitykit/react";
 import Button from "../Shared/Button.tsx";
 import { type MenuProps } from "@headlessui/react";
 import { shortPrincipal } from "../../utils/icp.ts";
@@ -7,6 +11,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { FiLogOut, FiCopy } from "react-icons/fi";
 import { copy } from "../../utils/shared.ts";
 import { motion } from "framer-motion";
+import { useDispatch, useSelector } from "react-redux";
+import { setScreenBlur } from "../../store/slices/appSlice.ts";
+import type { RootState } from "../../store/store.ts";
 
 const ConnectButton = (props: ConnectWalletButtonProps) => (
   <Button
@@ -38,7 +45,11 @@ const DropdownMenuComponent = ({
   return (
     <div className="relative">
       <button onClick={() => setUserDropdown(!userDropdown)} className="flex">
-        <img src="/icons/user-avatar-small.png" className="h-16" draggable="false" />
+        <img
+          src="/icons/user-avatar-small.png"
+          className="h-16"
+          draggable="false"
+        />
       </button>
       {userDropdown && (
         <motion.div
@@ -74,18 +85,30 @@ const Navbar = () => {
   const { user } = useAuth();
   const nav = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
+  const discordUserId = useSelector((state: RootState) => state.user.discordUserId)
 
   useEffect(() => {
-    if (user) {
-      nav("/app");
+    if (!user) {
+      return;
     }
-  }, [nav, user]);
+    nav("/app");
+    if (discordUserId) {
+      return;
+    }
+    dispatch(setScreenBlur(true));
+  }, [nav, user, discordUserId]);
 
   return (
     <div className="sticky top-0 w-full z-40">
       <div className="py-6 top-0 px-10 rounded-b-xl flex justify-between items-center mx-3 backdrop-blur-lg shadow-lg bg-[#1E0F33]/30">
         <a className="flex items-center gap-5" href="/">
-          <img src="/logos/logo.png" alt="Atlas logo" className="h-8" draggable="false" />
+          <img
+            src="/logos/logo.png"
+            alt="Atlas logo"
+            className="h-8"
+            draggable="false"
+          />
         </a>
         <div className="flex items-center justify-center gap-4">
           {user && (
@@ -99,7 +122,10 @@ const Navbar = () => {
               </Button>
             </div>
           )}
-          <ConnectWallet connectButtonComponent={ConnectButton} dropdownMenuComponent={DropdownMenuComponent} />
+          <ConnectWallet
+            connectButtonComponent={ConnectButton}
+            dropdownMenuComponent={DropdownMenuComponent}
+          />
         </div>
       </div>
     </div>

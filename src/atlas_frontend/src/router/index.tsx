@@ -4,12 +4,16 @@ import Footer from "../components/Footer.tsx";
 import Navbar from "../components/Navbar/index.tsx";
 import Home from "../components/Home/index.tsx";
 import MissionApp from "../components/MissionApp/index.tsx";
+import { useSelector } from "react-redux";
+import type { RootState } from "../store/store.ts";
 
 const Router = () => {
+  const isScreenBlur = useSelector((state: RootState) => state.app.isScreenBlur)
+
   return (
     <BrowserRouter>
       <div
-        className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-25 sm:backdrop-blur-sm backdrop-blur-none z-50 hidden"
+        className={`fixed inset-0 flex items-center justify-center bg-black bg-opacity-25 sm:backdrop-blur-sm backdrop-blur-none z-50 ${isScreenBlur ? "" : "hidden"}`}
       />
       <div className="relative bg-gradient-to-b from-[#1E0F33] to-[#9173FF]/50 bg-[#1E0F33] min-h-screen flex flex-col justify-between w-screen">
         <div>
