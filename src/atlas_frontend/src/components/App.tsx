@@ -1,15 +1,19 @@
+import React from "react";
 import { Toaster } from "react-hot-toast";
 import Router from "../router/index.tsx";
 import "@nfid/identitykit/react/styles.css";
 import { IdentityKitProvider } from "@nfid/identitykit/react";
 
-export default () => {
+const App = () => {
   return (
     <>
       <Toaster />
-      <IdentityKitProvider>
+      <IdentityKitProvider authType="ACCOUNTS">
         <Router />
       </IdentityKitProvider>
     </>
   );
 };
+
+
+export default App;

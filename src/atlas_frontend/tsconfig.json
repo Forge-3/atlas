@@ -22,6 +22,7 @@
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
     "outDir": "HACK_BECAUSE_OF_ALLOW_JS",
-    "jsxImportSource": "react"
+    "jsxImportSource": "react",
+    "allowImportingTsExtensions": true
   }
 }

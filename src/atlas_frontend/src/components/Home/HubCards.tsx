@@ -2,7 +2,7 @@ import * as React from "react";
 import HubCard from "./HubCard.tsx";
 import HubCardReversed from "./HubCardReversed.tsx";
 
-export default () => {
+const HubCards = () => {
   const data: {
     ambassadorsCount: number;
     country: string;
@@ -27,3 +27,5 @@ export default () => {
     </div>
   );
 };
+
+export default HubCards

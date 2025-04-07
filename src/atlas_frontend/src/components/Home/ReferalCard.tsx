@@ -8,7 +8,7 @@ const ReferalCard = ({
   subtitle: string;
 }) => {
   return (
-    <div className="rounded-2xl pl-3  bg-[#9173FF] shadow-lg shadow-[#1E0F33]/50 opacity-80 max-w-[418px] sm:w-[45%]  dlg:w-[30%]   h-[457px] flex flex-col justify-between">
+    <div className="rounded-2xl pl-3  bg-[#9173FF] h-[457px] flex flex-col justify-between shadow-lg shadow-[#1E0F33]/50 max-w-[418px] sm:w-[45%]  dlg:w-[30%]">
       <div className="flex gap-4 p-4">
         <img
           src="/logos/small-white-logo.png"

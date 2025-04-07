@@ -1,11 +1,10 @@
 import React from "react";
 import Header from "./Header.tsx";
-import { IoArrowForwardCircleOutline } from "react-icons/io5";
 import ReferalCard from "./ReferalCard.tsx";
 import HubCard from "./HubCards.tsx";
 import Button from "../Shared/Button.tsx";
 
-export default () => {
+const Home = () => {
   const data = [
     {
       heading: "Quest",
@@ -22,7 +21,7 @@ export default () => {
   ];
 
   return (
-    <div className="flex flex-col pb-10 bg-gradient-to-b from-[#1E0F33]/80 to-[#9173FF]/10 bg-[#3d2a6b]">
+    <div className="flex flex-col pb-10">
     <Header />
     <div className="w-full px-3 ">
       <div className=" mb-6  pb-10  w-full rounded-xl bg-gradient-to-b from-[#1E0F33]/60 to-[#9173FF]/40  ">
@@ -260,3 +259,5 @@ export default () => {
   </div>
   );
 };
+
+export default Home

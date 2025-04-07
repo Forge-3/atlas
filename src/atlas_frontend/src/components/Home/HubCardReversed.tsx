@@ -1,6 +1,6 @@
 import React from "react";
 
-export default ({ ambassadorsCount, country }: { ambassadorsCount: number, country: string  }) => {
+const HubCardReversed = ({ ambassadorsCount, country }: { ambassadorsCount: number, country: string  }) => {
   return (
     <div className="flex flex-col items-center  border rounded-t-xl rounded-b-full  border-white border-solid ">
       <div className="self-stretch md:px-2 dlg:px-4 py-2.5 md:font-medium dlg:font-semibold  rounded-b-md rounded-t-xl  border-b">
@@ -23,4 +23,4 @@ export default ({ ambassadorsCount, country }: { ambassadorsCount: number, count
   );
 }
 
-
+export default HubCardReversed
