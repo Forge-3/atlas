@@ -15,6 +15,8 @@ export default {
       fontFamily: {
         roboto: ["Roboto", "sans-serif"],
         robotoMono: ["Roboto Mono", "monospace"],
+        poppins: ["Poppins", "Roboto", "sans-serif"],
+        montserrat: ["Montserrat", "Roboto", "sans-serif"],
       },
       fontSize: {
         h1: "5.667rem",

@@ -2,13 +2,13 @@ import React from "react";
 import { Toaster } from "react-hot-toast";
 import Router from "../router/index.tsx";
 import "@nfid/identitykit/react/styles.css";
-import { IdentityKitProvider } from "@nfid/identitykit/react";
+import { IdentityKitProvider, IdentityKitTheme } from "@nfid/identitykit/react";
 
-const App = () => {
+const Main = () => {
   return (
     <>
       <Toaster />
-      <IdentityKitProvider authType="ACCOUNTS">
+      <IdentityKitProvider authType="ACCOUNTS" theme={IdentityKitTheme.LIGHT}>
         <Router />
       </IdentityKitProvider>
     </>
@@ -16,4 +16,4 @@ const App = () => {
 };
 
 
-export default App;
+export default Main;

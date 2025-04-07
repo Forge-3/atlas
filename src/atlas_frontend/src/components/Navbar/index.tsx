@@ -7,7 +7,7 @@ import {
 import Button from "../Shared/Button.tsx";
 import { type MenuProps } from "@headlessui/react";
 import { shortPrincipal } from "../../utils/icp.ts";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { FiLogOut, FiCopy } from "react-icons/fi";
 import { copy } from "../../utils/shared.ts";
 import { motion } from "framer-motion";
@@ -33,11 +33,19 @@ const DropdownMenuComponent = ({
   const copyAccount = () => {
     copy(connectedAccount);
   };
+  const disconnectWallet = () => {
+    disconnect();
+    window.location.href = "/";
+  };
 
   return (
     <div className="relative">
       <button onClick={() => setUserDropdown(!userDropdown)} className="flex">
-        <img src="/icons/user-avatar-small.png" className="h-16" />
+        <img
+          src="/icons/user-avatar-small.png"
+          className="h-16"
+          draggable="false"
+        />
       </button>
       {userDropdown && (
         <motion.div
@@ -54,7 +62,7 @@ const DropdownMenuComponent = ({
                 </div>
               </button>
             </li>
-            <li onClick={disconnect}>
+            <li onClick={disconnectWallet}>
               <button className="flex justify-between gap-6 items-center justify-center w-full">
                 <div>Disconnect</div>{" "}
                 <div className="flex items-center justify-center">
@@ -72,27 +80,44 @@ const DropdownMenuComponent = ({
 const Navbar = () => {
   const { user } = useAuth();
   const nav = useNavigate();
-  
+  const location = useLocation();
+
   useEffect(() => {
     if (user) {
-      nav('/app');
+      nav("/app");
     }
   }, [nav, user]);
 
   return (
-    <div className="sticky top-0 w-full">
-      <div className="py-2 sticky top-0 z-50 px-10 rounded-b-xl flex justify-between items-center mx-3 backdrop-blur-lg shadow-lg bg-[#1E0F33]/30">
-        <div className="flex items-center gap-5 ml-6">
+    <div className="sticky top-0 w-full z-50">
+      <div className="py-6 top-0 px-10 rounded-b-xl flex justify-between items-center mx-3 backdrop-blur-lg shadow-lg bg-[#1E0F33]/30">
+        <a className="flex items-center gap-5" href="/">
           <img
             src="/logos/logo.png"
-            alt="atlas"
-            className="md:h-[2rem] dlg:h-[2.6rem]"
+            alt="Atlas logo"
+            className="h-8"
+            draggable="false"
+          />
+        </a>
+        <div className="flex items-center justify-center gap-4">
+          {user && (
+            <div className="flex items-center justify-center gap-4">
+              <Button content="Misson" light={location?.pathname !== "/app"} />
+              <Button
+                content="Leaderboard"
+                light={location?.pathname !== "/app/leaderboard"}
+              />
+              <Button
+                content="Referrals"
+                light={location?.pathname !== "/app/referrals"}
+              />
+            </div>
+          )}
+          <ConnectWallet
+            connectButtonComponent={ConnectButton}
+            dropdownMenuComponent={DropdownMenuComponent}
           />
         </div>
-        <ConnectWallet
-          connectButtonComponent={ConnectButton}
-          dropdownMenuComponent={DropdownMenuComponent}
-        />
       </div>
     </div>
   );

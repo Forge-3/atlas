@@ -20,6 +20,7 @@ const Footer = () => {
         src="/logos/footer-logo.png"
         alt="Huge logo of Atlas"
         className="object-contain mt-9 w-full aspect-[5.75]  max-w-[1314px] max-md:max-w-full"
+        draggable="false"
       />
     </div>
   );
