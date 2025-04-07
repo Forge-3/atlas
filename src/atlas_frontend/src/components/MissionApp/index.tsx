@@ -1,3 +1,4 @@
+import React from "react";
 import { useAuth } from "@nfid/identitykit/react";
 import DarkBox from "../../layouts/DarkBox.tsx";
 import { useEffect } from "react";

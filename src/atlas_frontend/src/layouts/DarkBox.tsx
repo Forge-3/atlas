@@ -1,3 +1,5 @@
+import React from "react";
+
 const DarkBox = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="w-full px-3">
