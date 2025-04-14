@@ -3,7 +3,11 @@
     "atlas_backend": {
       "candid": "src/atlas_backend/atlas_backend.did",
       "package": "atlas_backend",
-      "type": "rust"
+      "type": "custom",
+      "wasm": "target/wasm32-unknown-unknown/release/atlas_backend-opt.wasm.gz",
+      "build": "./build.sh atlas_backend",
+      "optimize": "cycles",
+      "frontend": {}
     },
     "atlas_frontend": {
       "dependencies": [

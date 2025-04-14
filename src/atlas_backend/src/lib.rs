@@ -1,4 +1,5 @@
-#[ic_cdk::query]
-fn greet(name: String) -> String {
-    format!("Hello, {}!", name)
-}
+pub mod state;
+pub mod user;
+
+// Main file
+pub mod bootstrap;

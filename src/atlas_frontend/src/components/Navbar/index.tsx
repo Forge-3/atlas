@@ -86,21 +86,21 @@ const Navbar = () => {
   const nav = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
-  const discordUserId = useSelector((state: RootState) => state.user.discordUserId)
+  const userDiscordData = useSelector((state: RootState) => state.user.integrations.discord)
 
   useEffect(() => {
     if (!user) {
       return;
     }
     nav("/app");
-    if (discordUserId) {
+    if (userDiscordData) {
       return;
     }
     dispatch(setScreenBlur(true));
-  }, [nav, user, discordUserId]);
+  }, [nav, user, userDiscordData]);
 
   return (
-    <div className="sticky top-0 w-full z-40">
+    <div className="sticky top-0 w-full z-30">
       <div className="py-6 top-0 px-10 rounded-b-xl flex justify-between items-center mx-3 backdrop-blur-lg shadow-lg bg-[#1E0F33]/30">
         <a className="flex items-center gap-5" href="/">
           <img
