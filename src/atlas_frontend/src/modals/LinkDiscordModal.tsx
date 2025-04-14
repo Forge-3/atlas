@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { useAgent, useAuth } from "@nfid/identitykit/react";
+import { useAuth } from "@nfid/identitykit/react";
 import { useDispatch } from "react-redux";
 import { setScreenBlur } from "../store/slices/appSlice.ts";
 import Button from "../components/Shared/Button.tsx";
@@ -15,6 +15,7 @@ import {
   setUserDiscordAccessToken,
   setUserDiscordData,
 } from "../store/slices/userSlice.ts";
+import { useAgent } from "../hooks/identityKit.ts";
 
 const LastStep = () => {
   const dispatch = useDispatch();
@@ -27,19 +28,13 @@ const LastStep = () => {
     [agent]
   );
 
-  console.log("xx" , {authenticatedAtlasBackend})
-
-
   const disconnectWallet = () => {
     dispatch(setScreenBlur(false));
     disconnect();
   };
 
   const openOAuthTab = () => {
-    window.open(
-      getOAuth2URL(user?.principal.toString()),
-      "_blank"
-    );
+    window.open(getOAuth2URL(user?.principal.toString()), "_blank");
   };
 
   const postDiscordLogin = async (accessToken: string) => {
@@ -50,8 +45,6 @@ const LastStep = () => {
       toast.error("Failed to get Discord data");
       return;
     }
-
-    console.log("postDiscordLogin" , {authenticatedAtlasBackend})
 
     if (!authenticatedAtlasBackend) {
       toast.error("Session expired");
@@ -82,11 +75,17 @@ const LastStep = () => {
         !tokenType ||
         !accessToken ||
         !expiresIn ||
+        !state
+      ) {
+        return;
+      }
+      if (
         state !== user?.principal.toString()
       ) {
         toast.error("Failed to authenticate with Discord");
         return;
       }
+      
       postDiscordLogin(accessToken);
     };
 
