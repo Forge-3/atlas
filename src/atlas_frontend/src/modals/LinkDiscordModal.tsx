@@ -41,6 +41,7 @@ const LastStep = () => {
     let userData: null | UserData = null;
     try {
       userData = await getUserData(accessToken);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_err) {
       toast.error("Failed to get Discord data");
       return;
@@ -54,6 +55,7 @@ const LastStep = () => {
 
     try {
       await authenticatedAtlasBackend.register_user(accessToken);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_err) {
       toast.error("Failed to register user");
       navigate("/");
@@ -67,25 +69,19 @@ const LastStep = () => {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleMessage = (event: any) => {
       if (event.origin !== window.location.origin) return;
       const { tokenType, accessToken, state, expiresIn } = event.data;
 
-      if (
-        !tokenType ||
-        !accessToken ||
-        !expiresIn ||
-        !state
-      ) {
+      if (!tokenType || !accessToken || !expiresIn || !state) {
         return;
       }
-      if (
-        state !== user?.principal.toString()
-      ) {
+      if (state !== user?.principal.toString()) {
         toast.error("Failed to authenticate with Discord");
         return;
       }
-      
+
       postDiscordLogin(accessToken);
     };
 
