@@ -1,5 +1,6 @@
 [workspace]
 members = [
-    "src/atlas_backend"
+    "src/atlas_main",
+    "src/atlas_space"
 ]
 resolver = "2"

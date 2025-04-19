@@ -1,17 +1,19 @@
 {
   "canisters": {
-    "atlas_backend": {
-      "candid": "src/atlas_backend/atlas_backend.did",
-      "package": "atlas_backend",
+    "atlas_main": {
+      "candid": "src/atlas_main/atlas_main.did",
+      "package": "atlas_main",
       "type": "custom",
-      "wasm": "target/wasm32-unknown-unknown/release/atlas_backend-opt.wasm.gz",
-      "build": "./build.sh atlas_backend",
-      "optimize": "cycles",
-      "frontend": {}
+      "wasm": "target/wasm32-unknown-unknown/release/atlas_main-opt.wasm.gz",
+      "build": [
+        "./build.sh atlas_space",
+        "./build.sh atlas_main"
+      ],
+      "optimize": "cycles"
     },
     "atlas_frontend": {
       "dependencies": [
-        "atlas_backend"
+        "atlas_main"
       ],
       "source": [
         "src/atlas_frontend/dist"

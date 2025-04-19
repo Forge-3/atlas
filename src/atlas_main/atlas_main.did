@@ -1,0 +1,19 @@
+type AtlasArgs = variant { UpgradeArg : Config; InitArg : Config };
+type Config = record { spaces_per_space_lead : nat8 };
+type Error = variant {
+  UserRankNoMatch : Rank;
+  FailedToUpdateConfig : text;
+  UserRichSpaceLimit : record { found : nat64; expected : nat64 };
+  UserRankToHigh : record { found : Rank; expected : Rank };
+  UserAlreadyHaveExpectedRank : Rank;
+  AnonymousCaller;
+};
+type Rank = variant { SpaceLead; User; Admin };
+type Result = variant { Ok; Err : Error };
+type WalletReceiveResult = record { accepted : nat64 };
+service : (AtlasArgs) -> {
+  create_new_space : () -> (Result);
+  set_user_space_lead : (principal) -> (Result);
+  wallet_balance : () -> (nat) query;
+  wallet_receive : () -> (WalletReceiveResult);
+}

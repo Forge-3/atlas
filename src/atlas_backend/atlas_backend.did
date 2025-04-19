@@ -1,1 +1,0 @@
-service : { register_user : (text) -> () }

@@ -1,0 +1,14 @@
+type Config = record { admin : principal; owner : principal };
+type InitArg = record {
+  admin : principal;
+  space_background : opt text;
+  space_logo : opt text;
+  space_name : text;
+  space_description : text;
+};
+type SpaceArgs = variant { UpgradeArg : Config; InitArg : InitArg };
+type WalletReceiveResult = record { accepted : nat64 };
+service : (SpaceArgs) -> {
+  wallet_balance : () -> (nat) query;
+  wallet_receive : () -> (WalletReceiveResult);
+}

@@ -57,9 +57,9 @@ const DropdownMenuComponent = ({
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0 }}
         >
-          <ul className="absolute -bottom-18 bg-white right-0 px-6 py-2 rounded-xl text-nowrap text-sm">
+          <ul className="absolute right-0 px-6 py-2 text-sm bg-white -bottom-18 rounded-xl text-nowrap">
             <li onClick={copyAccount}>
-              <button className="flex justify-between gap-6 items-center justify-center w-full">
+              <button className="flex items-center justify-center justify-between w-full gap-6">
                 <div>Wallet address</div>{" "}
                 <div className="flex items-center justify-center">
                   {shortPrincipal(connectedAccount)} <FiCopy className="ml-2" />
@@ -67,7 +67,7 @@ const DropdownMenuComponent = ({
               </button>
             </li>
             <li onClick={disconnectWallet}>
-              <button className="flex justify-between gap-6 items-center justify-center w-full">
+              <button className="flex items-center justify-center justify-between w-full gap-6">
                 <div>Disconnect</div>{" "}
                 <div className="flex items-center justify-center">
                   <FiLogOut className="ml-2" />
@@ -92,7 +92,7 @@ const Navbar = () => {
     if (!user) {
       return;
     }
-    nav("/app");
+    nav("/space");
     if (userDiscordData) {
       return;
     }
@@ -100,7 +100,7 @@ const Navbar = () => {
   }, [nav, user, userDiscordData]);
 
   return (
-    <div className="sticky top-0 w-full z-30">
+    <div className="sticky top-0 z-30 w-full">
       <div className="py-6 top-0 px-10 rounded-b-xl flex justify-between items-center mx-3 backdrop-blur-lg shadow-lg bg-[#1E0F33]/30">
         <a className="flex items-center gap-5" href="/">
           <img
@@ -113,11 +113,11 @@ const Navbar = () => {
         <div className="flex items-center justify-center gap-4">
           {user && (
             <div className="flex items-center justify-center gap-4">
-              <Button light={location?.pathname !== "/app"}>Misson</Button>
-              <Button light={location?.pathname !== "/app/leaderboard"}>
+              <Button light={location?.pathname !== "/space"}>Misson</Button>
+              <Button light={location?.pathname !== "/space/leaderboard"}>
                 Leaderboard
               </Button>
-              <Button light={location?.pathname !== "/app/referrals"}>
+              <Button light={location?.pathname !== "/space/referrals"}>
                 Referrals
               </Button>
             </div>

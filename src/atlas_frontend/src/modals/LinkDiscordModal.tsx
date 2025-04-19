@@ -9,7 +9,7 @@ import {
   type UserData,
 } from "../integrations/discord.ts";
 import { toast } from "react-hot-toast";
-import { authenticatedAtlasBackendActor } from "../canisters/atlas_backend.ts";
+import { authenticatedAtlasBackendActor } from "../canisters/atlas_main.ts"
 import { useNavigate } from "react-router-dom";
 import {
   setUserDiscordAccessToken,
@@ -63,7 +63,7 @@ const LastStep = () => {
     }
     dispatch(setUserDiscordAccessToken(accessToken));
     dispatch(setUserDiscordData(userData));
-    navigate("/app");
+    navigate("/space");
     dispatch(setScreenBlur(false));
     toast.success("Successfully linked Discord");
   };

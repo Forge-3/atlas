@@ -3,7 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Footer from "../components/Footer.tsx";
 import Navbar from "../components/Navbar/index.tsx";
 import Home from "../components/Home/index.tsx";
-import MissionApp from "../components/MissionApp/index.tsx";
+import Space from "../components/Space/index.tsx";
 import { useSelector } from "react-redux";
 import type { RootState } from "../store/store.ts";
 import { CALLBACK_PATH } from "../integrations/discord.ts";
@@ -20,7 +20,7 @@ const Router = () => {
           <Navbar />
           <main>
             <Routes><Route path="/" element={<Home />} /></Routes>
-            <Routes><Route path="/app" element={<MissionApp />} /></Routes>
+            <Routes><Route path="/space" element={<Space />} /></Routes>
             <Routes><Route path={CALLBACK_PATH} element={<DiscordCallback />} /></Routes>
           </main>
         </div>
