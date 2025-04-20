@@ -26,6 +26,7 @@ dependencies = [
  "minicbor 0.26.4",
  "minicbor-derive 0.16.2",
  "serde",
+ "shared",
  "thiserror 2.0.12",
 ]
 
@@ -42,6 +43,7 @@ dependencies = [
  "minicbor 0.26.4",
  "minicbor-derive 0.16.2",
  "serde",
+ "shared",
  "thiserror 2.0.12",
 ]
 
@@ -662,6 +664,15 @@ dependencies = [
  "cfg-if",
  "cpufeatures",
  "digest",
+]
+
+[[package]]
+name = "shared"
+version = "0.1.0"
+dependencies = [
+ "candid",
+ "ic-cdk",
+ "serde",
 ]
 
 [[package]]

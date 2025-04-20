@@ -4,8 +4,8 @@ use candid::CandidType;
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
+use shared::InitArg;
 
-use crate::lifecycle::InitArg;
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Deserialize, CandidType, Default, Clone)]
 pub struct State {

@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "src/atlas_main",
-    "src/atlas_space"
+    "src/atlas_space",
+    "src/shared"
 ]
 resolver = "2"

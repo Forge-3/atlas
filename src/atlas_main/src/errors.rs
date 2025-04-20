@@ -23,4 +23,7 @@ pub enum Error {
 
     #[error("User rich space limit (expected: {expected:?}, found: {found:?})")]
     UserRichSpaceLimit { expected: usize, found: usize },
+
+    #[error("Failed to initialize canister (Err: {0})")]
+    FailedToInitializeCanister(String)
 }

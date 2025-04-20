@@ -1,6 +1,5 @@
-use candid::{CandidType, Principal};
 use ic_cdk::init;
-use serde::Deserialize;
+use shared::SpaceArgs;
 
 use crate::{config::Config, guard::authenticated_guard, memory};
 
@@ -16,17 +15,3 @@ pub fn init(args: SpaceArgs) {
     ic_cdk::trap("Cannot init canister state with upgrade args");
 }
 
-#[derive(Deserialize, CandidType, Clone)]
-pub struct InitArg {
-    pub admin: Principal,
-    pub space_name: String,
-    pub space_description: String,
-    pub space_logo: Option<String>,
-    pub space_background: Option<String>,
-}
-
-#[derive(Deserialize, CandidType)]
-pub enum SpaceArgs {
-    InitArg(InitArg),
-    UpgradeArg(Config),
-}

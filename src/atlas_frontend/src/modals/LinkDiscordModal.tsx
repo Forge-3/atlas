@@ -54,7 +54,7 @@ const LastStep = () => {
     }
 
     try {
-      await authenticatedAtlasBackend.register_user(accessToken);
+      //await authenticatedAtlasBackend.register_user(accessToken);
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_err) {
       toast.error("Failed to register user");

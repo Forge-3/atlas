@@ -4,8 +4,7 @@ use candid::{CandidType, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
-
-use crate::lifecycle::InitArg;
+use shared::InitArg;
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Deserialize, CandidType, Clone)]
 pub struct Config {

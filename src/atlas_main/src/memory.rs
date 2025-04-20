@@ -5,7 +5,6 @@ use std::cell::RefCell;
 
 use crate::config::Config;
 use crate::errors::Error;
-use crate::space::Space;
 use crate::user::{Rank, User};
 
 type VMem = VirtualMemory<DefaultMemoryImpl>;
@@ -33,12 +32,6 @@ thread_local! {
         StableBTreeMap::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(USERS_MAP_MEMORY_ID)),
         )
-    );
-
-    static SPACES_VEC: RefCell<StableVec<Space, VMem>> = RefCell::new(
-        StableVec::init(
-            MEMORY_MANAGER.with(|m| m.borrow().get(SPACES_VEC_MEMORY_ID))
-        ).expect("Failed to initialize stable Vec")
     );
 }
 
