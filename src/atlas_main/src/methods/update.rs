@@ -56,7 +56,7 @@ pub async fn create_new_space(
 
     memory::push_space(&space)?;
     memory::mut_user(caller, |maybe_user| {
-        let mut user = maybe_user.ok_or(Error::UserDoNotExist)?;
+        let mut user = maybe_user.expect("User do not exist?!");
         let space_index = memory::get_space_vec_len()
             .checked_sub(1)
             .expect("Space vector is empty!?");

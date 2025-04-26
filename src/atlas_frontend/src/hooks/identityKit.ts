@@ -2,8 +2,7 @@ import { useAgent as useIdentityKitAgent } from "@nfid/identitykit/react";
 import { useQuery } from "@tanstack/react-query";
 import { ICP_HOST, IS_LOCAL } from "../utils/icp.ts";
 import { useMemo } from "react";
-import { authenticatedAtlasMainActor } from "../canisters/atlasMain/actors.ts";
-import { atlas_main } from "../../../declarations/atlas_main/index.js";
+import { atlasMainActor } from "../canisters/atlasMain/actors.ts";
 import { HttpAgent } from "@dfinity/agent";
 import { atlasSpaceActor } from "../canisters/atlasSpace/actors.ts";
 import type { Principal } from "@dfinity/principal";
@@ -11,13 +10,13 @@ import type { Principal } from "@dfinity/principal";
 export const useAuthAgent = () => {
   const tempAgent = useIdentityKitAgent({
     host: ICP_HOST,
-  });
+  }) ?? null;
 
   const { data: agent } = useQuery(
     ["user", tempAgent],
     async () => {
       await tempAgent?.fetchRootKey();
-      return tempAgent;
+      return tempAgent ?? null;
     },
     {
       enabled: !!tempAgent && IS_LOCAL,
@@ -34,7 +33,7 @@ export const useUnAuthAgent = () => {
     ["user", tempAgent],
     async () => {
       await tempAgent?.fetchRootKey();
-      return tempAgent;
+      return tempAgent?? null;
     },
     {
       enabled: !!tempAgent && IS_LOCAL,
@@ -44,25 +43,25 @@ export const useUnAuthAgent = () => {
   return agent;
 };
 
-export const useAuthenticatedAtlasMainActor = () => {
+export const useAuthAtlasMainActor = () => {
   const agent = useAuthAgent();
 
-  return useMemo(() => agent && authenticatedAtlasMainActor(agent), [agent]);
+  return useMemo(() => agent && atlasMainActor(agent), [agent]);
 };
 
-export const useUnAuthenticatedAtlasMainActor = () => {
+export const useUnAuthAtlasMainActor = () => {
   const agent = useUnAuthAgent();
 
-  return useMemo(() => agent && authenticatedAtlasMainActor(agent), [agent]);
+  return useMemo(() => agent && atlasMainActor(agent), [agent]);
 };
 
-export const useAuthenticatedAtlasSpaceActor = (canisterId: Principal) => {
+export const useAuthAtlasSpaceActor = (canisterId: Principal) => {
   const agent = useAuthAgent();
 
   return useMemo(() => agent && atlasSpaceActor(agent, canisterId), [agent]);
 };
 
-export const useUnAuthenticatedAtlasSpaceActor = (canisterId: Principal)  => {
+export const useUnAuthAtlasSpaceActor = (canisterId: Principal)  => {
   const agent = useUnAuthAgent();
 
   return useMemo(() => agent && atlasSpaceActor(agent, canisterId), [agent]);

@@ -14,14 +14,14 @@ import {
   setUserDiscordAccessToken,
   setUserDiscordData,
 } from "../store/slices/userSlice.ts";
-import { useAuthenticatedAtlasMainActor } from "../hooks/identityKit.ts";
+import { useAuthAtlasMainActor } from "../hooks/identityKit.ts";
 
 const LastStep = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { disconnect, user } = useAuth();
 
-  const authenticatedAtlasBackend = useAuthenticatedAtlasMainActor()
+  const authenticatedAtlasMain = useAuthAtlasMainActor()
 
   const disconnectWallet = () => {
     dispatch(setScreenBlur(false));
@@ -42,14 +42,14 @@ const LastStep = () => {
       return;
     }
 
-    if (!authenticatedAtlasBackend) {
+    if (!authenticatedAtlasMain) {
       toast.error("Session expired");
       navigate("/");
       return <></>;
     }
 
     try {
-      //await authenticatedAtlasBackend.register_user(accessToken);
+      //await authenticatedAtlasMain.register_user(accessToken);
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_err) {
       toast.error("Failed to register user");
@@ -82,7 +82,7 @@ const LastStep = () => {
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [authenticatedAtlasBackend]);
+  }, [authenticatedAtlasMain]);
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center">

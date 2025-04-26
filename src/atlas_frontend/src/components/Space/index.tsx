@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getAtlasSpace } from "../../canisters/atlasSpace/api.ts";
 import { Principal } from "@dfinity/principal";
 import { toast } from "react-hot-toast";
-import { useUnAuthenticatedAtlasSpaceActor } from "../../hooks/identityKit.ts";
+import { useUnAuthAtlasSpaceActor } from "../../hooks/identityKit.ts";
 
 const SpacePage = () => {
   const params = useParams();
@@ -17,18 +17,18 @@ const SpacePage = () => {
 
   try {
     principal = Principal.fromText(spacePrincipal);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_err) {
     toast.error("Failed to decode space ID");
     navigate("/");
     return;
   }
-  const actor = useUnAuthenticatedAtlasSpaceActor(principal);
+  const actor = useUnAuthAtlasSpaceActor(principal);
   const { data } = useQuery({
     queryKey: ["spaceState", actor],
     queryFn: async () => {
-      if (!actor) return;
-      return await getAtlasSpace(actor);
+      if (!actor) return null;
+      return await getAtlasSpace({ unAuthAtlasSpaceActor: actor });
     },
   });
 

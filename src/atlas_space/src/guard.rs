@@ -6,7 +6,7 @@ use crate::{errors::Error, memory};
 pub fn authenticated_guard() -> Result<Principal, Error> {
     let principal = ic_cdk::caller();
     if principal == Principal::anonymous() {
-        return Err(Error::AnonymousCaller)
+        return Err(Error::AnonymousCaller);
     }
     Ok(principal)
 }
@@ -15,13 +15,11 @@ pub fn authenticated_guard() -> Result<Principal, Error> {
 pub fn owner_guard() -> Result<Principal, Error> {
     let principal = ic_cdk::caller();
     if principal == Principal::anonymous() {
-        return Err(Error::AnonymousCaller)
+        return Err(Error::AnonymousCaller);
     }
-    let config = memory::read_config(|config| {
-        config.clone().ok_or(Error::ConfigNotSet)
-    })?;
+    let config = memory::read_config(|config| config.clone().ok_or(Error::ConfigNotSet))?;
     if principal != config.owner() {
-        return Err(Error::NotOwner)
+        return Err(Error::NotOwner);
     }
     Ok(principal)
 }
@@ -30,13 +28,11 @@ pub fn owner_guard() -> Result<Principal, Error> {
 pub fn admin_guard() -> Result<Principal, Error> {
     let principal = ic_cdk::caller();
     if principal == Principal::anonymous() {
-        return Err(Error::AnonymousCaller)
+        return Err(Error::AnonymousCaller);
     }
-    let config = memory::read_config(|config| {
-        config.clone().ok_or(Error::ConfigNotSet)
-    })?;
+    let config = memory::read_config(|config| config.clone().ok_or(Error::ConfigNotSet))?;
     if principal != config.admin() {
-        return Err(Error::NotAdmin)
+        return Err(Error::NotAdmin);
     }
     Ok(principal)
 }
@@ -45,13 +41,11 @@ pub fn admin_guard() -> Result<Principal, Error> {
 pub fn admin_or_owner_guard() -> Result<Principal, Error> {
     let principal = ic_cdk::caller();
     if principal == Principal::anonymous() {
-        return Err(Error::AnonymousCaller)
+        return Err(Error::AnonymousCaller);
     }
-    let config = memory::read_config(|config| {
-        config.clone().ok_or(Error::ConfigNotSet)
-    })?;
+    let config = memory::read_config(|config| config.clone().ok_or(Error::ConfigNotSet))?;
     if principal != config.admin() && principal != config.owner() {
-        return Err(Error::NotAdminNorOwner)
+        return Err(Error::NotAdminNorOwner);
     }
     Ok(principal)
 }

@@ -3,18 +3,22 @@ import type { _SERVICE } from "../../../../declarations/atlas_space/atlas_space.
 import { toast } from "react-hot-toast";
 
 interface State {
-    space_name: string,
-    space_description: string,
-    space_symbol: string | null,
-    space_logo: string | null,
-    space_background: string | null,
+  space_name: string;
+  space_description: string;
+  space_symbol: string | null;
+  space_logo: string | null;
+  space_background: string | null;
 }
 
-export const getAtlasSpace = async (
-  unAuthenticatedAtlasSpaceActor: ActorSubclass<_SERVICE>
-) => {
+interface GetAtlasSpaceArgs {
+  unAuthAtlasSpaceActor: ActorSubclass<_SERVICE>;
+}
+
+export const getAtlasSpace = async ({
+  unAuthAtlasSpaceActor,
+}: GetAtlasSpaceArgs) => {
   const promise = new Promise<State>(async (res, rej) => {
-    const state = await unAuthenticatedAtlasSpaceActor
+    const state = await unAuthAtlasSpaceActor
       .get_state()
       .catch((err) => rej(err));
 

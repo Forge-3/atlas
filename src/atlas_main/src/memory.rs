@@ -44,7 +44,10 @@ thread_local! {
 
 // User state methods
 
-pub fn mut_user(user_id: Principal, f: impl FnOnce(Option<User>) -> Result<User, Error>) -> Result<Option<User>, Error> {
+pub fn mut_user(
+    user_id: Principal,
+    f: impl FnOnce(Option<User>) -> Result<User, Error>,
+) -> Result<Option<User>, Error> {
     USERS_MAP.with_borrow_mut(|users| Ok(users.insert(user_id, f(users.get(&user_id))?)))
 }
 
@@ -81,8 +84,7 @@ pub fn set_config(config: Config) -> Result<(), Error> {
 // Spaces Vec state methods
 
 pub fn get_space_vec_len() -> u64 {
-    SPACES_VEC
-        .with_borrow(|space| space.len())
+    SPACES_VEC.with_borrow(|space| space.len())
 }
 
 pub fn with_space_vec_iter<F, R>(f: F) -> R

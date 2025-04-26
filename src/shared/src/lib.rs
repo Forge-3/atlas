@@ -1,4 +1,4 @@
-use candid::{Principal, CandidType};
+use candid::{CandidType, Principal};
 use serde::Deserialize;
 
 pub mod cbor;

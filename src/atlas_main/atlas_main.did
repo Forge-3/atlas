@@ -10,12 +10,14 @@ type Error = variant {
   FailedToGetCanisterInfo : text;
   FailedToInstallWASM : text;
   FailedToInitializeCanister : text;
+  UserDoNotExist;
   AnonymousCaller;
 };
 type Integrations = record { discord_id : opt text };
 type Rank = variant { SpaceLead; User; Admin };
-type Result = variant { Ok : principal; Err : Error };
+type Result = variant { Ok : Space; Err : Error };
 type Result_1 = variant { Ok; Err : Error };
+type Space = record { id : principal };
 type User = record {
   integrations : Integrations;
   rank : Rank;

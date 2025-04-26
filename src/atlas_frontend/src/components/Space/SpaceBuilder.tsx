@@ -5,14 +5,19 @@ import Dropzone from "./Dropzone.tsx";
 import type { DropzoneOptions } from "react-dropzone";
 import imageCompression from "browser-image-compression";
 import { useForm, type SubmitHandler } from "react-hook-form";
-import { useAuthenticatedAtlasMainActor } from "../../hooks/identityKit.ts";
-import { createNewSpace } from "../../canisters/atlasMain/api.ts";
+import {
+  useAuthAtlasMainActor,
+  useUnAuthAtlasMainActor,
+} from "../../hooks/identityKit.ts";
+import { createNewSpace, getAtlasUser } from "../../canisters/atlasMain/api.ts";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { toast } from "react-hot-toast";
 import { formatFormError } from "../../utils/errors.ts";
 import { useNavigate } from "react-router-dom";
 import { SPACE_PATH } from "../../router/index.tsx";
+import { useAuth } from "@nfid/identitykit/react";
+import { useDispatch } from "react-redux";
 
 interface SpaceBuilderFormInput {
   space_symbol?: string;
@@ -20,12 +25,11 @@ interface SpaceBuilderFormInput {
   space_description: string;
 }
 
-const schema = yup
-  .object({
-    space_symbol: yup.string().trim().max(16).optional(),
-    space_description: yup.string().trim().max(128).min(3).required(),
-    space_name: yup.string().max(32).trim().min(2).required(),
-  })
+const schema = yup.object({
+  space_symbol: yup.string().trim().max(16).optional(),
+  space_description: yup.string().trim().max(128).min(3).required(),
+  space_name: yup.string().max(32).trim().min(2).required(),
+});
 
 const SpaceBuilder = () => {
   const navigate = useNavigate();
@@ -40,32 +44,46 @@ const SpaceBuilder = () => {
   } = useForm({
     resolver: yupResolver(schema),
   });
-  const authenticatedAtlasBackend = useAuthenticatedAtlasMainActor();
+  const authenticatedAtlasMain = useAuthAtlasMainActor();
+  const { user } = useAuth();
+  const dispatch = useDispatch();
+  const unAuthAtlasMain = useUnAuthAtlasMainActor();
 
   useEffect(() => {
-    if (errors.space_name?.message) toast.error(formatFormError(errors.space_name?.message));
-    if (errors.space_description?.message) toast.error(formatFormError(errors.space_description?.message));
-    if (errors.space_symbol?.message) toast.error(formatFormError(errors.space_symbol?.message));
+    if (errors.space_name?.message)
+      toast.error(formatFormError(errors.space_name?.message));
+    if (errors.space_description?.message)
+      toast.error(formatFormError(errors.space_description?.message));
+    if (errors.space_symbol?.message)
+      toast.error(formatFormError(errors.space_symbol?.message));
   }, [errors]);
 
   const onSubmit: SubmitHandler<SpaceBuilderFormInput> = async (data) => {
-    if (!authenticatedAtlasBackend) {
+    if (!authenticatedAtlasMain) {
       return;
     }
     const name = data.space_name.trim();
     const description = data.space_description.trim();
-    const symbol = data.space_symbol!== "" && data.space_symbol ? data.space_symbol : null;
+    const symbol =
+      data.space_symbol !== "" && data.space_symbol ? data.space_symbol : null;
 
-    const spacePrincipal = await createNewSpace(
-      authenticatedAtlasBackend,
+    const spacePrincipal = await createNewSpace({
+      authenticatedAtlasMain,
       name,
       description,
       symbol,
-      builderAvatarImg,
-      builderBackgroundImg
-    );
+      logo: builderAvatarImg,
+      background: builderBackgroundImg,
+    });
+    if (user?.principal && unAuthAtlasMain) {
+      getAtlasUser({
+        dispatch,
+        userId: user.principal,
+        unAuthAtlasMain: unAuthAtlasMain,
+      });
+    }
 
-    navigate(SPACE_PATH.replace(":spacePrincipal", spacePrincipal.toText()))
+    navigate(SPACE_PATH.replace(":spacePrincipal", spacePrincipal.toText()));
   };
 
   const getDropzoneOptions = (

@@ -5,7 +5,6 @@ use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use shared::SpaceInitArg;
 
-
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Default, Clone, CandidType)]
 pub struct State {
     #[n(0)]
@@ -52,13 +51,13 @@ impl State {
 
 impl From<SpaceInitArg> for State {
     fn from(init_args: SpaceInitArg) -> Self {
-        Self { 
+        Self {
             space_name: init_args.space_name,
             space_description: init_args.space_description,
             space_logo: init_args.space_logo,
             space_background: init_args.space_background,
-            space_symbol: init_args.space_symbol
-         }
+            space_symbol: init_args.space_symbol,
+        }
     }
 }
 

@@ -1,16 +1,16 @@
+mod config;
 mod cycles;
 mod errors;
 mod guard;
-mod methods;
 mod lifecycle;
-mod config;
 mod memory;
+mod methods;
 mod state;
 
+use crate::cycles::WalletReceiveResult;
+use crate::errors::Error;
+use crate::state::State;
 use candid::Nat;
 use shared::SpaceArgs;
-use crate::errors::Error;
-use crate::cycles::WalletReceiveResult;
-use crate::state::State;
 
 ic_cdk::export_candid!();

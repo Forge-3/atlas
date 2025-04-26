@@ -6,7 +6,7 @@ import {
 } from "../../../../declarations/atlas_main/index.js";
 import type { _SERVICE } from "../../../../declarations/atlas_main/atlas_main.did.js";
 
-export const authenticatedAtlasMainActor = (
+export const atlasMainActor = (
   agent: Agent
 ): ActorSubclass<_SERVICE> => {
   return Actor.createActor(idlFactory, {
@@ -14,5 +14,3 @@ export const authenticatedAtlasMainActor = (
     canisterId,
   });
 };
-
-export const unAuthenticatedAtlasMainActor: ActorSubclass<_SERVICE> = atlas_main;

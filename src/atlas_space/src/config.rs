@@ -11,14 +11,14 @@ pub struct Config {
     #[cbor(n(0), with = "shared::cbor::principal")]
     owner: Principal,
     #[cbor(n(1), with = "shared::cbor::principal")]
-    admin: Principal
+    admin: Principal,
 }
- 
+
 impl Config {
     pub fn new(owner: Principal, init_args: SpaceInitArg) -> Self {
         Self {
             owner,
-            admin: init_args.admin
+            admin: init_args.admin,
         }
     }
 

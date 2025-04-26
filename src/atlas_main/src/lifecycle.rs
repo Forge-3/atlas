@@ -2,7 +2,12 @@ use candid::CandidType;
 use ic_cdk::init;
 use serde::Deserialize;
 
-use crate::{config::Config, guard::authenticated_guard, memory, user::{Rank, User}};
+use crate::{
+    config::Config,
+    guard::authenticated_guard,
+    memory,
+    user::{Rank, User},
+};
 
 #[derive(Deserialize, CandidType)]
 pub enum AtlasArgs {

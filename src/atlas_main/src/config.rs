@@ -8,13 +8,13 @@ use serde::Deserialize;
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Default, Deserialize, CandidType, Clone, Copy)]
 pub struct Config {
     #[n(0)]
-    spaces_per_space_lead: u8
+    spaces_per_space_lead: u8,
 }
 
 impl Config {
     pub fn new(spaces_per_space_lead: u8) -> Self {
         Self {
-            spaces_per_space_lead
+            spaces_per_space_lead,
         }
     }
 

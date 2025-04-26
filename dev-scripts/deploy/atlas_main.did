@@ -1,0 +1,5 @@
+(variant {
+  InitArg = record { 
+    spaces_per_space_lead = 2
+  }
+})

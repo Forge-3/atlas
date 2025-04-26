@@ -14,15 +14,15 @@ import { motion } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { setConfig } from "../../store/slices/appSlice.ts";
 import type { RootState } from "../../store/store.ts";
-import { useAuthenticatedAtlasMainActor } from "../../hooks/identityKit.ts";
-import type { Principal } from "@dfinity/principal";
+import {
+  useUnAuthAtlasMainActor,
+} from "../../hooks/identityKit.ts";
 import {
   selectUserBlockchainData,
-  setUserBlockchainData,
 } from "../../store/slices/userSlice.ts";
 import { toast } from "react-hot-toast";
-import { unAuthenticatedAtlasMainActor } from "../../canisters/atlasMain/actors.ts";
 import { SPACE_BUILDER_PATH } from "../../router/index.tsx";
+import { getAtlasUser } from "../../canisters/atlasMain/api.ts";
 
 const ConnectButton = (props: ConnectWalletButtonProps) => (
   <Button
@@ -43,7 +43,7 @@ const DropdownMenuComponent = ({
   connectedAccount: string;
 }) => {
   const [userDropdown, setUserDropdown] = useState(false);
-  const authenticatedAtlasBackend = useAuthenticatedAtlasMainActor();
+  const unAuthAtlasMain = useUnAuthAtlasMainActor();
   const { user } = useAuth();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -57,21 +57,10 @@ const DropdownMenuComponent = ({
     disconnect();
     window.location.href = "/";
   };
-  const getAtlasUser = async (userId: Principal) => {
-    const userData = await authenticatedAtlasBackend?.get_user(userId);
-    if (!userData) {
-      toast.error("Failed to get user data from ICP");
-      return;
-    }
-    dispatch(
-      setUserBlockchainData({
-        ...userData,
-        owned_spaces: Array.from(userData.owned_spaces),
-      })
-    );
-  };
+
   const getAtlasConfig = async () => {
-    const config = await unAuthenticatedAtlasMainActor.app_config();
+    if (!unAuthAtlasMain) return;
+    const config = await unAuthAtlasMain.app_config();
     if (!config) {
       toast.error("Failed to get config from ICP");
       return;
@@ -80,15 +69,19 @@ const DropdownMenuComponent = ({
   };
 
   useEffect(() => {
-    getAtlasConfig();
-  }, [dispatch]);
+    if (unAuthAtlasMain) getAtlasConfig();
+  }, [dispatch, unAuthAtlasMain]);
 
   useEffect(() => {
-    if (user?.principal && authenticatedAtlasBackend) {
+    if (user?.principal && unAuthAtlasMain) {
       getAtlasConfig();
-      getAtlasUser(user.principal);
+      getAtlasUser({
+        dispatch,
+        userId: user.principal,
+        unAuthAtlasMain,
+      });
     }
-  }, [authenticatedAtlasBackend, user, dispatch]);
+  }, [unAuthAtlasMain, user, dispatch]);
 
   const ownedSpacesCount = userBlockchainData?.owned_spaces.length;
   const navigateToSpaceBuilder = () => {
