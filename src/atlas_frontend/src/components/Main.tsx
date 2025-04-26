@@ -1,43 +1,30 @@
 import React from "react";
-import { Toaster } from "react-hot-toast";
-import Router from "../router/index.tsx";
-import "@nfid/identitykit/react/styles.css";
-import { IdentityKitProvider, IdentityKitTheme } from "@nfid/identitykit/react";
-import {
-  NFIDW,
-  InternetIdentity,
-  Stoic,
-  OISY,
-  IdentityKitAuthType,
-} from "@nfid/identitykit";
-import { Provider } from "react-redux";
-import { store } from "../store/store.ts";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
-const InternetIdentityWallet =
-  process.env.DFX_NETWORK === "local"
-    ? {
-        ...InternetIdentity,
-        providerUrl: "http://c2lt4-zmaaa-aaaaa-qaaiq-cai.localhost:4943/",
-      }
-    : InternetIdentity;
+import { useSelector } from "react-redux";
+import Navbar from "./Navbar";
+import type { RootState } from "../store/store";
+import Router from "../router";
+import Footer from "./Footer";
 
 const Main = () => {
-  const queryClient = new QueryClient();
+  const isScreenBlur = useSelector(
+    (state: RootState) => state.app.isScreenBlur
+  );
 
   return (
-    <Provider store={store}>
-      <Toaster />
-      <QueryClientProvider client={queryClient}>
-        <IdentityKitProvider
-          authType={IdentityKitAuthType.DELEGATION}
-          theme={IdentityKitTheme.LIGHT}
-          signers={[NFIDW, Stoic, OISY, InternetIdentityWallet]}
-        >
-          <Router />
-        </IdentityKitProvider>
-      </QueryClientProvider>
-    </Provider>
+    <>
+      <div
+        className={`absolute inset-0 flex items-center justify-center bg-black bg-opacity-25 sm:backdrop-blur-sm backdrop-blur-none z-40 ${isScreenBlur ? "" : "hidden"}`}
+      ></div>
+      <div className="relative bg-gradient-to-b from-[#1E0F33] to-[#9173FF]/50 bg-[#1E0F33] min-h-screen flex flex-col justify-between w-screen">
+        <div>
+          <Navbar />
+          <main>
+            <Router />
+          </main>
+        </div>
+        <Footer />
+      </div>
+    </>
   );
 };
 

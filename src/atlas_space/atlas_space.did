@@ -1,14 +1,35 @@
-type Config = record { admin : principal; owner : principal };
-type InitArg = record {
+type Error = variant {
+  NotAdminNorOwner;
+  FailedToUpdateConfig : text;
+  ConfigNotSet;
+  NotAdmin;
+  NotOwner;
+  AnonymousCaller;
+};
+type Result = variant { Ok; Err : Error };
+type SpaceArgs = variant { UpgradeArg; InitArg : SpaceInitArg };
+type SpaceInitArg = record {
   admin : principal;
+  space_symbol : opt text;
   space_background : opt text;
   space_logo : opt text;
   space_name : text;
   space_description : text;
 };
-type SpaceArgs = variant { UpgradeArg : Config; InitArg : InitArg };
+type State = record {
+  space_symbol : opt text;
+  space_background : opt text;
+  space_logo : opt text;
+  space_name : text;
+  space_description : text;
+};
 type WalletReceiveResult = record { accepted : nat64 };
 service : (SpaceArgs) -> {
+  get_state : () -> (State) query;
+  set_space_background : (text) -> (Result);
+  set_space_description : (text) -> (Result);
+  set_space_logo : (text) -> (Result);
+  set_space_name : (text) -> (Result);
   wallet_balance : () -> (nat) query;
   wallet_receive : () -> (WalletReceiveResult);
 }

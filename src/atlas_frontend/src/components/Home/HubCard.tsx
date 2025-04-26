@@ -1,6 +1,10 @@
 import React from "react";
 
-function AmbassadorCard({ ambassadorsCount, country }: { ambassadorsCount: number, country: string  }) {
+interface AmbassadorCardProps {
+  ambassadorsCount: number, country: string 
+}
+
+function AmbassadorCard({ ambassadorsCount, country }: AmbassadorCardProps) {
   return (
     <div className="flex w-full flex-col items-center  border border-white border-solid  rounded-t-full ">
       <div className="md:w-[70px] md:h-[70px] dlg:w-[90px] dlg:h-[90px] mb-3 rounded-full flex items-center justify-center">

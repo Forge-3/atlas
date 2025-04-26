@@ -5,6 +5,7 @@ use std::cell::RefCell;
 
 use crate::config::Config;
 use crate::errors::Error;
+use crate::space::Space;
 use crate::user::{Rank, User};
 
 type VMem = VirtualMemory<DefaultMemoryImpl>;
@@ -33,12 +34,22 @@ thread_local! {
             MEMORY_MANAGER.with(|m| m.borrow().get(USERS_MAP_MEMORY_ID)),
         )
     );
+
+    static SPACES_VEC: RefCell<StableVec<Space, VMem>> = RefCell::new(
+        StableVec::init(
+            MEMORY_MANAGER.with(|m| m.borrow().get(SPACES_VEC_MEMORY_ID)),
+        ).expect("Failed to initialize stable Vec")
+    );
 }
 
 // User state methods
 
-pub fn insert_user(user_id: Principal, user_data: User) {
-    USERS_MAP.with_borrow_mut(|users| users.insert(user_id, user_data));
+pub fn mut_user(user_id: Principal, f: impl FnOnce(Option<User>) -> Result<User, Error>) -> Result<Option<User>, Error> {
+    USERS_MAP.with_borrow_mut(|users| Ok(users.insert(user_id, f(users.get(&user_id))?)))
+}
+
+pub fn insert_user(user_id: Principal, user_data: User) -> Option<User> {
+    USERS_MAP.with_borrow_mut(|users| users.insert(user_id, user_data))
 }
 
 pub fn user_rank_match(user_id: &Principal, rank: &Rank) -> Result<User, Error> {
@@ -64,5 +75,26 @@ pub fn set_config(config: Config) -> Result<(), Error> {
     CONFIG
         .with_borrow_mut(|users| users.set(config))
         .map_err(|err| Error::FailedToUpdateConfig(format!("{:?}", err)))?;
+    Ok(())
+}
+
+// Spaces Vec state methods
+
+pub fn get_space_vec_len() -> u64 {
+    SPACES_VEC
+        .with_borrow(|space| space.len())
+}
+
+pub fn with_space_vec_iter<F, R>(f: F) -> R
+where
+    F: for<'a> FnOnce(Box<dyn Iterator<Item = Space> + 'a>) -> R,
+{
+    SPACES_VEC.with_borrow(|events| f(Box::new(events.iter())))
+}
+
+pub fn push_space(space_principal: &Space) -> Result<(), Error> {
+    SPACES_VEC
+        .with_borrow_mut(|space| space.push(space_principal))
+        .map_err(|err| Error::FailedToSaveSpace(format!("{:?}", err)))?;
     Ok(())
 }

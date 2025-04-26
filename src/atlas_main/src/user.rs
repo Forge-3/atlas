@@ -1,11 +1,11 @@
 use std::{borrow::Cow, fmt};
 
 use crate::errors::Error;
-use candid::{CandidType, Deserialize, Principal};
+use candid::{CandidType, Deserialize};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 
-#[derive(Eq, PartialEq, Debug, Decode, Encode, Default)]
+#[derive(Eq, PartialEq, Debug, Decode, Encode, Default, CandidType)]
 pub struct Integrations {
     #[n(0)]
     discord_id: Option<String>,
@@ -43,14 +43,14 @@ impl fmt::Display for Rank {
     }
 }
 
-#[derive(Eq, PartialEq, Debug, Decode, Encode, Default)]
+#[derive(Eq, PartialEq, Debug, Decode, Encode, Default, CandidType)]
 pub struct User {
     #[n(0)]
     integrations: Integrations,
     #[n(1)]
     rank: Rank,
     #[n(2)]
-    owned_spaces: Vec<u32>,
+    owned_spaces: Vec<u64>,
 }
 
 impl User {
@@ -82,6 +82,10 @@ impl User {
 
     pub fn owned_spaces_count(&self) -> usize {
         self.owned_spaces.len()
+    }
+
+    pub fn push_space(&mut self, space_index: u64) {
+        self.owned_spaces.push(space_index);
     }
 }
 

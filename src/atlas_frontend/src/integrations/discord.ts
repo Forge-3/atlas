@@ -1,6 +1,5 @@
 import axios from "axios";
-
-export const CALLBACK_PATH = "/auth/discord/callback";
+import { DISCORD_CALLBACK_PATH } from "../router";
 
 export interface UserData {
   accent_color: null | string;
@@ -31,7 +30,7 @@ export const getOAuth2URL = (stateData?: string) => {
   url.searchParams.set("client_id", import.meta.env.PUBLIC_DISCORD_CLIENT_ID);
   url.searchParams.set(
     "redirect_uri",
-    new URL(CALLBACK_PATH, window.location.origin).toString()
+    new URL(DISCORD_CALLBACK_PATH, window.location.origin).toString()
   );
   url.searchParams.set("response_type", "token");
   url.searchParams.set("scope", "identify");

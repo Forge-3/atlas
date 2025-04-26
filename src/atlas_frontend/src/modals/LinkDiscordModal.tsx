@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect } from "react";
 import { useAuth } from "@nfid/identitykit/react";
 import { useDispatch } from "react-redux";
 import { setScreenBlur } from "../store/slices/appSlice.ts";
@@ -9,24 +9,19 @@ import {
   type UserData,
 } from "../integrations/discord.ts";
 import { toast } from "react-hot-toast";
-import { authenticatedAtlasBackendActor } from "../canisters/atlas_main.ts"
 import { useNavigate } from "react-router-dom";
 import {
   setUserDiscordAccessToken,
   setUserDiscordData,
 } from "../store/slices/userSlice.ts";
-import { useAgent } from "../hooks/identityKit.ts";
+import { useAuthenticatedAtlasMainActor } from "../hooks/identityKit.ts";
 
 const LastStep = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { disconnect, user } = useAuth();
-  const agent = useAgent();
 
-  const authenticatedAtlasBackend = useMemo(
-    () => agent && authenticatedAtlasBackendActor(agent),
-    [agent]
-  );
+  const authenticatedAtlasBackend = useAuthenticatedAtlasMainActor()
 
   const disconnectWallet = () => {
     dispatch(setScreenBlur(false));

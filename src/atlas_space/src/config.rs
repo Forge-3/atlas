@@ -4,18 +4,18 @@ use candid::{CandidType, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
-use shared::InitArg;
+use shared::SpaceInitArg;
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Deserialize, CandidType, Clone)]
 pub struct Config {
-    #[cbor(n(0), with = "crate::cbor::principal")]
+    #[cbor(n(0), with = "shared::cbor::principal")]
     owner: Principal,
-    #[cbor(n(1), with = "crate::cbor::principal")]
+    #[cbor(n(1), with = "shared::cbor::principal")]
     admin: Principal
 }
  
 impl Config {
-    pub fn new(owner: Principal, init_args: InitArg) -> Self {
+    pub fn new(owner: Principal, init_args: SpaceInitArg) -> Self {
         Self {
             owner,
             admin: init_args.admin

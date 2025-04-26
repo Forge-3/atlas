@@ -8,12 +8,9 @@
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "allowJs": false,
     "skipLibCheck": true,
-    "esModuleInterop": false,
-    "allowSyntheticDefaultImports": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "module": "node16",
-    "moduleResolution": "node16",
+    "module": "ES2020",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
@@ -21,8 +18,9 @@
     "types": ["vite/client"],
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
-    "outDir": "HACK_BECAUSE_OF_ALLOW_JS",
     "jsxImportSource": "react",
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   }
 }

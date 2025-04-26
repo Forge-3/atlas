@@ -3,20 +3,21 @@ use std::borrow::Cow;
 use candid::CandidType;
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
-use serde::Deserialize;
-use shared::InitArg;
+use shared::SpaceInitArg;
 
 
-#[derive(Eq, PartialEq, Debug, Decode, Encode, Deserialize, CandidType, Default, Clone)]
+#[derive(Eq, PartialEq, Debug, Decode, Encode, Default, Clone, CandidType)]
 pub struct State {
     #[n(0)]
-    space_name: String,
-    #[n(1)]
-    space_description: String,
-    #[n(2)]
     space_logo: Option<String>,
-    #[n(3)]
+    #[n(1)]
     space_background: Option<String>,
+    #[n(2)]
+    space_name: String,
+    #[n(3)]
+    space_description: String,
+    #[n(4)]
+    space_symbol: Option<String>,
 }
 
 impl State {
@@ -49,13 +50,14 @@ impl State {
     }
 }
 
-impl From<InitArg> for State {
-    fn from(init_args: InitArg) -> Self {
+impl From<SpaceInitArg> for State {
+    fn from(init_args: SpaceInitArg) -> Self {
         Self { 
             space_name: init_args.space_name,
             space_description: init_args.space_description,
             space_logo: init_args.space_logo,
-            space_background: init_args.space_background
+            space_background: init_args.space_background,
+            space_symbol: init_args.space_symbol
          }
     }
 }

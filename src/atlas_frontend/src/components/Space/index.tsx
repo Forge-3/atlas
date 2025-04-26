@@ -1,42 +1,47 @@
 import React from "react";
-import { useAuth } from "@nfid/identitykit/react";
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import LinkDiscordModal from "../../modals/LinkDiscordModal.tsx";
-import { useDispatch, useSelector } from "react-redux";
-import { setScreenBlur } from "../../store/slices/appSlice.ts";
-import { selectUserDiscordData } from "../../store/slices/userSlice.ts";
-import SpaceMain from "./HubSpaceMain.tsx";
+import Space from "./Space.tsx";
+import { useNavigate, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { getAtlasSpace } from "../../canisters/atlasSpace/api.ts";
+import { Principal } from "@dfinity/principal";
+import { toast } from "react-hot-toast";
+import { useUnAuthenticatedAtlasSpaceActor } from "../../hooks/identityKit.ts";
 
-const Space = () => {
-  const dispatch = useDispatch();
-  const nav = useNavigate();
-  const { user } = useAuth();
+const SpacePage = () => {
+  const params = useParams();
+  const navigate = useNavigate();
+  const spacePrincipal = params["spacePrincipal"];
 
-  const userDiscordData = useSelector(selectUserDiscordData);
-  const isDiscord = userDiscordData.accessToken && userDiscordData.userData;
+  if (!spacePrincipal) return <></>;
+  let principal: Principal | null = null;
 
-  useEffect(() => {
-    if (!user) {
-      nav("/");
-    }
-  }, [nav, user]);
+  try {
+    principal = Principal.fromText(spacePrincipal);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_err) {
+    toast.error("Failed to decode space ID");
+    navigate("/");
+    return;
+  }
+  const actor = useUnAuthenticatedAtlasSpaceActor(principal);
+  const { data } = useQuery({
+    queryKey: ["spaceState", actor],
+    queryFn: async () => {
+      if (!actor) return;
+      return await getAtlasSpace(actor);
+    },
+  });
 
-  useEffect(() => {
-    dispatch(dispatch(setScreenBlur(!isDiscord)));
-  }, [dispatch, userDiscordData]);
-
+  if (!data) return <></>;
   return (
-    <>
-      <SpaceMain
-        country="India"
-        description="Join the ICP Hub – where technology meets action! Complete tasks, explore the ICP blockchain, and earn rewards for your engagement."
-        backgroundImg="/hubs/background-india.png"
-        avatarImg="/hubs/logo-india-square.png"
-      />
-      {!isDiscord && <LinkDiscordModal />}
-    </>
+    <Space
+      name={data.space_name}
+      description={data.space_description}
+      symbol={data.space_symbol}
+      backgroundImg={data.space_background}
+      avatarImg={data.space_logo}
+    />
   );
 };
 
-export default Space;
+export default SpacePage;

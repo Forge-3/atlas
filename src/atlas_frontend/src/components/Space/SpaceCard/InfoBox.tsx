@@ -1,13 +1,13 @@
 import React from "react";
 
-interface InfoBoxArgs {
+interface InfoBoxProps {
   type: "ongoing" | "starting" | "expired" | "points" | "tokens";
   startingIn?: string;
   points?: string;
   tokens?: string
 }
 
-const InfoBox = ({ type, startingIn, points, tokens }: InfoBoxArgs) => {
+const InfoBox = ({ type, startingIn, points, tokens }: InfoBoxProps) => {
   switch (type) {
     case "ongoing":
       return (

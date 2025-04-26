@@ -32,3 +32,4 @@ pub fn set_space_background(space_background: String) -> Result<(), Error> {
     memory::mut_state(|state| state.set_space_background(space_background))?;
     Ok(())
 }
+

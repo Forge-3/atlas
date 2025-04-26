@@ -1,14 +1,14 @@
 import React from "react";
 import InfoBox from "./InfoBox.tsx";
 
-interface SpaceCardArgs {
+interface SpaceCardProps {
   type: "ongoing" | "starting" | "expired";
   startingIn?: string;
   points: string;
   tokens: string;
 }
 
-const SpaceCard = ({ type, startingIn, points, tokens }: SpaceCardArgs) => {
+const SpaceCard = ({ type, startingIn, points, tokens }: SpaceCardProps) => {
   return (
     <div className="rounded-xl bg-gradient-to-b from-[#9173FF] to-transparent to-[150%] flex flex-col">
       <div

@@ -8,12 +8,21 @@ import Button from "../Shared/Button.tsx";
 import { type MenuProps } from "@headlessui/react";
 import { shortPrincipal } from "../../utils/icp.ts";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FiLogOut, FiCopy } from "react-icons/fi";
+import { FiLogOut, FiCopy, FiPlus } from "react-icons/fi";
 import { copy } from "../../utils/shared.ts";
 import { motion } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
-import { setScreenBlur } from "../../store/slices/appSlice.ts";
+import { setConfig } from "../../store/slices/appSlice.ts";
 import type { RootState } from "../../store/store.ts";
+import { useAuthenticatedAtlasMainActor } from "../../hooks/identityKit.ts";
+import type { Principal } from "@dfinity/principal";
+import {
+  selectUserBlockchainData,
+  setUserBlockchainData,
+} from "../../store/slices/userSlice.ts";
+import { toast } from "react-hot-toast";
+import { unAuthenticatedAtlasMainActor } from "../../canisters/atlasMain/actors.ts";
+import { SPACE_BUILDER_PATH } from "../../router/index.tsx";
 
 const ConnectButton = (props: ConnectWalletButtonProps) => (
   <Button
@@ -34,12 +43,68 @@ const DropdownMenuComponent = ({
   connectedAccount: string;
 }) => {
   const [userDropdown, setUserDropdown] = useState(false);
+  const authenticatedAtlasBackend = useAuthenticatedAtlasMainActor();
+  const { user } = useAuth();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const userBlockchainData = useSelector(selectUserBlockchainData);
+  const config = useSelector((state: RootState) => state.app.blockchainConfig);
+
   const copyAccount = () => {
     copy(connectedAccount);
   };
   const disconnectWallet = () => {
     disconnect();
     window.location.href = "/";
+  };
+  const getAtlasUser = async (userId: Principal) => {
+    const userData = await authenticatedAtlasBackend?.get_user(userId);
+    if (!userData) {
+      toast.error("Failed to get user data from ICP");
+      return;
+    }
+    dispatch(
+      setUserBlockchainData({
+        ...userData,
+        owned_spaces: Array.from(userData.owned_spaces),
+      })
+    );
+  };
+  const getAtlasConfig = async () => {
+    const config = await unAuthenticatedAtlasMainActor.app_config();
+    if (!config) {
+      toast.error("Failed to get config from ICP");
+      return;
+    }
+    dispatch(setConfig(config));
+  };
+
+  useEffect(() => {
+    getAtlasConfig();
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (user?.principal && authenticatedAtlasBackend) {
+      getAtlasConfig();
+      getAtlasUser(user.principal);
+    }
+  }, [authenticatedAtlasBackend, user, dispatch]);
+
+  const ownedSpacesCount = userBlockchainData?.owned_spaces.length;
+  const navigateToSpaceBuilder = () => {
+    if (
+      ownedSpacesCount === undefined ||
+      config?.spaces_per_space_lead === undefined
+    ) {
+      return;
+    }
+    if (
+      ownedSpacesCount < config?.spaces_per_space_lead &&
+      userBlockchainData?.getRank() === "SpaceLead"
+    ) {
+      navigate(SPACE_BUILDER_PATH);
+      return;
+    }
   };
 
   return (
@@ -66,6 +131,19 @@ const DropdownMenuComponent = ({
                 </div>
               </button>
             </li>
+            {userBlockchainData?.getRank() === "SpaceLead" && (
+              <li onClick={navigateToSpaceBuilder}>
+                <button className="flex items-center justify-center justify-between w-full gap-6">
+                  <div>
+                    Create new space ({ownedSpacesCount}/
+                    {config?.spaces_per_space_lead})
+                  </div>{" "}
+                  <div className="flex items-center justify-center">
+                    <FiPlus />
+                  </div>
+                </button>
+              </li>
+            )}
             <li onClick={disconnectWallet}>
               <button className="flex items-center justify-center justify-between w-full gap-6">
                 <div>Disconnect</div>{" "}
@@ -83,21 +161,8 @@ const DropdownMenuComponent = ({
 
 const Navbar = () => {
   const { user } = useAuth();
-  const nav = useNavigate();
   const location = useLocation();
-  const dispatch = useDispatch();
-  const userDiscordData = useSelector((state: RootState) => state.user.integrations.discord)
-
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-    nav("/space");
-    if (userDiscordData) {
-      return;
-    }
-    dispatch(setScreenBlur(true));
-  }, [nav, user, userDiscordData]);
+  const userBlockchainData = useSelector(selectUserBlockchainData);
 
   return (
     <div className="sticky top-0 z-30 w-full">
@@ -111,9 +176,9 @@ const Navbar = () => {
           />
         </a>
         <div className="flex items-center justify-center gap-4">
-          {user && (
+          {user && userBlockchainData && (
             <div className="flex items-center justify-center gap-4">
-              <Button light={location?.pathname !== "/space"}>Misson</Button>
+              <Button light={location?.pathname !== "/space"}>Spaces</Button>
               <Button light={location?.pathname !== "/space/leaderboard"}>
                 Leaderboard
               </Button>

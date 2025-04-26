@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-candid = "0.10"
-ic-cdk = "0.17"
-serde = "1.0.219"
+candid = { workspace = true }
+ic-cdk = { workspace = true }
+serde = { workspace = true }
+minicbor = { workspace = true }

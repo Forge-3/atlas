@@ -9,7 +9,7 @@ use crate::state::State;
 type VMem = VirtualMemory<DefaultMemoryImpl>;
 
 const CONFIG_MEMORY_ID: MemoryId = MemoryId::new(0);
-const STATE_MEMORY_ID: MemoryId = MemoryId::new(0);
+const STATE_MEMORY_ID: MemoryId = MemoryId::new(1);
 
 thread_local! {
     static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(

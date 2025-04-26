@@ -9,7 +9,13 @@
         "./build.sh atlas_space",
         "./build.sh atlas_main"
       ],
-      "optimize": "cycles"
+      "optimize": "cycles",
+      "declarations": {
+        "bindings": [
+          "js",
+          "ts"
+        ]
+      }
     },
     "atlas_frontend": {
       "dependencies": [
@@ -19,7 +25,10 @@
         "src/atlas_frontend/dist"
       ],
       "type": "assets",
-      "workspace": "atlas_frontend"
+      "workspace": "atlas_frontend",
+      "declarations": {
+        "bindings": []
+      }
     },
     "internet_identity": {
       "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
@@ -29,14 +38,35 @@
           "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
         }
       },
+      "declarations": {
+        "bindings": [
+          "js",
+          "ts"
+        ]
+      },
       "type": "custom",
       "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
+    },
+    "atlas_space": {
+      "type": "custom",
+      "candid": "src/atlas_space/atlas_space.did",
+      "wasm": "target/wasm32-unknown-unknown/release/atlas_space-opt.wasm.gz",
+      "bindings": [
+        "js",
+        "ts"
+      ]
     }
   },
   "defaults": {
     "build": {
       "args": "",
       "packtool": ""
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "localhost:4943",
+      "type": "ephemeral"
     }
   },
   "output_env_file": ".env",

@@ -5,7 +5,7 @@ use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
 
-#[derive(Eq, PartialEq, Debug, Decode, Encode, Default, Deserialize, CandidType)]
+#[derive(Eq, PartialEq, Debug, Decode, Encode, Default, Deserialize, CandidType, Clone, Copy)]
 pub struct Config {
     #[n(0)]
     spaces_per_space_lead: u8

@@ -7,7 +7,7 @@ use crate::{config::Config, guard::authenticated_guard, memory, user::{Rank, Use
 #[derive(Deserialize, CandidType)]
 pub enum AtlasArgs {
     InitArg(Config),
-    UpgradeArg(Config),
+    UpgradeArg(Option<Config>),
 }
 
 #[init]

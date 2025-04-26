@@ -25,5 +25,17 @@ pub enum Error {
     UserRichSpaceLimit { expected: usize, found: usize },
 
     #[error("Failed to initialize canister (Err: {0})")]
-    FailedToInitializeCanister(String)
+    FailedToInitializeCanister(String),
+
+    #[error("Failed to install wasm (Err: {0})")]
+    FailedToInstallWASM(String),
+
+    #[error("Failed to get canister info (Err: {0})")]
+    FailedToGetCanisterInfo(String),
+
+    #[error("Failed to push new space to stable vec (Err: {0})")]
+    FailedToSaveSpace(String),
+
+    #[error("User do not exist")]
+    UserDoNotExist,
 }
