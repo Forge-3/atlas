@@ -37,6 +37,7 @@ jobs:
 
       - name: Build project
         run: npm run build
+        
   format-rust:
     runs-on: ubuntu-latest
     env:
@@ -47,7 +48,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y build-essential git clang curl libssl-dev llvm libudev-dev make protobuf-compiler pkg-config git-restore-mtime
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       # this is needed to make sure that cargo uses the cached target files,
       # which will have an older date than the checked out source code.
