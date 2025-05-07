@@ -14,6 +14,7 @@ use crate::config::Config;
 use crate::cycles::WalletReceiveResult;
 use crate::errors::Error;
 use crate::lifecycle::AtlasArgs;
+use crate::methods::query::{GetSpacesArgs, GetUserBy, GetSpacesRes};
 use crate::space::Space;
 use crate::user::User;
 use candid::{Nat, Principal};

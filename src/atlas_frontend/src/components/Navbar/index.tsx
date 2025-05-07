@@ -73,6 +73,7 @@ const DropdownMenuComponent = ({
   }, [dispatch, unAuthAtlasMain]);
 
   useEffect(() => {
+    console.log(unAuthAtlasMain)
     if (user?.principal && unAuthAtlasMain) {
       getAtlasConfig();
       getAtlasUser({

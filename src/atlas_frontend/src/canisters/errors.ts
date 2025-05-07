@@ -1,4 +1,4 @@
-import {type Error} from "../../../../declarations/atlas_main/atlas_main.did.js"
+import {type Error} from "../../../declarations/atlas_main/atlas_main.did.js"
 
 function formatPascalCase(input: string): string {
     return input

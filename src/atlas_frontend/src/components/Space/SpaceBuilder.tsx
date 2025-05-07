@@ -82,8 +82,8 @@ const SpaceBuilder = () => {
         unAuthAtlasMain: unAuthAtlasMain,
       });
     }
-
-    navigate(SPACE_PATH.replace(":spacePrincipal", spacePrincipal.toText()));
+    if (spacePrincipal) {
+    navigate(SPACE_PATH.replace(":spacePrincipal", spacePrincipal.toText()));}
   };
 
   const getDropzoneOptions = (

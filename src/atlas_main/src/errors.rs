@@ -38,4 +38,7 @@ pub enum Error {
 
     #[error("User do not exist")]
     UserDoNotExist,
+
+    #[error("Count is to high (max: {max}, found: {found})")]
+    CountToHigh { max: usize, found: usize },
 }

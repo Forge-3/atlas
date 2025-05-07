@@ -1,3 +1,3 @@
 
-dfx canister call atlas_main set_user_space_lead '(principal "ru3ud-ofzg7-54air-jmyro-tr5n6-jl6i4-6rsfk-dwndf-3nvio-tw2vl-pqe")'
+dfx canister call atlas_main set_user_space_lead '(principal "hqbct-jzj2y-qurfk-jtp2a-6axxo-zce7l-o2elu-u5cb6-ffiqn-snmxd-hae")'
 dfx ledger fabricate-cycles --canister atlas_main

@@ -1,2 +1,2 @@
-mod query;
+pub mod query;
 mod update;

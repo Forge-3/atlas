@@ -11,18 +11,27 @@ export type Error = { 'UserRankNoMatch' : Rank } |
   { 'UserRichSpaceLimit' : { 'found' : bigint, 'expected' : bigint } } |
   { 'UserRankToHigh' : { 'found' : Rank, 'expected' : Rank } } |
   { 'UserAlreadyHaveExpectedRank' : Rank } |
+  { 'CountToHigh' : { 'max' : bigint, 'found' : bigint } } |
   { 'FailedToGetCanisterInfo' : string } |
   { 'FailedToInstallWASM' : string } |
   { 'FailedToInitializeCanister' : string } |
   { 'UserDoNotExist' : null } |
   { 'AnonymousCaller' : null };
+export interface GetSpacesArgs { 'count' : bigint, 'start' : bigint }
+export interface GetSpacesRes {
+  'spaces' : Array<Space>,
+  'spaces_count' : bigint,
+}
+export type GetUserBy = { 'Principal' : Principal };
 export interface Integrations { 'discord_id' : [] | [string] }
 export type Rank = { 'SpaceLead' : null } |
   { 'User' : null } |
   { 'Admin' : null };
 export type Result = { 'Ok' : Space } |
   { 'Err' : Error };
-export type Result_1 = { 'Ok' : null } |
+export type Result_1 = { 'Ok' : GetSpacesRes } |
+  { 'Err' : Error };
+export type Result_2 = { 'Ok' : null } |
   { 'Err' : Error };
 export interface Space { 'id' : Principal }
 export interface User {
@@ -37,8 +46,9 @@ export interface _SERVICE {
     [string, string, [] | [string], [] | [string], [] | [string]],
     Result
   >,
-  'get_user' : ActorMethod<[Principal], User>,
-  'set_user_space_lead' : ActorMethod<[Principal], Result_1>,
+  'get_spaces' : ActorMethod<[GetSpacesArgs], Result_1>,
+  'get_user' : ActorMethod<[GetUserBy], User>,
+  'set_user_space_lead' : ActorMethod<[Principal], Result_2>,
   'wallet_balance' : ActorMethod<[], bigint>,
   'wallet_receive' : ActorMethod<[], WalletReceiveResult>,
 }

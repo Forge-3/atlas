@@ -1,11 +1,12 @@
 import type { ActorSubclass } from "@dfinity/agent";
-import type { _SERVICE } from "../../../../declarations/atlas_main/atlas_main.did.js";
+import type { _SERVICE, Space } from "../../../../declarations/atlas_main/atlas_main.did.js";
 import { toast } from "react-hot-toast";
-import { formatErrorMsg } from "./errors";
+import { formatErrorMsg } from "../errors.js";
 import type { Principal } from "@dfinity/principal";
 import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import { setUserBlockchainData } from "../../store/slices/userSlice.js";
+import { unwrapCall } from "../delegatedCall.js";
 
 interface CreateNewSpaceArgs {
   authenticatedAtlasMain: ActorSubclass<_SERVICE>;
@@ -23,32 +24,22 @@ export const createNewSpace = async ({
   logo,
   background,
 }: CreateNewSpaceArgs) => {
-  const promise = new Promise<Principal>(async (res, rej) => {
-    const userData = await authenticatedAtlasMain.create_new_space(
-      name,
-      description,
-      symbol ? [symbol] : [],
-      logo ? [logo] : [],
-      background ? [background] : []
-    ).catch(err => {
-      console.error(err)
-      rej("Failed to create new space")
-    });
-    if (!userData) return rej("Failed to create new space")
+  const call = authenticatedAtlasMain.create_new_space(
+    name,
+    description,
+    symbol ? [symbol] : [],
+    logo ? [logo] : [],
+    background ? [background] : []
+  )
+  const promise = unwrapCall<Space>({call, errMsg: "Failed to get data from blockchain"})
 
-    if ("Ok" in userData) {
-      res(userData.Ok.id);
-    } else if ("Err" in userData) {
-      console.error(userData.Err);
-      rej(formatErrorMsg(userData.Err));
-    }
-  });
-
-  return toast.promise(promise, {
+  const space = await toast.promise(promise, {
     loading: "Creating new space...",
     success: "Space created successfully",
     error: "Failed to create space",
   });
+
+  return space?.id ?? null
 };
 
 interface GetAtlasUserArgs {
@@ -62,7 +53,9 @@ export const getAtlasUser = async ({
   userId,
   dispatch,
 }: GetAtlasUserArgs) => {
-  const userData = await unAuthAtlasMain.get_user(userId);
+  const userData = await unAuthAtlasMain.get_user({
+    Principal: userId
+  });
   if (!userData) {
     toast.error("Failed to get user data from ICP");
     return;
@@ -74,3 +67,20 @@ export const getAtlasUser = async ({
     })
   );
 };
+
+interface GetAtlasSpaces {
+  unAuthAtlasMain: ActorSubclass<_SERVICE>;
+  dispatch: Dispatch<UnknownAction>;
+}
+
+export const getAllSpaces  = async ({
+  unAuthAtlasMain,
+  dispatch,
+}: GetAtlasSpaces) => {
+  let start = 0n
+  const count = 200n
+  const spaces = await unAuthAtlasMain.get_spaces({
+    start,
+    count
+  });
+}

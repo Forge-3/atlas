@@ -1,14 +1,58 @@
-use candid::Principal;
+use candid::{CandidType, Principal};
 use ic_cdk::query;
+use serde::Deserialize;
 
-use crate::{config::Config, memory, user::User};
+use crate::{config::Config, errors::Error, memory, space::Space, user::User};
+
+const MAX_SPACES_PER_RESPONSE: u8 = 100;
 
 #[query]
 pub fn app_config() -> Config {
     memory::read_config(|config| config.clone())
 }
 
+#[derive(Debug, CandidType, Deserialize)]
+pub enum GetUserBy {
+    Principal(Principal),
+}
+
 #[query]
-pub fn get_user(user_id: Principal) -> User {
-    memory::get_user(&user_id).unwrap_or_default()
+pub fn get_user(by: GetUserBy) -> User {
+    match by {
+        GetUserBy::Principal(principal) => memory::get_user(&principal).unwrap_or_default(),
+    }
+}
+
+#[derive(Debug, CandidType, Deserialize)]
+pub struct GetSpacesArgs {
+    start: usize,
+    count: usize,
+}
+
+#[derive(Debug, CandidType)]
+pub struct GetSpacesRes {
+    pub spaces_count: usize,
+    pub spaces: Vec<Space>,
+}
+
+#[query]
+pub fn get_spaces(args: GetSpacesArgs) -> Result<GetSpacesRes, Error> {
+    if args.count > MAX_SPACES_PER_RESPONSE as usize {
+        return Err(Error::CountToHigh {
+            max: MAX_SPACES_PER_RESPONSE as usize,
+            found: args.count,
+        });
+    }
+
+    let spaces = memory::with_space_vec_iter(|spaces| {
+        spaces
+            .skip(args.start)
+            .take(args.count.min(MAX_SPACES_PER_RESPONSE as usize))
+            .collect()
+    });
+
+    Ok(GetSpacesRes {
+        spaces,
+        spaces_count: memory::get_space_vec_len() as usize,
+    })
 }
