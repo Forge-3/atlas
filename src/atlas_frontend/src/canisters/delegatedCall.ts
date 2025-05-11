@@ -8,4 +8,5 @@ export const unwrapCall = async<T> ({call, errMsg}: UnwrapCallArgs<T>) => {
     } else if ("Err" in res) {
     throw res.Err
     }
+    throw "Unhandled response type?!"
 }

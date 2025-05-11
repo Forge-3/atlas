@@ -30,7 +30,23 @@
         "bindings": []
       }
     },
-  
+    "internet_identity": {
+      "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
+      "frontend": {},
+      "remote": {
+        "id": {
+          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+        }
+      },
+      "declarations": {
+        "bindings": [
+          "js",
+          "ts"
+        ]
+      },
+      "type": "custom",
+      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
+    },
     "atlas_space": {
       "type": "custom",
       "candid": "src/atlas_space/atlas_space.did",

@@ -51,6 +51,8 @@ pub struct User {
     rank: Rank,
     #[n(2)]
     owned_spaces: Vec<u64>,
+    #[n(3)]
+    space_creation_in_progress: bool,
 }
 
 impl User {
@@ -59,6 +61,7 @@ impl User {
             integrations: Integrations::default(),
             rank,
             owned_spaces: Vec::new(),
+            space_creation_in_progress: false,
         }
     }
 
@@ -86,6 +89,14 @@ impl User {
 
     pub fn push_space(&mut self, space_index: u64) {
         self.owned_spaces.push(space_index);
+    }
+
+    pub fn set_space_creation(&mut self, status: bool) {
+        self.space_creation_in_progress = status
+    }
+
+    pub fn space_creation_in_progress(&self) -> bool {
+        self.space_creation_in_progress
     }
 }
 

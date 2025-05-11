@@ -15,6 +15,7 @@ export type Error = { 'UserRankNoMatch' : Rank } |
   { 'FailedToGetCanisterInfo' : string } |
   { 'FailedToInstallWASM' : string } |
   { 'FailedToInitializeCanister' : string } |
+  { 'CreationInProgress' : null } |
   { 'UserDoNotExist' : null } |
   { 'AnonymousCaller' : null };
 export interface GetSpacesArgs { 'count' : bigint, 'start' : bigint }
@@ -37,6 +38,7 @@ export interface Space { 'id' : Principal }
 export interface User {
   'integrations' : Integrations,
   'rank' : Rank,
+  'space_creation_in_progress' : boolean,
   'owned_spaces' : BigUint64Array | bigint[],
 }
 export interface WalletReceiveResult { 'accepted' : bigint }

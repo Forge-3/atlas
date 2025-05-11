@@ -44,6 +44,16 @@ pub async fn create_new_space(
         });
     }
 
+    if user.space_creation_in_progress() {
+        return Err(Error::CreationInProgress);
+    }
+    
+    memory::mut_user(caller, |maybe_user| {
+        let mut user = maybe_user.expect("User do not exist?!");
+        user.set_space_creation(true);
+        Ok(user)
+    })?;
+
     let space_init_args = SpaceInitArg {
         admin: caller,
         space_name,
@@ -52,7 +62,13 @@ pub async fn create_new_space(
         space_logo,
         space_background,
     };
-    let space = Space::create_space(space_init_args).await?;
+    let space = Space::create_space(space_init_args).await;
+    memory::mut_user(caller, |maybe_user| {
+        let mut user = maybe_user.expect("User do not exist?!");
+        user.set_space_creation(false);
+        Ok(user)
+    })?;
+    let space = space?;
 
     memory::push_space(&space)?;
     memory::mut_user(caller, |maybe_user| {

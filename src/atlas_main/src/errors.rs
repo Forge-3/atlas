@@ -41,4 +41,7 @@ pub enum Error {
 
     #[error("Count is to high (max: {max}, found: {found})")]
     CountToHigh { max: usize, found: usize },
+
+    #[error("Space creation in progress")]
+    CreationInProgress
 }

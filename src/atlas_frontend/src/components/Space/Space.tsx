@@ -3,12 +3,53 @@ import { FiFilter, FiStar } from "react-icons/fi";
 import Button from "../Shared/Button.tsx";
 import SpaceCard from "./SpaceCard/index.tsx";
 
+interface TasksListProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  spaces?: any[];
+}
+
+const TasksList = ({ spaces }: TasksListProps) => {
+  {
+    if (spaces && spaces.length) {
+      return (
+        <>
+          <div className="relative w-full bg-[#1E0F33] mb-1">
+            <div className="flex px-8 py-6">
+              <div className="flex gap-4">
+                <Button className="flex gap-1">
+                  <FiFilter /> Sorting
+                </Button>
+                <Button className="flex gap-1">
+                  <FiStar /> Newest
+                </Button>
+              </div>
+            </div>
+          </div>
+          <div className="relative w-full bg-[#1E0F33] rounded-b-xl">
+            <div className="grid gap-4 px-8 py-6">
+              <SpaceCard type="ongoing" points="100" tokens="0.2 ICP" />
+              <SpaceCard
+                type="starting"
+                startingIn="3 days"
+                points="1000"
+                tokens="0.5 ICP"
+              />
+              <SpaceCard type="expired" points="1500" tokens="1 ICP" />
+            </div>
+          </div>
+        </>
+      );
+    }
+  }
+};
+
 interface SpaceProps {
   name: string;
   description: string;
   symbol: string | null;
   avatarImg: string | null;
   backgroundImg: string | null;
+  spaces?: any[];
 }
 
 const Space = ({
@@ -17,23 +58,29 @@ const Space = ({
   description,
   backgroundImg,
   avatarImg,
+  spaces,
 }: SpaceProps) => {
   return (
     <div className="container mx-auto my-4">
       <div className="w-full px-3">
-        <div></div>
         <div className="relative w-full rounded-t-xl bg-[#1E0F33] mb-1">
-          <div className="px-8 py-8">
+          <div className="p-8">
             <div
               className={`${backgroundImg ? "h-52 rounded-3xl bg-center bg-no-repeat bg-cover relative" : "bg-[#4A0295]"} w-full flex items-center justify-center`}
-              style={backgroundImg ? { backgroundImage: `url('${backgroundImg}')` }: {}}
+              style={
+                backgroundImg
+                  ? { backgroundImage: `url('${backgroundImg}')` }
+                  : {}
+              }
             >
-              <div className={`${backgroundImg ? "absolute bottom-0 right-0": "absolute top-0 right-0"} flex items-center justify-center gap-2 m-4 text-4xl text-white font-roboto`}>
+              <div
+                className={`${backgroundImg ? "absolute bottom-0 right-0" : "absolute top-0 right-0"} flex items-center justify-center gap-2 m-4 text-4xl text-white font-roboto`}
+              >
                 <img src="/logos/icp-bold-uppercase.svg" draggable="false" />
                 <span>{symbol}</span>
               </div>
             </div>
-            <div className="flex mt-4">
+            <div className="flex mt-8">
               <div className="bg-white flex rounded-3xl w-fit h-fit flex-none">
                 {avatarImg ? (
                   <img
@@ -46,36 +93,13 @@ const Space = ({
                 )}
               </div>
               <div className="ml-4 my-1 text-white font-montserrat flex-1">
-                <h1 className="text-4xl font-semibold flex">{name}</h1>
+                <h2 className="text-4xl font-semibold flex">{name}</h2>
                 <p>{description}</p>
               </div>
             </div>
           </div>
         </div>
-        <div className="relative w-full bg-[#1E0F33] mb-1">
-          <div className="flex px-8 py-6">
-            <div className="flex gap-4">
-              <Button className="flex gap-1">
-                <FiFilter /> Sorting
-              </Button>
-              <Button className="flex gap-1">
-                <FiStar /> Newest
-              </Button>
-            </div>
-          </div>
-        </div>
-        <div className="relative w-full bg-[#1E0F33] rounded-b-xl">
-          <div className="grid gap-4 px-8 py-6">
-            <SpaceCard type="ongoing" points="100" tokens="0.2 ICP" />
-            <SpaceCard
-              type="starting"
-              startingIn="3 days"
-              points="1000"
-              tokens="0.5 ICP"
-            />
-            <SpaceCard type="expired" points="1500" tokens="1 ICP" />
-          </div>
-        </div>
+        <TasksList spaces={spaces} />
       </div>
     </div>
   );

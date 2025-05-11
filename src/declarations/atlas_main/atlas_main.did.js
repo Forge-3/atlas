@@ -24,6 +24,7 @@ export const idlFactory = ({ IDL }) => {
     'FailedToGetCanisterInfo' : IDL.Text,
     'FailedToInstallWASM' : IDL.Text,
     'FailedToInitializeCanister' : IDL.Text,
+    'CreationInProgress' : IDL.Null,
     'UserDoNotExist' : IDL.Null,
     'AnonymousCaller' : IDL.Null,
   });
@@ -42,6 +43,7 @@ export const idlFactory = ({ IDL }) => {
   const User = IDL.Record({
     'integrations' : Integrations,
     'rank' : Rank,
+    'space_creation_in_progress' : IDL.Bool,
     'owned_spaces' : IDL.Vec(IDL.Nat64),
   });
   const Result_2 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });

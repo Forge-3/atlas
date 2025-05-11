@@ -48,7 +48,7 @@ const DropdownMenuComponent = ({
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const userBlockchainData = useSelector(selectUserBlockchainData);
-  const config = useSelector((state: RootState) => state.app.blockchainConfig);
+  const appConfig = useSelector((state: RootState) => state.app.blockchainConfig);
 
   const copyAccount = () => {
     copy(connectedAccount);
@@ -59,7 +59,7 @@ const DropdownMenuComponent = ({
   };
 
   const getAtlasConfig = async () => {
-    if (!unAuthAtlasMain) return;
+    if (!unAuthAtlasMain || appConfig) return;
     const config = await unAuthAtlasMain.app_config();
     if (!config) {
       toast.error("Failed to get config from ICP");
@@ -73,10 +73,9 @@ const DropdownMenuComponent = ({
   }, [dispatch, unAuthAtlasMain]);
 
   useEffect(() => {
-    console.log(unAuthAtlasMain)
     if (user?.principal && unAuthAtlasMain) {
-      getAtlasConfig();
-      getAtlasUser({
+      if (!appConfig) getAtlasConfig();
+      if (!userBlockchainData) getAtlasUser({
         dispatch,
         userId: user.principal,
         unAuthAtlasMain,
@@ -88,12 +87,12 @@ const DropdownMenuComponent = ({
   const navigateToSpaceBuilder = () => {
     if (
       ownedSpacesCount === undefined ||
-      config?.spaces_per_space_lead === undefined
+      appConfig?.spaces_per_space_lead === undefined
     ) {
       return;
     }
     if (
-      ownedSpacesCount < config?.spaces_per_space_lead &&
+      ownedSpacesCount < appConfig?.spaces_per_space_lead &&
       userBlockchainData?.getRank() === "SpaceLead"
     ) {
       navigate(SPACE_BUILDER_PATH);
@@ -130,7 +129,7 @@ const DropdownMenuComponent = ({
                 <button className="flex items-center justify-center justify-between w-full gap-6">
                   <div>
                     Create new space ({ownedSpacesCount}/
-                    {config?.spaces_per_space_lead})
+                    {appConfig?.spaces_per_space_lead})
                   </div>{" "}
                   <div className="flex items-center justify-center">
                     <FiPlus />

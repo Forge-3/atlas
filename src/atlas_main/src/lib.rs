@@ -8,7 +8,6 @@ pub mod methods;
 pub mod space;
 pub mod user;
 
-mod cbor;
 
 use crate::config::Config;
 use crate::cycles::WalletReceiveResult;

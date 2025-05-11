@@ -24,15 +24,26 @@ const SpacePage = () => {
     return;
   }
   const actor = useUnAuthAtlasSpaceActor(principal);
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["spaceState", actor],
     queryFn: async () => {
       if (!actor) return null;
-      return await getAtlasSpace({ unAuthAtlasSpaceActor: actor });
+
+      return await toast.promise(
+        getAtlasSpace({ unAuthAtlasSpaceActor: actor }),
+        {
+          loading: "Loading a space...",
+          success: "Successfully loaded the space",
+          error: "Failed to load space",
+        }
+      );
     },
   });
 
-  if (!data) return <></>;
+  if (!data) {
+    return <></>;
+  }
+
   return (
     <Space
       name={data.space_name}

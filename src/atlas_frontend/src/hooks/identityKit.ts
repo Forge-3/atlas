@@ -23,7 +23,7 @@ export const useAuthAgent = () => {
     }
   );
 
-  return agent;
+  return useMemo(() => agent ?? null, [agent]);
 };
 
 export const useUnAuthAgent = () => {
@@ -40,29 +40,29 @@ export const useUnAuthAgent = () => {
     }
   );
 
-  return agent;
+  return useMemo(() => agent ?? null, [agent]);
 };
 
 export const useAuthAtlasMainActor = () => {
   const agent = useAuthAgent();
-
-  return useMemo(() => agent && atlasMainActor(agent), [agent]);
+  return agent && atlasMainActor(agent)
 };
 
 export const useUnAuthAtlasMainActor = () => {
   const agent = useUnAuthAgent();
-
-  return useMemo(() => agent && atlasMainActor(agent), [agent]);
+  return agent && atlasMainActor(agent)
 };
 
 export const useAuthAtlasSpaceActor = (canisterId: Principal) => {
   const agent = useAuthAgent();
-
-  return useMemo(() => agent && atlasSpaceActor(agent, canisterId), [agent]);
+  return agent && atlasSpaceActor(agent, canisterId)
 };
 
 export const useUnAuthAtlasSpaceActor = (canisterId: Principal)  => {
   const agent = useUnAuthAgent();
+  return agent && atlasSpaceActor(agent, canisterId)
+};
 
-  return useMemo(() => agent && atlasSpaceActor(agent, canisterId), [agent]);
+export const getUnAuthAtlasSpaceActor = (agent: HttpAgent, canisterId: Principal)  => {
+  return atlasSpaceActor(agent, canisterId)
 };

@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 use crate::{config::Config, errors::Error, memory, space::Space, user::User};
 
-const MAX_SPACES_PER_RESPONSE: u8 = 100;
+const MAX_SPACES_PER_RESPONSE: u8 = 200;
 
 #[query]
 pub fn app_config() -> Config {

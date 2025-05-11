@@ -17,7 +17,7 @@ pub const SPACE_DEFAULT_CYCLES: u128 = 10_000_000_000_000;
 
 #[derive(Debug, CandidType, minicbor::Decode, minicbor::Encode)]
 pub struct Space {
-    #[cbor(n(0), with = "crate::cbor::principal")]
+    #[cbor(n(0), with = "shared::cbor::principal")]
     id: Principal,
 }
 
@@ -38,7 +38,7 @@ impl Space {
         if !info.controllers.is_empty() {
             archive_controllers.extend(info.controllers);
         }
-        let init_arg = Encode!(&SpaceArgs::InitArg(arg)).unwrap();
+        let init_arg = Encode!(&SpaceArgs::InitArg(arg)).expect("Failed to encode init args?!");
 
         let (principal,) = create_canister(
             CreateCanisterArgument {
