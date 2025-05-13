@@ -2,6 +2,8 @@ use candid::CandidType;
 use serde::Deserialize;
 use thiserror::Error;
 
+use crate::task::TaksId;
+
 #[derive(Clone, PartialEq, Debug, CandidType, Deserialize, Error)]
 pub enum Error {
     #[error("Anonymous principal is not allowed")]
@@ -21,4 +23,7 @@ pub enum Error {
 
     #[error("Caller is not an admin nor Owner")]
     NotAdminNorOwner,
+
+    #[error("Task already exists ({0})")]
+    TaskAlreadyExists(TaksId)
 }

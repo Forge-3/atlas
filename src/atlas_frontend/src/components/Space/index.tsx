@@ -24,7 +24,7 @@ const SpacePage = () => {
     return;
   }
   const actor = useUnAuthAtlasSpaceActor(principal);
-  const { data, isLoading } = useQuery({
+  const { data } = useQuery({
     queryKey: ["spaceState", actor],
     queryFn: async () => {
       if (!actor) return null;

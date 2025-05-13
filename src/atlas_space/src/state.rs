@@ -17,6 +17,8 @@ pub struct State {
     space_description: String,
     #[n(4)]
     space_symbol: Option<String>,
+    #[n(5)]
+    tasks_count: u64,
 }
 
 impl State {
@@ -47,6 +49,12 @@ impl State {
             ..self.clone()
         }
     }
+
+    pub fn get_next_task_id(&mut self) -> u64 {
+        let next_task_id = self.tasks_count.checked_add(1).expect("Failed to bump task id!?");
+        self.tasks_count = next_task_id;
+        return next_task_id;
+    }
 }
 
 impl From<SpaceInitArg> for State {
@@ -57,6 +65,7 @@ impl From<SpaceInitArg> for State {
             space_logo: init_args.space_logo,
             space_background: init_args.space_background,
             space_symbol: init_args.space_symbol,
+            tasks_count: 0,
         }
     }
 }

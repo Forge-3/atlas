@@ -16,3 +16,6 @@ minicbor-derive = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 shared = { workspace = true }
+ic-ledger-types = { workspace = true }
+ethnum = { workspace = true }
+num-bigint = { workspace = true }

@@ -8,3 +8,7 @@ candid = { workspace = true }
 ic-cdk = { workspace = true }
 serde = { workspace = true }
 minicbor = { workspace = true }
+ic-ledger-types = { workspace = true }
+ethnum = { workspace = true }
+num-bigint = { workspace = true }
+num-traits = { workspace = true }

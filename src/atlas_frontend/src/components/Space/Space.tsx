@@ -49,6 +49,7 @@ interface SpaceProps {
   symbol: string | null;
   avatarImg: string | null;
   backgroundImg: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   spaces?: any[];
 }
 
