@@ -8,6 +8,7 @@ mod methods;
 mod state;
 mod task;
 mod nat256;
+mod deposit;
 
 use crate::cycles::WalletReceiveResult;
 use crate::errors::Error;

@@ -12,7 +12,6 @@ import { FiLogOut, FiCopy, FiPlus } from "react-icons/fi";
 import { copy } from "../../utils/shared.ts";
 import { motion } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
-import { setConfig } from "../../store/slices/appSlice.ts";
 import type { RootState } from "../../store/store.ts";
 import {
   useUnAuthAtlasMainActor,
@@ -20,9 +19,8 @@ import {
 import {
   selectUserBlockchainData,
 } from "../../store/slices/userSlice.ts";
-import { toast } from "react-hot-toast";
 import { SPACE_BUILDER_PATH } from "../../router/index.tsx";
-import { getAtlasUser } from "../../canisters/atlasMain/api.ts";
+import { getAtlasConfig, getAtlasUser } from "../../canisters/atlasMain/api.ts";
 
 const ConnectButton = (props: ConnectWalletButtonProps) => (
   <Button
@@ -58,23 +56,19 @@ const DropdownMenuComponent = ({
     window.location.href = "/";
   };
 
-  const getAtlasConfig = async () => {
-    if (!unAuthAtlasMain || appConfig) return;
-    const config = await unAuthAtlasMain.app_config();
-    if (!config) {
-      toast.error("Failed to get config from ICP");
-      return;
-    }
-    dispatch(setConfig(config));
-  };
-
   useEffect(() => {
-    if (unAuthAtlasMain) getAtlasConfig();
+    if (unAuthAtlasMain && !appConfig) getAtlasConfig({
+      dispatch,
+      unAuthAtlasMain
+    });
   }, [dispatch, unAuthAtlasMain]);
 
   useEffect(() => {
     if (user?.principal && unAuthAtlasMain) {
-      if (!appConfig) getAtlasConfig();
+      if (!appConfig) getAtlasConfig({
+        dispatch,
+        unAuthAtlasMain
+      });
       if (!userBlockchainData) getAtlasUser({
         dispatch,
         userId: user.principal,

@@ -4,7 +4,11 @@ import type { IDL } from '@dfinity/candid';
 
 export type AtlasArgs = { 'UpgradeArg' : [] | [Config] } |
   { 'InitArg' : Config };
-export interface Config { 'spaces_per_space_lead' : number }
+export interface CkUsdcLedger { 'fee' : [] | [bigint], 'principal' : Principal }
+export interface Config {
+  'spaces_per_space_lead' : number,
+  'ckusdc_ledger' : CkUsdcLedger,
+}
 export type Error = { 'UserRankNoMatch' : Rank } |
   { 'FailedToSaveSpace' : string } |
   { 'FailedToUpdateConfig' : string } |

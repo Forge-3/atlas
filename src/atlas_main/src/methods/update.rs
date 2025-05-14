@@ -34,12 +34,11 @@ pub async fn create_new_space(
 ) -> Result<Space, Error> {
     let caller = authenticated_guard()?;
     let user = memory::user_rank_match(&caller, &Rank::SpaceLead)?;
-    let spaces_per_space_lead =
-        memory::read_config(|local_config| local_config.spaces_per_space_lead());
+    let config = memory::read_config(|local_config| local_config.clone());
 
-    if user.owned_spaces_count() >= spaces_per_space_lead as usize {
+    if user.owned_spaces_count() >= config.spaces_per_space_lead as usize {
         return Err(Error::UserRichSpaceLimit {
-            expected: spaces_per_space_lead as usize,
+            expected: config.spaces_per_space_lead as usize,
             found: user.owned_spaces_count(),
         });
     }
@@ -47,7 +46,7 @@ pub async fn create_new_space(
     if user.space_creation_in_progress() {
         return Err(Error::CreationInProgress);
     }
-    
+
     memory::mut_user(caller, |maybe_user| {
         let mut user = maybe_user.expect("User do not exist?!");
         user.set_space_creation(true);
@@ -61,6 +60,10 @@ pub async fn create_new_space(
         space_symbol,
         space_logo,
         space_background,
+        ckusdc_ledger: shared::CkUsdcLedger {
+            principal: config.ckusdc_ledger.principal,
+            fee: config.ckusdc_ledger.fee,
+        },
     };
     let space = Space::create_space(space_init_args).await;
     memory::mut_user(caller, |maybe_user| {

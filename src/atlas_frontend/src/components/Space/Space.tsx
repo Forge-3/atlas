@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { FiFilter, FiStar } from "react-icons/fi";
 import Button from "../Shared/Button.tsx";
 import SpaceCard from "./SpaceCard/index.tsx";
+import CreateNewTaskModal from "../../modals/CreateNewTaskModal.tsx";
 
 interface TasksListProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -61,48 +62,56 @@ const Space = ({
   avatarImg,
   spaces,
 }: SpaceProps) => {
+  const [isCreateSpaceModal, setCreateSpaceModal] = useState(false);
+
   return (
-    <div className="container mx-auto my-4">
-      <div className="w-full px-3">
-        <div className="relative w-full rounded-t-xl bg-[#1E0F33] mb-1">
-          <div className="p-8">
-            <div
-              className={`${backgroundImg ? "h-52 rounded-3xl bg-center bg-no-repeat bg-cover relative" : "bg-[#4A0295]"} w-full flex items-center justify-center`}
-              style={
-                backgroundImg
-                  ? { backgroundImage: `url('${backgroundImg}')` }
-                  : {}
-              }
-            >
+    <>
+      <div className="container mx-auto my-4">
+        <div className="w-full px-3">
+          <div className="mb-2 flex justify-end">
+            <Button onClick={() => setCreateSpaceModal(true)}>Create new task</Button>
+          </div>
+          <div className="relative w-full rounded-t-xl bg-[#1E0F33] mb-1">
+            <div className="p-8">
               <div
-                className={`${backgroundImg ? "absolute bottom-0 right-0" : "absolute top-0 right-0"} flex items-center justify-center gap-2 m-4 text-4xl text-white font-roboto`}
+                className={`${backgroundImg ? "h-52 rounded-3xl bg-center bg-no-repeat bg-cover relative" : "bg-[#4A0295]"} w-full flex items-center justify-center`}
+                style={
+                  backgroundImg
+                    ? { backgroundImage: `url('${backgroundImg}')` }
+                    : {}
+                }
               >
-                <img src="/logos/icp-bold-uppercase.svg" draggable="false" />
-                <span>{symbol}</span>
+                <div
+                  className={`${backgroundImg ? "absolute bottom-0 right-0" : "absolute top-0 right-0"} flex items-center justify-center gap-2 m-4 text-4xl text-white font-roboto`}
+                >
+                  <img src="/logos/icp-bold-uppercase.svg" draggable="false" />
+                  <span>{symbol}</span>
+                </div>
               </div>
-            </div>
-            <div className="flex mt-8">
-              <div className="bg-white flex rounded-3xl w-fit h-fit flex-none">
-                {avatarImg ? (
-                  <img
-                    src={avatarImg}
-                    draggable="false"
-                    className="rounded-3xl m-[5px] w-28 h-28"
-                  />
-                ) : (
-                  <div className="bg-[#4A0295] rounded-3xl m-[5px] w-28 h-28"></div>
-                )}
-              </div>
-              <div className="ml-4 my-1 text-white font-montserrat flex-1">
-                <h2 className="text-4xl font-semibold flex">{name}</h2>
-                <p>{description}</p>
+              <div className="flex mt-8">
+                <div className="bg-white flex rounded-3xl w-fit h-fit flex-none">
+                  {avatarImg ? (
+                    <img
+                      src={avatarImg}
+                      draggable="false"
+                      className="rounded-3xl m-[5px] w-28 h-28"
+                    />
+                  ) : (
+                    <div className="bg-[#4A0295] rounded-3xl m-[5px] w-28 h-28"></div>
+                  )}
+                </div>
+                <div className="ml-4 my-1 text-white font-montserrat flex-1">
+                  <h2 className="text-4xl font-semibold flex">{name}</h2>
+                  <p>{description}</p>
+                </div>
               </div>
             </div>
           </div>
+          <TasksList spaces={spaces} />
         </div>
-        <TasksList spaces={spaces} />
       </div>
-    </div>
+      {isCreateSpaceModal && <CreateNewTaskModal />}
+    </>
   );
 };
 

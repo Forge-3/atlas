@@ -1,17 +1,27 @@
 use std::borrow::Cow;
 
-use candid::{CandidType, Principal};
+use candid::{CandidType, Nat, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
 use shared::SpaceInitArg;
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Deserialize, CandidType, Clone)]
+pub struct CkUsdcLedger {
+    #[cbor(n(0), with = "shared::cbor::principal")]
+    pub(crate) principal: Principal,
+    #[cbor(n(1), with = "shared::cbor::nat::option")]
+    pub(crate) fee: Option<Nat>,
+}
+
+#[derive(Eq, PartialEq, Debug, Decode, Encode, Deserialize, CandidType, Clone)]
 pub struct Config {
     #[cbor(n(0), with = "shared::cbor::principal")]
-    owner: Principal,
+    pub(crate) owner: Principal,
     #[cbor(n(1), with = "shared::cbor::principal")]
-    admin: Principal,
+    pub(crate) admin: Principal,
+    #[n(2)]
+    pub(crate) ckusdc_ledger: CkUsdcLedger,
 }
 
 impl Config {
@@ -19,6 +29,10 @@ impl Config {
         Self {
             owner,
             admin: init_args.admin,
+            ckusdc_ledger: CkUsdcLedger {
+                principal: init_args.ckusdc_ledger.principal,
+                fee: init_args.ckusdc_ledger.fee,
+            },
         }
     }
 

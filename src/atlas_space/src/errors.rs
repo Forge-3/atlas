@@ -2,7 +2,7 @@ use candid::CandidType;
 use serde::Deserialize;
 use thiserror::Error;
 
-use crate::task::TaksId;
+use crate::task::TaskId;
 
 #[derive(Clone, PartialEq, Debug, CandidType, Deserialize, Error)]
 pub enum Error {
@@ -25,5 +25,8 @@ pub enum Error {
     NotAdminNorOwner,
 
     #[error("Task already exists ({0})")]
-    TaskAlreadyExists(TaksId)
+    TaskAlreadyExists(TaskId),
+
+    #[error("Failed to transfer funds (Error: {0})")]
+    FailedToTransfer(String)
 }

@@ -17,7 +17,7 @@ pub fn owner_guard() -> Result<Principal, Error> {
     if principal == Principal::anonymous() {
         return Err(Error::AnonymousCaller);
     }
-    let config = memory::read_config(|config| config.clone().ok_or(Error::ConfigNotSet))?;
+    let config = memory::read_config(|config| config.clone());
     if principal != config.owner() {
         return Err(Error::NotOwner);
     }
@@ -30,7 +30,7 @@ pub fn admin_guard() -> Result<Principal, Error> {
     if principal == Principal::anonymous() {
         return Err(Error::AnonymousCaller);
     }
-    let config = memory::read_config(|config| config.clone().ok_or(Error::ConfigNotSet))?;
+    let config = memory::read_config(|config| config.clone());
     if principal != config.admin() {
         return Err(Error::NotAdmin);
     }
@@ -43,7 +43,7 @@ pub fn admin_or_owner_guard() -> Result<Principal, Error> {
     if principal == Principal::anonymous() {
         return Err(Error::AnonymousCaller);
     }
-    let config = memory::read_config(|config| config.clone().ok_or(Error::ConfigNotSet))?;
+    let config = memory::read_config(|config| config.clone());
     if principal != config.admin() && principal != config.owner() {
         return Err(Error::NotAdminNorOwner);
     }

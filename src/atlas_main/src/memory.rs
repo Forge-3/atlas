@@ -19,12 +19,12 @@ thread_local! {
         MemoryManager::init(DefaultMemoryImpl::default())
     );
 
-   static CONFIG: RefCell<StableCell<Config, VMem>> = MEMORY_MANAGER
+   static CONFIG: RefCell<StableCell<Option<Config>, VMem>> = MEMORY_MANAGER
    .with(|m|
        RefCell::new(
             StableCell::init(
                m.borrow().get(CONFIG_MEMORY_ID),
-               Config::default()
+               None
            ).expect("Failed to initialize stable Cell")
        )
    );
@@ -71,12 +71,12 @@ pub fn get_user(user_id: &Principal) -> Option<User> {
 // Config state methods
 
 pub fn read_config<R>(f: impl FnOnce(&Config) -> R) -> R {
-    CONFIG.with_borrow(|s| f(s.get()))
+    CONFIG.with_borrow(|s| f(s.get().as_ref().expect("Config is not set")))
 }
 
 pub fn set_config(config: Config) -> Result<(), Error> {
     CONFIG
-        .with_borrow_mut(|users| users.set(config))
+        .with_borrow_mut(|users| users.set(Some(config)))
         .map_err(|err| Error::FailedToUpdateConfig(format!("{:?}", err)))?;
     Ok(())
 }

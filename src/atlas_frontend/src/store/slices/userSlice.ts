@@ -14,7 +14,8 @@ export class BlockchainUser implements StorableUser {
   "integrations": Integrations;
   "rank": Rank;
   "owned_spaces": Array<bigint>;
-
+  'space_creation_in_progress': boolean;
+  
   constructor(user: StorableUser) {
     this.integrations = user.integrations;
     this.rank = user.rank;

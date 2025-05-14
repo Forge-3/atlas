@@ -19,3 +19,5 @@ shared = { workspace = true }
 ic-ledger-types = { workspace = true }
 ethnum = { workspace = true }
 num-bigint = { workspace = true }
+icrc-ledger-types = "0.1.8"
+sha2 = "0.10.9"

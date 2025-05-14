@@ -1,5 +1,12 @@
 export const idlFactory = ({ IDL }) => {
-  const Config = IDL.Record({ 'spaces_per_space_lead' : IDL.Nat8 });
+  const CkUsdcLedger = IDL.Record({
+    'fee' : IDL.Opt(IDL.Nat),
+    'principal' : IDL.Principal,
+  });
+  const Config = IDL.Record({
+    'spaces_per_space_lead' : IDL.Nat8,
+    'ckusdc_ledger' : CkUsdcLedger,
+  });
   const AtlasArgs = IDL.Variant({
     'UpgradeArg' : IDL.Opt(Config),
     'InitArg' : Config,
@@ -69,7 +76,14 @@ export const idlFactory = ({ IDL }) => {
   });
 };
 export const init = ({ IDL }) => {
-  const Config = IDL.Record({ 'spaces_per_space_lead' : IDL.Nat8 });
+  const CkUsdcLedger = IDL.Record({
+    'fee' : IDL.Opt(IDL.Nat),
+    'principal' : IDL.Principal,
+  });
+  const Config = IDL.Record({
+    'spaces_per_space_lead' : IDL.Nat8,
+    'ckusdc_ledger' : CkUsdcLedger,
+  });
   const AtlasArgs = IDL.Variant({
     'UpgradeArg' : IDL.Opt(Config),
     'InitArg' : Config,

@@ -1,5 +1,9 @@
 type AtlasArgs = variant { UpgradeArg : opt Config; InitArg : Config };
-type Config = record { spaces_per_space_lead : nat8 };
+type CkUsdcLedger = record { fee : opt nat; "principal" : principal };
+type Config = record {
+  spaces_per_space_lead : nat8;
+  ckusdc_ledger : CkUsdcLedger;
+};
 type Error = variant {
   UserRankNoMatch : Rank;
   FailedToSaveSpace : text;

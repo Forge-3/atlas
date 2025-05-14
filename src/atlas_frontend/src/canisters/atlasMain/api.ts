@@ -10,7 +10,7 @@ import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import { setUserBlockchainData } from "../../store/slices/userSlice.js";
 import { unwrapCall } from "../delegatedCall.js";
-import { setSpaces } from "../../store/slices/appSlice.js";
+import { setConfig, setSpaces } from "../../store/slices/appSlice.js";
 import { getAtlasSpace } from "../atlasSpace/api.js";
 import type { _SERVICE as _SERVICE_SPACE } from "../../../../declarations/atlas_space/atlas_space.did.js";
 
@@ -72,7 +72,7 @@ export const getAtlasUser = async ({
   );
 };
 
-interface GetAtlasSpaces {
+interface GetAtlasData {
   unAuthAtlasMain: ActorSubclass<_SERVICE_MAIN>;
   dispatch: Dispatch<UnknownAction>;
 }
@@ -80,7 +80,7 @@ interface GetAtlasSpaces {
 export const getAllSpaces = async ({
   unAuthAtlasMain,
   dispatch,
-}: GetAtlasSpaces) => {
+}: GetAtlasData) => {
   const spaces: Space[] = [];
   let spacesCount = 0n;
   let start = 0n;
@@ -112,9 +112,25 @@ export const getAllSpaces = async ({
   const spacesList = spaces.reduce((acc, val) => {
     return {
       ...acc,
-      [val.id.toString()]: null
-    }
-  }, {})
+      [val.id.toString()]: null,
+    };
+  }, {});
 
   dispatch(setSpaces(spacesList));
+};
+
+export const getAtlasConfig = async ({
+  unAuthAtlasMain,
+  dispatch,
+}: GetAtlasData) => {
+  const config = await unAuthAtlasMain.app_config();
+  dispatch(
+    setConfig({
+      ...config,
+      ckusdc_ledger: {
+        fee: config.ckusdc_ledger.fee.pop() ?? null,
+        principal: config.ckusdc_ledger.principal.toText(),
+      },
+    })
+  );
 };

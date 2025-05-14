@@ -1,15 +1,24 @@
+type CkUsdcLedger = record { fee : opt nat; "principal" : principal };
+type CreateTaskArgs = record {
+  token_reward : TokenReward;
+  task_content : TaskContent;
+  number_of_uses : nat64;
+};
 type Error = variant {
   NotAdminNorOwner;
   FailedToUpdateConfig : text;
+  TaskAlreadyExists : nat64;
   ConfigNotSet;
   NotAdmin;
   NotOwner;
+  FailedToTransfer : text;
   AnonymousCaller;
 };
 type Result = variant { Ok; Err : Error };
 type SpaceArgs = variant { UpgradeArg; InitArg : SpaceInitArg };
 type SpaceInitArg = record {
   admin : principal;
+  ckusdc_ledger : CkUsdcLedger;
   space_symbol : opt text;
   space_background : opt text;
   space_logo : opt text;
@@ -21,10 +30,16 @@ type State = record {
   space_background : opt text;
   space_logo : opt text;
   space_name : text;
+  tasks_count : nat64;
   space_description : text;
 };
+type TaskContent = variant {
+  TitleAndDescription : record { task_description : text; task_title : text };
+};
+type TokenReward = variant { CkUsdc : record { amount : nat } };
 type WalletReceiveResult = record { accepted : nat64 };
 service : (SpaceArgs) -> {
+  create_task : (CreateTaskArgs) -> (Result);
   get_state : () -> (State) query;
   set_space_background : (text) -> (Result);
   set_space_description : (text) -> (Result);

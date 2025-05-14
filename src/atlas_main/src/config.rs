@@ -1,25 +1,32 @@
 use std::borrow::Cow;
 
-use candid::CandidType;
+use candid::{CandidType, Nat, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
 
-#[derive(Eq, PartialEq, Debug, Decode, Encode, Default, Deserialize, CandidType, Clone, Copy)]
+#[derive(Eq, PartialEq, Debug, Decode, Encode, Deserialize, CandidType, Clone)]
+pub struct CkUsdcLedger {
+    #[cbor(n(0), with = "shared::cbor::principal")]
+    pub(crate) principal: Principal,
+    #[cbor(n(1), with = "shared::cbor::nat::option")]
+    pub(crate) fee: Option<Nat>,
+}
+
+#[derive(Eq, PartialEq, Debug, Decode, Encode, Deserialize, CandidType, Clone)]
 pub struct Config {
     #[n(0)]
-    spaces_per_space_lead: u8,
+    pub(crate) spaces_per_space_lead: u8,
+    #[n(1)]
+    pub(crate) ckusdc_ledger: CkUsdcLedger,
 }
 
 impl Config {
-    pub fn new(spaces_per_space_lead: u8) -> Self {
+    pub fn new(spaces_per_space_lead: u8, ckusdc_ledger: CkUsdcLedger) -> Self {
         Self {
             spaces_per_space_lead,
+            ckusdc_ledger
         }
-    }
-
-    pub fn spaces_per_space_lead(&self) -> u8 {
-        self.spaces_per_space_lead
     }
 }
 
