@@ -1,13 +1,14 @@
 import React from "react";
 
 interface InfoBoxProps {
-  type: "ongoing" | "starting" | "expired" | "points" | "tokens";
+  type: "ongoing" | "starting" | "expired" | "points" | "steps" | "uses";
   startingIn?: string;
   points?: string;
-  tokens?: string
+  steps?: number;
+  uses?: string;
 }
 
-const InfoBox = ({ type, startingIn, points, tokens }: InfoBoxProps) => {
+const InfoBox = ({ type, startingIn, points, steps, uses }: InfoBoxProps) => {
   switch (type) {
     case "ongoing":
       return (
@@ -30,13 +31,19 @@ const InfoBox = ({ type, startingIn, points, tokens }: InfoBoxProps) => {
     case "points":
       return (
         <div className="border border-white p-2 font-montserrat text-sm rounded-xl text-white w-fit">
-          {points} Points
+          {points} XP
         </div>
       );
-    case "tokens":
+    case "steps":
       return (
         <div className="bg-[#fff]/20 border border-white p-2 font-montserrat text-sm rounded-xl text-white w-fit">
-          {tokens}
+          {steps} {steps === 1 ? "step" : "steps"}
+        </div>
+      );
+    case "uses":
+      return (
+        <div className="bg-[#fff]/20 border border-white p-2 font-montserrat text-sm rounded-xl text-white w-fit">
+          {uses}
         </div>
       );
   }

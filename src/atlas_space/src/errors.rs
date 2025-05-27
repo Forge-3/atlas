@@ -21,6 +21,9 @@ pub enum Error {
     #[error("Caller is not an admin")]
     NotAdmin,
 
+    #[error("Caller is not an parent")]
+    NotParent,
+
     #[error("Caller is not an admin nor Owner")]
     NotAdminNorOwner,
 
@@ -28,5 +31,29 @@ pub enum Error {
     TaskAlreadyExists(TaskId),
 
     #[error("Failed to transfer funds (Error: {0})")]
-    FailedToTransfer(String)
+    FailedToTransfer(String),
+
+    #[error("Invalid task content (Error: {0})")]
+    InvalidTaskContent(String),
+
+    #[error("Count is to high (max: {max}, found: {found})")]
+    CountToHigh { max: usize, found: usize },
+
+    #[error("Task do not exists ({0})")]
+    TaskDoNotExists(TaskId),
+
+    #[error("Subtask do not exists ({0})")]
+    SubtaskDoNotExists(usize),
+
+    #[error("User already submitted submission")]
+    UserAlreadySubmitted,
+
+    #[error("Incorrect type of submission (expected: {0})")]
+    IncorrectSubmission(String),
+
+    #[error("Space bytecode is up to date")]
+    BytecodeUpToDate,
+
+    #[error("Failed to call main app (Error: {0})")]
+    FailedToCallMain(String),
 }

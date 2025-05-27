@@ -1,26 +1,46 @@
 type CkUsdcLedger = record { fee : opt nat; "principal" : principal };
 type CreateTaskArgs = record {
+  task_title : text;
   token_reward : TokenReward;
-  task_content : TaskContent;
+  task_content : vec TaskContent;
   number_of_uses : nat64;
 };
 type Error = variant {
+  BytecodeUpToDate;
   NotAdminNorOwner;
   FailedToUpdateConfig : text;
   TaskAlreadyExists : nat64;
+  FailedToCallMain : text;
   ConfigNotSet;
+  UserAlreadySubmitted;
   NotAdmin;
+  IncorrectSubmission : text;
+  CountToHigh : record { max : nat64; found : nat64 };
+  SubtaskDoNotExists : nat64;
   NotOwner;
   FailedToTransfer : text;
+  InvalidTaskContent : text;
+  TaskDoNotExists : nat64;
   AnonymousCaller;
 };
-type Result = variant { Ok; Err : Error };
-type SpaceArgs = variant { UpgradeArg; InitArg : SpaceInitArg };
+type GetTasksArgs = record { count : nat64; start : nat64 };
+type GetTasksRes = record {
+  tasks : vec record { nat64; Task };
+  tasks_count : nat64;
+};
+type Result = variant { Ok : nat64; Err : Error };
+type Result_1 = variant { Ok : GetTasksRes; Err : Error };
+type Result_2 = variant { Ok; Err : Error };
+type SpaceArgs = variant {
+  UpgradeArg : record { version : nat64 };
+  InitArg : SpaceInitArg;
+};
 type SpaceInitArg = record {
   admin : principal;
   ckusdc_ledger : CkUsdcLedger;
   space_symbol : opt text;
   space_background : opt text;
+  current_wasm_version : nat64;
   space_logo : opt text;
   space_name : text;
   space_description : text;
@@ -33,18 +53,41 @@ type State = record {
   tasks_count : nat64;
   space_description : text;
 };
+type Submission = variant { Text : record { content : text } };
+type SubmissionData = record {
+  state : SubmissionState;
+  submission : Submission;
+};
+type SubmissionState = variant { Rejected; WaitingForReview; Accepted };
+type Task = record {
+  tasks : vec TaskType;
+  creator : principal;
+  task_title : text;
+  token_reward : TokenReward;
+  number_of_uses : nat64;
+};
 type TaskContent = variant {
   TitleAndDescription : record { task_description : text; task_title : text };
+};
+type TaskType = variant {
+  GenericTask : record {
+    task_content : TaskContent;
+    submission : vec record { principal; SubmissionData };
+  };
 };
 type TokenReward = variant { CkUsdc : record { amount : nat } };
 type WalletReceiveResult = record { accepted : nat64 };
 service : (SpaceArgs) -> {
   create_task : (CreateTaskArgs) -> (Result);
+  get_closed_tasks : (GetTasksArgs) -> (Result_1) query;
+  get_current_bytecode_version : () -> (nat64) query;
+  get_open_tasks : (GetTasksArgs) -> (Result_1) query;
   get_state : () -> (State) query;
-  set_space_background : (text) -> (Result);
-  set_space_description : (text) -> (Result);
-  set_space_logo : (text) -> (Result);
-  set_space_name : (text) -> (Result);
+  set_space_background : (text) -> (Result_2);
+  set_space_description : (text) -> (Result_2);
+  set_space_logo : (text) -> (Result_2);
+  set_space_name : (text) -> (Result_2);
+  submit_subtask_submission : (nat64, nat64, Submission) -> (Result_2);
   wallet_balance : () -> (nat) query;
   wallet_receive : () -> (WalletReceiveResult);
 }

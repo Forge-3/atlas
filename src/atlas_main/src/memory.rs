@@ -13,6 +13,7 @@ type VMem = VirtualMemory<DefaultMemoryImpl>;
 const CONFIG_MEMORY_ID: MemoryId = MemoryId::new(0);
 const USERS_MAP_MEMORY_ID: MemoryId = MemoryId::new(1);
 const SPACES_VEC_MEMORY_ID: MemoryId = MemoryId::new(2);
+const SPACES_WASM_MEMORY_ID: MemoryId = MemoryId::new(3);
 
 thread_local! {
     static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(
@@ -39,6 +40,12 @@ thread_local! {
         StableVec::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(SPACES_VEC_MEMORY_ID)),
         ).expect("Failed to initialize stable Vec")
+    );
+
+    static WASM_SPACES_MAP: RefCell<StableBTreeMap<u64, Vec<u8>, VMem>> = RefCell::new(
+        StableBTreeMap::init(
+            MEMORY_MANAGER.with(|m| m.borrow().get(SPACES_WASM_MEMORY_ID)),
+        )
     );
 }
 
@@ -81,6 +88,15 @@ pub fn set_config(config: Config) -> Result<(), Error> {
     Ok(())
 }
 
+pub fn mut_config<T>(f: impl FnOnce(&mut Option<Config>) -> T) -> T {
+    CONFIG.with_borrow_mut(|s| {
+        let mut config = s.get().clone();
+        let result = f(&mut config);
+        s.set(config).expect("Failed to update config");
+        result
+    })
+}
+
 // Spaces Vec state methods
 
 pub fn get_space_vec_len() -> u64 {
@@ -91,7 +107,7 @@ pub fn with_space_vec_iter<F, R>(f: F) -> R
 where
     F: for<'a> FnOnce(Box<dyn Iterator<Item = Space> + 'a>) -> R,
 {
-    SPACES_VEC.with_borrow(|events| f(Box::new(events.iter())))
+    SPACES_VEC.with_borrow(|space| f(Box::new(space.iter())))
 }
 
 pub fn push_space(space_principal: &Space) -> Result<(), Error> {
@@ -99,4 +115,16 @@ pub fn push_space(space_principal: &Space) -> Result<(), Error> {
         .with_borrow_mut(|space| space.push(space_principal))
         .map_err(|err| Error::FailedToSaveSpace(format!("{:?}", err)))?;
     Ok(())
+}
+
+// Spaces WASM 
+
+pub fn insert_new_version(version: u64, bytecode: Vec<u8>) {
+    if WASM_SPACES_MAP.with_borrow_mut(|code_map| code_map.insert(version, bytecode)).is_some() {
+        ic_cdk::trap("Fatal: Old bytecode was overwritten!")
+    }
+}
+
+pub fn get_bytecode_by_version(version: &u64) -> Option<Vec<u8>> {
+    WASM_SPACES_MAP.with_borrow(|code_map| code_map.get(version))
 }

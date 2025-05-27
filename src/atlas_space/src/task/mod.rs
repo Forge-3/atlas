@@ -4,15 +4,38 @@ use candid::{CandidType, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
+use submission::{Submission, SubmissionData, SubmissionState};
 use token_reward::TokenReward;
-use xp_reward::XpReward;
 
-use crate::{
-    deposit::calculate_deposit_amount, errors::Error, memory, methods::update::CreateTaskArgs,
-};
+use crate::errors::Error;
 
+pub mod submission;
 pub mod token_reward;
 pub mod xp_reward;
+
+#[derive(CandidType, Deserialize)]
+pub struct CreateTaskArgs {
+    pub task_title: String,
+    pub token_reward: TokenReward,
+    pub task_content: Vec<TaskContent>,
+    pub number_of_uses: u64,
+}
+
+impl CreateTaskArgs {
+    pub fn validate(&self) -> Result<(), Error> {
+        if self.task_title.trim().len() > 50 {
+            return Err(Error::InvalidTaskContent(
+                "Task title is too long (max length: 50)".into(),
+            ));
+        }
+        if self.task_content.len() > 10 {
+            return Err(Error::InvalidTaskContent("Too many subtasks".into()));
+        }
+        self.task_content
+            .iter()
+            .try_for_each(|content| content.validate())
+    }
+}
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType, Deserialize)]
 pub enum TaskContent {
@@ -25,33 +48,96 @@ pub enum TaskContent {
     },
 }
 
-#[derive(Eq, PartialEq, Debug, Decode, Encode, Clone)]
-pub enum SubmissionType {
-    #[n(0)]
-    Text,
+impl TaskContent {
+    pub fn validate(&self) -> Result<(), Error> {
+        match self {
+            TaskContent::TitleAndDescription {
+                task_title,
+                task_description,
+            } => {
+                if task_title.trim().len() > 50 {
+                    return Err(Error::InvalidTaskContent(
+                        "Subtask title is too long (max length: 50)".into(),
+                    ));
+                }
+                if task_description.trim().len() > 500 {
+                    return Err(Error::InvalidTaskContent(
+                        "Subtask description is too long (max length: 500)".into(),
+                    ));
+                }
+                Ok(())
+            }
+        }
+    }
 }
 
-#[derive(Eq, PartialEq, Debug, Decode, Encode, Clone)]
+impl From<&TaskContent> for TaskType {
+    fn from(content: &TaskContent) -> Self {
+        match content {
+            TaskContent::TitleAndDescription {
+                task_title,
+                task_description,
+            } => Self::GenericTask {
+                task_content: TaskContent::TitleAndDescription {
+                    task_title: task_title.clone(),
+                    task_description: task_description.clone(),
+                },
+                submission: Default::default(),
+            },
+        }
+    }
+}
+
+#[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType)]
 pub enum TaskType {
     #[n(0)]
     GenericTask {
         #[n(0)]
         task_content: TaskContent,
         #[cbor(n(1), with = "shared::cbor::principal_map")]
-        submission: BTreeMap<Principal, String>,
+        submission: BTreeMap<Principal, SubmissionData>,
     },
 }
 
-#[derive(Eq, PartialEq, Debug, Decode, Encode, Clone)]
+impl TaskType {
+    pub fn submit(&mut self, user: Principal, submission: Submission) -> Result<(), Error> {
+        match self {
+            TaskType::GenericTask {
+                task_content: _,
+                submission: submissions_map,
+            } => {
+                if submissions_map.contains_key(&user) {
+                    return Err(Error::UserAlreadySubmitted);
+                }
+                if !submission.is_text() {
+                    return Err(Error::IncorrectSubmission("Text".to_string()));
+                }
+                match &submission {
+                    Submission::Text { content } => content.trim().len() ,
+                };
+
+                submissions_map.insert(
+                    user,
+                    SubmissionData::new(submission, SubmissionState::default()),
+                );
+                Ok(())
+            }
+        }
+    }
+}
+
+#[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType)]
 pub struct Task {
     #[cbor(n(0), with = "shared::cbor::principal")]
     creator: Principal,
     #[n(1)]
     token_reward: TokenReward,
     #[n(2)]
-    task_content: TaskContent,
+    tasks: Vec<TaskType>,
     #[n(3)]
     number_of_uses: u64,
+    #[n(4)]
+    task_title: String,
 }
 
 impl Task {
@@ -68,9 +154,24 @@ impl Task {
         Ok(Self {
             creator,
             token_reward: create_task_args.token_reward,
-            task_content: create_task_args.task_content,
+            tasks: create_task_args
+                .task_content
+                .iter()
+                .map(|content| content.into())
+                .collect(),
             number_of_uses: create_task_args.number_of_uses,
+            task_title: create_task_args.task_title,
         })
+    }
+
+    pub fn submit_subtask_submission(&mut self, user: Principal, subtask_id: usize, submission: Submission) -> Result<(), Error> {
+        let subtask = self
+            .tasks
+            .get_mut(subtask_id)
+            .ok_or(Error::SubtaskDoNotExists(subtask_id))?;
+        subtask.submit(user, submission)?;
+
+        Ok(())
     }
 }
 

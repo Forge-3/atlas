@@ -6,6 +6,7 @@ import { atlasMainActor } from "../canisters/atlasMain/actors.ts";
 import { HttpAgent } from "@dfinity/agent";
 import { atlasSpaceActor } from "../canisters/atlasSpace/actors.ts";
 import type { Principal } from "@dfinity/principal";
+import { ckUSDCActor } from "../canisters/ckUSDC/actors.ts";
 
 export const useAuthAgent = () => {
   const tempAgent = useIdentityKitAgent({
@@ -51,6 +52,16 @@ export const useAuthAtlasMainActor = () => {
 export const useUnAuthAtlasMainActor = () => {
   const agent = useUnAuthAgent();
   return agent && atlasMainActor(agent)
+};
+
+export const useAuthCkUSDCActor = () => {
+  const agent = useAuthAgent();
+  return agent && ckUSDCActor(agent)
+};
+
+export const useUnAuthCkUSDCActor = () => {
+  const agent = useUnAuthAgent();
+  return agent && ckUSDCActor(agent)
 };
 
 export const useAuthAtlasSpaceActor = (canisterId: Principal) => {

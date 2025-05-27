@@ -17,7 +17,8 @@ import { formatFormError } from "../../utils/errors.ts";
 import { useNavigate } from "react-router-dom";
 import { SPACE_PATH } from "../../router/index.tsx";
 import { useAuth } from "@nfid/identitykit/react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { selectUserBlockchainData } from "../../store/slices/userSlice.ts";
 
 interface SpaceBuilderFormInput {
   space_symbol?: string;
@@ -44,6 +45,7 @@ const SpaceBuilder = () => {
   } = useForm({
     resolver: yupResolver(schema),
   });
+  const userBlockchainData = useSelector(selectUserBlockchainData);
   const authenticatedAtlasMain = useAuthAtlasMainActor();
   const { user } = useAuth();
   const dispatch = useDispatch();
@@ -66,14 +68,18 @@ const SpaceBuilder = () => {
     const description = data.space_description.trim();
     const symbol =
       data.space_symbol !== "" && data.space_symbol ? data.space_symbol : null;
-
-    const spacePrincipal = await createNewSpace({
+    const createSpaceCall = createNewSpace({
       authenticatedAtlasMain,
       name,
       description,
       symbol,
       logo: builderAvatarImg,
       background: builderBackgroundImg,
+    });
+    const space = await toast.promise(createSpaceCall, {
+      loading: "Creating new space...",
+      success: "Space created successfully",
+      error: "Failed to create space",
     });
     if (user?.principal && unAuthAtlasMain) {
       getAtlasUser({
@@ -82,8 +88,8 @@ const SpaceBuilder = () => {
         unAuthAtlasMain: unAuthAtlasMain,
       });
     }
-    if (spacePrincipal) {
-    navigate(SPACE_PATH.replace(":spacePrincipal", spacePrincipal.toText()));}
+
+    navigate(SPACE_PATH.replace(":spacePrincipal", space.id.toText()));
   };
 
   const getDropzoneOptions = (
@@ -110,9 +116,11 @@ const SpaceBuilder = () => {
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="container mx-auto my-4">
         <div className="w-full px-3">
+        {user && userBlockchainData?.isSpaceLead() && (
           <div className="mb-2 flex justify-end">
             <Button>Create space</Button>
           </div>
+        )}
           <div className="relative w-full rounded-t-xl bg-[#1E0F33] mb-1">
             <div className="px-8 py-8">
               <div className="relative">

@@ -4,15 +4,14 @@ import type {
   GetSpacesRes,
   Space,
 } from "../../../../declarations/atlas_main/atlas_main.did.js";
-import { toast } from "react-hot-toast";
 import type { Principal } from "@dfinity/principal";
 import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import { setUserBlockchainData } from "../../store/slices/userSlice.js";
 import { unwrapCall } from "../delegatedCall.js";
-import { setConfig, setSpaces } from "../../store/slices/appSlice.js";
-import { getAtlasSpace } from "../atlasSpace/api.js";
+import { setConfig } from "../../store/slices/appSlice.js";
 import type { _SERVICE as _SERVICE_SPACE } from "../../../../declarations/atlas_space/atlas_space.did.js";
+import { setSpaces } from "../../store/slices/spacesSlice.js";
 
 interface CreateNewSpaceArgs {
   authenticatedAtlasMain: ActorSubclass<_SERVICE_MAIN>;
@@ -37,17 +36,11 @@ export const createNewSpace = async ({
     logo ? [logo] : [],
     background ? [background] : []
   );
-  const promise = unwrapCall<Space>({
+
+  return unwrapCall<Space>({
     call,
     errMsg: "Failed to get data from blockchain",
   });
-  const space = await toast.promise(promise, {
-    loading: "Creating new space...",
-    success: "Space created successfully",
-    error: "Failed to create space",
-  });
-
-  return space.id;
 };
 
 interface GetAtlasUserArgs {

@@ -1,47 +1,51 @@
 import React, { useState } from "react";
 import { FiFilter, FiStar } from "react-icons/fi";
 import Button from "../Shared/Button.tsx";
-import SpaceCard from "./SpaceCard/index.tsx";
+import TaskCard from "./TaskCard/index.tsx";
 import CreateNewTaskModal from "../../modals/CreateNewTaskModal.tsx";
+import { useDispatch, useSelector } from "react-redux";
+import type { RootState } from "../../store/store.ts";
+import { setScreenBlur } from "../../store/slices/appSlice.ts";
+import { useAuth } from "@nfid/identitykit/react";
+import { selectUserBlockchainData } from "../../store/slices/userSlice.ts";
+import type { Tasks } from "../../canisters/atlasSpace/api.ts";
 
 interface TasksListProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  spaces?: any[];
+  tasks: Tasks;
 }
 
-const TasksList = ({ spaces }: TasksListProps) => {
-  {
-    if (spaces && spaces.length) {
-      return (
-        <>
-          <div className="relative w-full bg-[#1E0F33] mb-1">
-            <div className="flex px-8 py-6">
-              <div className="flex gap-4">
-                <Button className="flex gap-1">
-                  <FiFilter /> Sorting
-                </Button>
-                <Button className="flex gap-1">
-                  <FiStar /> Newest
-                </Button>
-              </div>
-            </div>
-          </div>
-          <div className="relative w-full bg-[#1E0F33] rounded-b-xl">
-            <div className="grid gap-4 px-8 py-6">
-              <SpaceCard type="ongoing" points="100" tokens="0.2 ICP" />
-              <SpaceCard
-                type="starting"
-                startingIn="3 days"
-                points="1000"
-                tokens="0.5 ICP"
-              />
-              <SpaceCard type="expired" points="1500" tokens="1 ICP" />
-            </div>
-          </div>
-        </>
-      );
-    }
+const TasksList = ({ tasks }: TasksListProps) => {
+  if (!tasks || Object.keys(tasks).length === 0) {
+    return <></>;
   }
+
+  const tasksEntries = Object.entries(tasks)
+
+  return (
+    <>
+      <div className="relative w-full bg-[#1E0F33] mb-1">
+        <div className="flex px-8 py-6">
+          <div className="flex gap-4">
+            <Button className="flex gap-1">
+              <FiFilter /> Sorting
+            </Button>
+            <Button className="flex gap-1">
+              <FiStar /> Newest
+            </Button>
+          </div>
+        </div>
+      </div>
+      <div className="relative w-full bg-[#1E0F33] rounded-b-xl">
+        <div className="grid gap-4 px-8 py-6">
+          {
+            tasksEntries.map(([id, task]) => {
+              return <TaskCard key={id} task={task} type={"ongoing"} id={id} />
+            })
+          }
+        </div>
+      </div>
+    </>
+  );
 };
 
 interface SpaceProps {
@@ -50,8 +54,7 @@ interface SpaceProps {
   symbol: string | null;
   avatarImg: string | null;
   backgroundImg: string | null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  spaces?: any[];
+  tasks?: Tasks;
 }
 
 const Space = ({
@@ -60,17 +63,29 @@ const Space = ({
   description,
   backgroundImg,
   avatarImg,
-  spaces,
+  tasks,
 }: SpaceProps) => {
-  const [isCreateSpaceModal, setCreateSpaceModal] = useState(false);
+  const { user } = useAuth();
+  const dispatch = useDispatch();
+  const isScreenBlur = useSelector(
+    (state: RootState) => state.app.isScreenBlur
+  );
+  const userBlockchainData = useSelector(selectUserBlockchainData);
+  const [isCreateTaskModal, setCreateTaskModal] = useState(false);
+  const toggleTaskModal = () => {
+    setCreateTaskModal(!isCreateTaskModal);
+    dispatch(setScreenBlur(!isScreenBlur));
+  };
 
   return (
     <>
       <div className="container mx-auto my-4">
         <div className="w-full px-3">
-          <div className="mb-2 flex justify-end">
-            <Button onClick={() => setCreateSpaceModal(true)}>Create new task</Button>
-          </div>
+          {user && userBlockchainData?.isSpaceLead() && (
+            <div className="mb-2 flex justify-end">
+              <Button onClick={toggleTaskModal}>Create new task</Button>
+            </div>
+          )}
           <div className="relative w-full rounded-t-xl bg-[#1E0F33] mb-1">
             <div className="p-8">
               <div
@@ -107,10 +122,10 @@ const Space = ({
               </div>
             </div>
           </div>
-          <TasksList spaces={spaces} />
+          {tasks && <TasksList tasks={tasks} />}
         </div>
       </div>
-      {isCreateSpaceModal && <CreateNewTaskModal />}
+      {isCreateTaskModal && <CreateNewTaskModal callback={toggleTaskModal} />}
     </>
   );
 };

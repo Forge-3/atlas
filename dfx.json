@@ -9,7 +9,6 @@
         "./build.sh atlas_space",
         "./build.sh atlas_main"
       ],
-      "optimize": "cycles",
       "declarations": {
         "bindings": [
           "js",
@@ -19,7 +18,9 @@
     },
     "atlas_frontend": {
       "dependencies": [
-        "atlas_main"
+        "atlas_main",
+        "ckusdc_canister",
+        "atlas_space"
       ],
       "source": [
         "src/atlas_frontend/dist"
@@ -55,6 +56,21 @@
         "js",
         "ts"
       ]
+    },
+    "ckusdc_canister": {
+      "type": "custom",
+      "candid": "https://raw.githubusercontent.com/dfinity/ic/2f52f298de53944209f550774505aa72a1a3ed17/rs/ledger_suite/icp/ledger.did",
+      "wasm": "https://download.dfinity.systems/ic/2f52f298de53944209f550774505aa72a1a3ed17/canisters/ledger-canister.wasm.gz",
+      "remote": {
+        "id": {
+          "ic": "xevnm-gaaaa-aaaar-qafnq-cai"
+        }
+      },
+      "bindings": [
+        "js",
+        "ts"
+      ],
+      "specified_id": "xevnm-gaaaa-aaaar-qafnq-cai"
     }
   },
   "defaults": {

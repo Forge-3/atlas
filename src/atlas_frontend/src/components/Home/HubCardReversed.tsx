@@ -17,11 +17,11 @@ const HubCardReversed = ({ ambassadorsCount, country }: HubCardReversedProps) =>
       <div className="mt-5 md:text-xl dlg:text-3xl md:font-semibold dlg:font-bold">
         {ambassadorsCount}
       </div>
-      <div className="mt-2 mb-0 text-xs dlg:text-sm  font-medium max-md:mb-2.5">
+      <div className="mt-3 mb-0 text-xs dlg:text-sm  font-medium max-md:mb-2.5">
         Ambassador
       </div>
-      <div className="md:w-[70px] md:h-[70px] dlg:w-[90px] dlg:h-[90px] mt-3 rounded-full  flex items-center justify-center">
-      <img src={`/hubs/logo-${country.toLowerCase()}-round.png`} alt={`Internet Computer ${country} HUB logo`} draggable="false"/>
+      <div className="md:w-[70px] md:h-[70px] dlg:w-[90px] dlg:h-[90px] mt-3 rounded-full flex items-center justify-center">
+      <img src={`/hubs/logo-${country.toLowerCase()}-square.jpg`} alt={`Internet Computer ${country} HUB logo`} draggable="false" className="rounded-full"/>
       </div>
     </div>
   );

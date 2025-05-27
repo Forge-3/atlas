@@ -11,17 +11,20 @@ pub struct CkUsdcLedger {
 
 #[derive(Deserialize, CandidType, Clone)]
 pub struct SpaceInitArg {
-    pub admin: Principal,
+    pub owner: Principal,
     pub space_name: String,
     pub space_description: String,
     pub space_symbol: Option<String>,
     pub space_logo: Option<String>,
     pub space_background: Option<String>,
     pub ckusdc_ledger: CkUsdcLedger,
+    pub current_wasm_version: u64
 }
 
-#[derive(Deserialize, CandidType)]
+#[derive(Deserialize, CandidType, Clone)]
 pub enum SpaceArgs {
     InitArg(SpaceInitArg),
-    UpgradeArg,
+    UpgradeArg {
+        version: u64
+    },
 }

@@ -1,56 +1,73 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Space from "./Space.tsx";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { getAtlasSpace } from "../../canisters/atlasSpace/api.ts";
-import { Principal } from "@dfinity/principal";
-import { toast } from "react-hot-toast";
-import { useUnAuthAtlasSpaceActor } from "../../hooks/identityKit.ts";
+import {
+  getAtlasSpace,
+  getSpaceTasks,
+} from "../../canisters/atlasSpace/api.ts";
+import {
+  getUnAuthAtlasSpaceActor,
+  useUnAuthAgent,
+} from "../../hooks/identityKit.ts";
+import { useSpaceId } from "../../hooks/space.ts";
+import { useDispatch, useSelector } from "react-redux";
+import { customSerify, type RootState } from "../../store/store.ts";
+import { deserify } from "@karmaniverous/serify-deserify";
+import type { Task } from "../../../../declarations/atlas_space/atlas_space.did";
 
 const SpacePage = () => {
-  const params = useParams();
+  const dispatch = useDispatch();
+  const { spacePrincipal } = useParams();
   const navigate = useNavigate();
-  const spacePrincipal = params["spacePrincipal"];
 
-  if (!spacePrincipal) return <></>;
-  let principal: Principal | null = null;
-
-  try {
-    principal = Principal.fromText(spacePrincipal);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (_err) {
-    toast.error("Failed to decode space ID");
-    navigate("/");
-    return;
-  }
-  const actor = useUnAuthAtlasSpaceActor(principal);
-  const { data } = useQuery({
-    queryKey: ["spaceState", actor],
-    queryFn: async () => {
-      if (!actor) return null;
-
-      return await toast.promise(
-        getAtlasSpace({ unAuthAtlasSpaceActor: actor }),
-        {
-          loading: "Loading a space...",
-          success: "Successfully loaded the space",
-          error: "Failed to load space",
-        }
-      );
-    },
+  const principal = useSpaceId({
+    spacePrincipal,
+    navigate,
   });
+  if (!principal) return <></>;
+  const spaceId = principal.toString();
+  const space = useSelector(
+    (state: RootState) => state.spaces?.spaces?.[principal.toString()] ?? null
+  );
+  const tasks = space?.tasks ? deserify(space?.tasks, customSerify) as {
+    [key: string]: Task;
+  } : null;
+  const spaceData = space?.state;
 
-  if (!data) {
+  const agent = useUnAuthAgent();
+
+  useEffect(() => {
+    if (!agent || spaceData) return;
+    const unAuthAtlasSpace = getUnAuthAtlasSpaceActor(agent, principal);
+    getAtlasSpace({
+      spaceId,
+      unAuthAtlasSpace,
+      dispatch,
+    });
+  }, [dispatch, agent, spaceData, principal]);
+
+  useEffect(() => {
+    if (!agent || tasks) return;
+    const unAuthAtlasSpace = getUnAuthAtlasSpaceActor(agent, principal);
+    getSpaceTasks({
+      spaceId,
+      unAuthAtlasSpace,
+      dispatch,
+    });
+  }, [dispatch, agent, tasks, principal]);
+
+  if (!spaceData) {
     return <></>;
   }
 
   return (
     <Space
-      name={data.space_name}
-      description={data.space_description}
-      symbol={data.space_symbol}
-      backgroundImg={data.space_background}
-      avatarImg={data.space_logo}
+      name={spaceData.space_name}
+      description={spaceData.space_description}
+      symbol={spaceData.space_symbol}
+      backgroundImg={spaceData.space_background}
+      avatarImg={spaceData.space_logo}
+      tasks={tasks === null ? undefined : tasks}
     />
   );
 };

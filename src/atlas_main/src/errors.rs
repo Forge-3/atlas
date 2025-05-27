@@ -1,8 +1,8 @@
-use candid::CandidType;
+use candid::{CandidType, Principal};
 use serde::Deserialize;
 use thiserror::Error;
 
-use crate::user::Rank;
+use crate::{space::Space, user::Rank};
 
 #[derive(Clone, PartialEq, Debug, CandidType, Deserialize, Error)]
 pub enum Error {
@@ -24,16 +24,19 @@ pub enum Error {
     #[error("User rich space limit (expected: {expected:?}, found: {found:?})")]
     UserRichSpaceLimit { expected: usize, found: usize },
 
-    #[error("Failed to initialize canister (Err: {0})")]
+    #[error("Failed to initialize canister (Error: {0})")]
     FailedToInitializeCanister(String),
 
-    #[error("Failed to install wasm (Err: {0})")]
+    #[error("Failed to update canister settings (Error: {0})")]
+    FailedToUpdateCanisterSettings(String),
+
+    #[error("Failed to install wasm (Error: {0})")]
     FailedToInstallWASM(String),
 
-    #[error("Failed to get canister info (Err: {0})")]
+    #[error("Failed to get canister info (Error: {0})")]
     FailedToGetCanisterInfo(String),
 
-    #[error("Failed to push new space to stable vec (Err: {0})")]
+    #[error("Failed to push new space to stable vec (Error: {0})")]
     FailedToSaveSpace(String),
 
     #[error("User do not exist")]
@@ -43,5 +46,20 @@ pub enum Error {
     CountToHigh { max: usize, found: usize },
 
     #[error("Space creation in progress")]
-    CreationInProgress
+    CreationInProgress,
+
+    #[error("Space do not exist")]
+    SpaceNotExist,
+
+    #[error("Failed to call space {principal} ({err})")]
+    FailedToCallSpace{
+        principal: Principal,
+        err: String
+    },
+
+    #[error("User rank is to low (expected: {expected:?} or above, found: {found:?})")]
+    UserRankToLow { expected: Rank, found: Rank },
+
+    #[error("User is not an owner of the space {0}")]
+    UserNotAnOwner(Space)
 }

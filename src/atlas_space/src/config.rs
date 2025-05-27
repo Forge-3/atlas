@@ -17,22 +17,25 @@ pub struct CkUsdcLedger {
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Deserialize, CandidType, Clone)]
 pub struct Config {
     #[cbor(n(0), with = "shared::cbor::principal")]
-    pub(crate) owner: Principal,
+    pub(crate) parent: Principal,
     #[cbor(n(1), with = "shared::cbor::principal")]
-    pub(crate) admin: Principal,
+    pub(crate) owner: Principal,
     #[n(2)]
     pub(crate) ckusdc_ledger: CkUsdcLedger,
+    #[n(3)]
+    pub(crate) current_wasm_version: u64,
 }
 
 impl Config {
-    pub fn new(owner: Principal, init_args: SpaceInitArg) -> Self {
+    pub fn new(parent: Principal, init_args: SpaceInitArg) -> Self {
         Self {
-            owner,
-            admin: init_args.admin,
+            parent,
+            owner: init_args.owner,
             ckusdc_ledger: CkUsdcLedger {
                 principal: init_args.ckusdc_ledger.principal,
                 fee: init_args.ckusdc_ledger.fee,
             },
+            current_wasm_version: init_args.current_wasm_version,
         }
     }
 
@@ -40,15 +43,24 @@ impl Config {
         self.owner
     }
 
-    pub fn admin(&self) -> Principal {
-        self.admin
+    pub fn parent(&self) -> Principal {
+        self.parent
+    }
+
+    pub fn bump_version(&mut self) -> u64 {
+        let new_version = self
+        .current_wasm_version
+        .checked_add(1)
+        .expect("Version is out of scope!?");
+        self.current_wasm_version = new_version;
+        new_version
     }
 }
 
 impl Storable for Config {
     fn to_bytes(&self) -> Cow<[u8]> {
         let mut buf = vec![];
-        minicbor::encode(self, &mut buf).expect("User encoding should always succeed");
+        minicbor::encode(self, &mut buf).expect("User encoding should always succeed.");
         Cow::Owned(buf)
     }
 

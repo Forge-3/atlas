@@ -2,25 +2,38 @@ import type { Principal } from '@dfinity/principal';
 import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
-export type AtlasArgs = { 'UpgradeArg' : [] | [Config] } |
+export type AtlasArgs = {
+    'UpgradeArg' : {
+      'upgrade_space_arg' : [] | [SpaceArgs],
+      'config' : [] | [UpdateConfig],
+    }
+  } |
   { 'InitArg' : Config };
 export interface CkUsdcLedger { 'fee' : [] | [bigint], 'principal' : Principal }
+export interface CkUsdcLedger_1 {
+  'fee' : [] | [bigint],
+  'principal' : Principal,
+}
 export interface Config {
   'spaces_per_space_lead' : number,
-  'ckusdc_ledger' : CkUsdcLedger,
+  'ckusdc_ledger' : CkUsdcLedger_1,
+  'current_space_version' : bigint,
 }
 export type Error = { 'UserRankNoMatch' : Rank } |
+  { 'FailedToCallSpace' : { 'err' : string, 'principal' : Principal } } |
   { 'FailedToSaveSpace' : string } |
   { 'FailedToUpdateConfig' : string } |
   { 'UserRichSpaceLimit' : { 'found' : bigint, 'expected' : bigint } } |
   { 'UserRankToHigh' : { 'found' : Rank, 'expected' : Rank } } |
   { 'UserAlreadyHaveExpectedRank' : Rank } |
   { 'CountToHigh' : { 'max' : bigint, 'found' : bigint } } |
+  { 'SpaceNotExist' : null } |
   { 'FailedToGetCanisterInfo' : string } |
   { 'FailedToInstallWASM' : string } |
   { 'FailedToInitializeCanister' : string } |
   { 'CreationInProgress' : null } |
   { 'UserDoNotExist' : null } |
+  { 'FailedToUpdateCanisterSettings' : string } |
   { 'AnonymousCaller' : null };
 export interface GetSpacesArgs { 'count' : bigint, 'start' : bigint }
 export interface GetSpacesRes {
@@ -39,6 +52,22 @@ export type Result_1 = { 'Ok' : GetSpacesRes } |
 export type Result_2 = { 'Ok' : null } |
   { 'Err' : Error };
 export interface Space { 'id' : Principal }
+export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
+  { 'InitArg' : SpaceInitArg };
+export interface SpaceInitArg {
+  'admin' : Principal,
+  'ckusdc_ledger' : CkUsdcLedger_1,
+  'space_symbol' : [] | [string],
+  'space_background' : [] | [string],
+  'current_wasm_version' : bigint,
+  'space_logo' : [] | [string],
+  'space_name' : string,
+  'space_description' : string,
+}
+export interface UpdateConfig {
+  'spaces_per_space_lead' : [] | [number],
+  'ckusdc_ledger' : [] | [CkUsdcLedger_1],
+}
 export interface User {
   'integrations' : Integrations,
   'rank' : Rank,
@@ -52,9 +81,15 @@ export interface _SERVICE {
     [string, string, [] | [string], [] | [string], [] | [string]],
     Result
   >,
+  'get_current_space_bytecode_version' : ActorMethod<[], bigint>,
+  'get_space_bytecode_by_version' : ActorMethod<
+    [bigint],
+    [] | [Uint8Array | number[]]
+  >,
   'get_spaces' : ActorMethod<[GetSpacesArgs], Result_1>,
   'get_user' : ActorMethod<[GetUserBy], User>,
   'set_user_space_lead' : ActorMethod<[Principal], Result_2>,
+  'upgrade_space' : ActorMethod<[Space], Result_2>,
   'wallet_balance' : ActorMethod<[], bigint>,
   'wallet_receive' : ActorMethod<[], WalletReceiveResult>,
 }

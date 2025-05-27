@@ -9,7 +9,6 @@ import { getAllSpaces } from "../../../canisters/atlasMain/api";
 import type { RootState } from "../../../store/store";
 import { Principal } from "@dfinity/principal";
 import { getAtlasSpace } from "../../../canisters/atlasSpace/api";
-import { setSpace } from "../../../store/slices/appSlice";
 import SpaceItem from "./SpaceItem";
 import { SPACE_PATH } from "../../../router";
 import { useNavigate } from "react-router-dom";
@@ -17,7 +16,7 @@ import { useNavigate } from "react-router-dom";
 const SpacesList = () => {
   const dispatch = useDispatch();
   const unAuthAtlasMain = useUnAuthAtlasMainActor();
-  const spaces = useSelector((state: RootState) => state.app.spaces);
+  const spaces = useSelector((state: RootState) => state.spaces.spaces);
   const [fetchedSpacesData, setFetchedSpacesData] = useState(false);
   const [fetchingInProgress, setFetchingInProgress] = useState(true);
   const agent = useUnAuthAgent();
@@ -39,21 +38,18 @@ const SpacesList = () => {
   useEffect(() => {
     if (!spaces || fetchedSpacesData || !agent) return;
     Object.keys(spaces).map(async (spaceId) => {
-      getUnAuthAtlasSpaceActor(agent, Principal.from(spaceId));
-      const unAuthAtlasSpaceActor = getUnAuthAtlasSpaceActor(
+      const spacePrincipal = Principal.from(spaceId)
+      getUnAuthAtlasSpaceActor(agent, spacePrincipal);
+      const unAuthAtlasSpace = getUnAuthAtlasSpaceActor(
         agent,
-        Principal.from(spaceId)
+        spacePrincipal
       );
-      if (!unAuthAtlasSpaceActor) return;
-      const state = await getAtlasSpace({
-        unAuthAtlasSpaceActor,
+      if (!unAuthAtlasSpace) return;
+      await getAtlasSpace({
+        spaceId,
+        unAuthAtlasSpace,
+        dispatch
       });
-      dispatch(
-        setSpace({
-          state,
-          spaceId,
-        })
-      );
     });
     setFetchedSpacesData(true);
   }, [dispatch, spaces, fetchedSpacesData]);
@@ -63,24 +59,33 @@ const SpacesList = () => {
     return <></>;
   }
 
-  return (
-    <div className="grid grid-cols-3 gap-2 container mx-auto my-4">
-      {Object.entries(spaces).map(
-        ([key, value]) =>
-          value && (
-            <a key={key} href={SPACE_PATH.replace(":spacePrincipal", key)}>
-              <SpaceItem
-                name={value.space_name}
-                description={value.space_description}
-                symbol={value.space_symbol}
-                backgroundImg={value.space_background}
-                avatarImg={value.space_logo}
-              />
-            </a>
-          )
-      )}
-    </div>
-  );
+  const spacesEntries = Object.entries(spaces);
+  if (spacesEntries.length > 0) {
+    return (
+      <div className="grid grid-cols-3 gap-2 container mx-auto my-4">
+        {spacesEntries.map(
+          ([key, value]) =>
+            value?.state && (
+              <a key={key} href={SPACE_PATH.replace(":spacePrincipal", key)}>
+                <SpaceItem
+                  name={value.state.space_name}
+                  description={value.state.space_description}
+                  symbol={value.state.space_symbol}
+                  backgroundImg={value.state.space_background}
+                  avatarImg={value.state.space_logo}
+                />
+              </a>
+            )
+        )}
+      </div>
+    );
+  } else {
+    return (
+      <div className="flex items-center justify-center">
+        <h1 className="text-white font-montserrat font-medium text-2xl mt-16">No spaces found</h1>
+      </div>
+    );
+  }
 };
 
 export default SpacesList;

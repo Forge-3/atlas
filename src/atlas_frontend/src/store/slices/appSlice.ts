@@ -1,31 +1,18 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Config } from "../../../../declarations/atlas_main/atlas_main.did.d.ts";
-
-export interface SimpleState {
-  space_symbol: string | null;
-  space_background: string | null;
-  space_logo: string | null;
-  space_name: string;
-  space_description: string;
-}
 
 export interface StorableConfig {
   spaces_per_space_lead: number;
   ckusdc_ledger: { fee: bigint | null; principal: string };
 }
 
-type Spaces = { [key: string]: null | SimpleState };
-
 interface AppState {
   blockchainConfig: null | StorableConfig;
   isScreenBlur: boolean;
-  spaces: Spaces | null;
 }
 
 const initialState: AppState = {
   blockchainConfig: null,
   isScreenBlur: false,
-  spaces: null,
 };
 
 export const appSlice = createSlice({
@@ -38,27 +25,14 @@ export const appSlice = createSlice({
     setConfig: (state, action: PayloadAction<StorableConfig>) => {
       state.blockchainConfig = action.payload;
     },
-    setSpaces: (state, action: PayloadAction<Spaces>) => {
-      state.spaces = action.payload;
-    },
-    setSpace: (
-      state,
-      action: PayloadAction<{ state: SimpleState; spaceId: string }>
-    ) => {
-      const spaceId = action.payload.spaceId;
-      const spaceState = action.payload.state;
-
-      if (state.spaces) {
-        state.spaces[spaceId] = action.payload.state;
-      } else if (!state.spaces) {
-        state.spaces = {
-          [spaceId]: spaceState,
-        };
-      }
-    },
   },
+  selectors: {
+    selectBlockchainConfig: (state: AppState) => state.blockchainConfig
+  }
 });
 
-export const { setScreenBlur, setConfig, setSpaces, setSpace } =
+export const { setScreenBlur, setConfig } =
   appSlice.actions;
+  export const { selectBlockchainConfig } = appSlice.selectors;
+  
 export default appSlice.reducer;

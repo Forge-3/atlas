@@ -25,6 +25,14 @@ export class BlockchainUser implements StorableUser {
   getRank() {
     return Object.keys(this.rank)[0] as keyof Rank;
   }
+
+  isSpaceLead() {
+    return Object.keys(this.rank)[0] as keyof Rank === "SpaceLead"; 
+  }
+
+  isAdmin() {
+    return Object.keys(this.rank)[0] as keyof Rank === "Admin"; 
+  }
 }
 
 interface UserState {

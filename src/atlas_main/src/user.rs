@@ -69,6 +69,10 @@ impl User {
         &self.rank
     }
 
+    pub fn owned_spaces(&self) -> &Vec<u64> {
+        &self.owned_spaces
+    }
+
     pub fn promote_to_space_lead(&mut self) -> Result<(), Error> {
         match self.rank() {
             Rank::User => {

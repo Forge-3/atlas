@@ -7,7 +7,7 @@ pub mod memory;
 pub mod methods;
 pub mod space;
 pub mod user;
-
+pub mod management;
 
 use crate::config::Config;
 use crate::cycles::WalletReceiveResult;

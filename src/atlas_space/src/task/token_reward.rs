@@ -1,9 +1,4 @@
-use candid::{CandidType, Nat, Principal};
-use ic_ledger_types::{Tokens, DEFAULT_FEE};
-use icrc_ledger_types::icrc1::account::Account as AccountIcrc;
-use icrc_ledger_types::icrc2::transfer_from::{
-    TransferFromArgs as TransferFromArgsIcrc, TransferFromError as TransferFromErrorIcrc,
-};
+use candid::{CandidType, Principal};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
 
@@ -37,7 +32,11 @@ impl TokenReward {
                     ckusdc_ledger.fee,
                     number_of_uses,
                 );
-                deposit_ckusdc(caller, subaccount, deposit_and_fee).await?;
+                deposit_ckusdc(caller, subaccount, deposit_and_fee.clone()).await?;
+                ic_cdk::println!(
+                    "Transfered {deposit_and_fee} ckUSDC to subaccount: {}",
+                    hex::encode(subaccount)
+                );
                 Ok(())
             }
         }

@@ -3,26 +3,28 @@
 set -e
 CANISTERS="$1"
 
+BASE_DIR="$(dirname "$0")"
+
 function generate_did() {
   local canister=$1
-  canister_root="src/$canister"
+  canister_root="$BASE_DIR/src/$canister"
 
   cargo build --manifest-path="$canister_root/Cargo.toml" \
       --target wasm32-unknown-unknown \
       --release --package "$canister"
 
   # See https://crates.io/crates/candid-extractor
-  candid-extractor "target/wasm32-unknown-unknown/release/$canister.wasm" > "$canister_root/$canister.did"
+  candid-extractor "$BASE_DIR/target/wasm32-unknown-unknown/release/$canister.wasm" > "$canister_root/$canister.did"
 
-  ic-wasm "target/wasm32-unknown-unknown/release/$canister.wasm" \
-    -o "target/wasm32-unknown-unknown/release/$canister.wasm" \
+  ic-wasm "$BASE_DIR/target/wasm32-unknown-unknown/release/$canister.wasm" \
+    -o "$BASE_DIR/target/wasm32-unknown-unknown/release/$canister.wasm" \
     metadata candid:service -v public -f "$canister_root/$canister.did"
 
-ic-wasm "target/wasm32-unknown-unknown/release/$canister.wasm" \
-    -o "target/wasm32-unknown-unknown/release/$canister-opt.wasm" \
+ic-wasm "$BASE_DIR/target/wasm32-unknown-unknown/release/$canister.wasm" \
+    -o "$BASE_DIR/target/wasm32-unknown-unknown/release/$canister-opt.wasm" \
     shrink
 
-    gzip -f "target/wasm32-unknown-unknown/release/$canister-opt.wasm" 
+    gzip -fn "$BASE_DIR/target/wasm32-unknown-unknown/release/$canister-opt.wasm" 
 }
 
 # The list of canisters of your project

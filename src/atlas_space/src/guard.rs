@@ -24,27 +24,15 @@ pub fn owner_guard() -> Result<Principal, Error> {
     Ok(principal)
 }
 
-#[inline(always)]
-pub fn admin_guard() -> Result<Principal, Error> {
-    let principal = ic_cdk::caller();
-    if principal == Principal::anonymous() {
-        return Err(Error::AnonymousCaller);
-    }
-    let config = memory::read_config(|config| config.clone());
-    if principal != config.admin() {
-        return Err(Error::NotAdmin);
-    }
-    Ok(principal)
-}
 
 #[inline(always)]
-pub fn admin_or_owner_guard() -> Result<Principal, Error> {
+pub fn parent_or_owner_guard() -> Result<Principal, Error> {
     let principal = ic_cdk::caller();
     if principal == Principal::anonymous() {
         return Err(Error::AnonymousCaller);
     }
     let config = memory::read_config(|config| config.clone());
-    if principal != config.admin() && principal != config.owner() {
+    if principal != config.parent() && principal != config.owner() {
         return Err(Error::NotAdminNorOwner);
     }
     Ok(principal)

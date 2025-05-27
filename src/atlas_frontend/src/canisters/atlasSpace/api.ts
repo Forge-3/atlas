@@ -1,19 +1,151 @@
 import type { ActorSubclass } from "@dfinity/agent";
-import type { _SERVICE } from "../../../../declarations/atlas_space/atlas_space.did.js";
-import type { SimpleState } from "../../store/slices/appSlice.js";
+import type {
+  _SERVICE,
+  GetTasksRes,
+  Submission,
+  Task,
+  TaskContent,
+} from "../../../../declarations/atlas_space/atlas_space.did.js";
+import { unwrapCall } from "../delegatedCall.js";
+import { setSpace, setTasks } from "../../store/slices/spacesSlice.js";
+import type { Dispatch } from "react";
+import type { UnknownAction } from "@reduxjs/toolkit";
+import { storableState } from "./storable.js";
+import { serify } from "@karmaniverous/serify-deserify";
+import { customSerify } from "../../store/store.js";
 
 interface GetAtlasSpaceArgs {
-  unAuthAtlasSpaceActor: ActorSubclass<_SERVICE>;
+  unAuthAtlasSpace: ActorSubclass<_SERVICE>;
+  spaceId: string;
+  dispatch: Dispatch<UnknownAction>;
 }
 
 export const getAtlasSpace = async ({
-  unAuthAtlasSpaceActor,
-}: GetAtlasSpaceArgs): Promise<SimpleState> => {
-  const state = await unAuthAtlasSpaceActor.get_state();
-  return {
-    ...state,
-    space_symbol: state.space_symbol.pop() ?? null,
-    space_background: state.space_background.pop() ?? null,
-    space_logo: state.space_logo.pop() ?? null,
-  }
+  unAuthAtlasSpace,
+  spaceId,
+  dispatch,
+}: GetAtlasSpaceArgs) => {
+  const state = await unAuthAtlasSpace.get_state();
+
+  dispatch(
+    setSpace({
+      state: storableState(state),
+      spaceId,
+    })
+  );
 };
+
+interface CreateNewSpaceTaskArgs {
+  authAtlasSpaceActor: ActorSubclass<_SERVICE>;
+  numberOfUses: bigint;
+  rewardPerUsage: bigint;
+  tasks: TaskContent[];
+  taskTitle: string;
+}
+
+export const createNewTask = async ({
+  authAtlasSpaceActor,
+  numberOfUses,
+  rewardPerUsage,
+  tasks,
+  taskTitle,
+}: CreateNewSpaceTaskArgs) => {
+  const call = authAtlasSpaceActor.create_task({
+    task_title: taskTitle,
+    token_reward: {
+      CkUsdc: {
+        amount: rewardPerUsage,
+      },
+    },
+    task_content: tasks,
+    number_of_uses: numberOfUses,
+  });
+
+  return await unwrapCall<bigint>({
+    call,
+    errMsg: "Failed to create new task",
+  });
+};
+
+export type Tasks = { [key: string]: Task };
+
+export const getSpaceTasks = async ({
+  unAuthAtlasSpace,
+  spaceId,
+  dispatch,
+}: GetAtlasSpaceArgs) => {
+  const tasks: [bigint, Task][] = [];
+  let tasksCount = 0n;
+  let start = 0n;
+  const count = 200n;
+  const call = unAuthAtlasSpace.get_open_tasks({
+    start,
+    count,
+  });
+  const res = await unwrapCall<GetTasksRes>({
+    call,
+    errMsg: "Failed to get data from blockchain",
+  });
+
+  tasksCount = res.tasks_count;
+  tasks.push(...res.tasks);
+  start += count;
+
+  while (tasksCount < tasks.length) {
+    const call = unAuthAtlasSpace.get_open_tasks({
+      start,
+      count,
+    });
+    const res = await unwrapCall<GetTasksRes>({
+      call,
+      errMsg: "Failed to get data from blockchain",
+    });
+    tasks.push(...res.tasks);
+    start += count;
+  }
+
+  const storableTasks = tasks.reduce(
+    (acc, [id, val]) => ({
+      ...acc,
+      [id.toString()]: val,
+    }),
+    {}
+  );
+
+  dispatch(
+    setTasks(
+      serify(
+        {
+          tasks: storableTasks,
+          spaceId,
+        },
+        customSerify
+      ) as { tasks: { [key: string]: Task; }; spaceId: string; }
+    )
+  );
+};
+
+interface SubmitSubtaskSubmissionArgs {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  taskId: bigint,
+  subtaskId: bigint,
+  submission: Submission
+}
+
+export const submitSubtaskSubmission = async ({
+  authAtlasSpace,
+  taskId,
+  subtaskId,
+  submission
+}: SubmitSubtaskSubmissionArgs) => {
+  const call = authAtlasSpace.submit_subtask_submission(
+    taskId,
+    subtaskId,
+    submission
+  )
+
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to send subtask submission",
+  });
+}

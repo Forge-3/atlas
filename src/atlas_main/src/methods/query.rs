@@ -2,7 +2,7 @@ use candid::{CandidType, Principal};
 use ic_cdk::query;
 use serde::Deserialize;
 
-use crate::{config::Config, errors::Error, memory, space::Space, user::User};
+use crate::{config::Config, errors::Error, memory, space::{Space, SPACE_WASM}, user::User};
 
 const MAX_SPACES_PER_RESPONSE: u8 = 200;
 
@@ -55,4 +55,14 @@ pub fn get_spaces(args: GetSpacesArgs) -> Result<GetSpacesRes, Error> {
         spaces,
         spaces_count: memory::get_space_vec_len() as usize,
     })
+}
+
+#[query]
+pub fn get_current_space_bytecode_version() -> u64 {
+    memory::read_config(|config| config.current_space_version)
+}
+
+#[query]
+pub fn get_space_bytecode_by_version(version: u64) -> Option<Vec<u8>> {
+    memory::get_bytecode_by_version(&version)
 }

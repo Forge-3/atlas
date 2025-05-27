@@ -13,12 +13,8 @@ import { copy } from "../../utils/shared.ts";
 import { motion } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../store/store.ts";
-import {
-  useUnAuthAtlasMainActor,
-} from "../../hooks/identityKit.ts";
-import {
-  selectUserBlockchainData,
-} from "../../store/slices/userSlice.ts";
+import { useUnAuthAtlasMainActor } from "../../hooks/identityKit.ts";
+import { selectUserBlockchainData } from "../../store/slices/userSlice.ts";
 import { SPACE_BUILDER_PATH } from "../../router/index.tsx";
 import { getAtlasConfig, getAtlasUser } from "../../canisters/atlasMain/api.ts";
 
@@ -46,7 +42,9 @@ const DropdownMenuComponent = ({
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const userBlockchainData = useSelector(selectUserBlockchainData);
-  const appConfig = useSelector((state: RootState) => state.app.blockchainConfig);
+  const appConfig = useSelector(
+    (state: RootState) => state.app.blockchainConfig
+  );
 
   const copyAccount = () => {
     copy(connectedAccount);
@@ -57,23 +55,26 @@ const DropdownMenuComponent = ({
   };
 
   useEffect(() => {
-    if (unAuthAtlasMain && !appConfig) getAtlasConfig({
-      dispatch,
-      unAuthAtlasMain
-    });
+    if (unAuthAtlasMain && !appConfig)
+      getAtlasConfig({
+        dispatch,
+        unAuthAtlasMain,
+      });
   }, [dispatch, unAuthAtlasMain]);
 
   useEffect(() => {
     if (user?.principal && unAuthAtlasMain) {
-      if (!appConfig) getAtlasConfig({
-        dispatch,
-        unAuthAtlasMain
-      });
-      if (!userBlockchainData) getAtlasUser({
-        dispatch,
-        userId: user.principal,
-        unAuthAtlasMain,
-      });
+      if (!appConfig)
+        getAtlasConfig({
+          dispatch,
+          unAuthAtlasMain,
+        });
+      if (!userBlockchainData)
+        getAtlasUser({
+          dispatch,
+          userId: user.principal,
+          unAuthAtlasMain,
+        });
     }
   }, [unAuthAtlasMain, user, dispatch]);
 
@@ -118,7 +119,7 @@ const DropdownMenuComponent = ({
                 </div>
               </button>
             </li>
-            {userBlockchainData?.getRank() === "SpaceLead" && (
+            {userBlockchainData?.isSpaceLead() && (
               <li onClick={navigateToSpaceBuilder}>
                 <button className="flex items-center justify-center justify-between w-full gap-6">
                   <div>
@@ -148,6 +149,7 @@ const DropdownMenuComponent = ({
 
 const Navbar = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const userBlockchainData = useSelector(selectUserBlockchainData);
 
@@ -165,7 +167,12 @@ const Navbar = () => {
         <div className="flex items-center justify-center gap-4">
           {user && userBlockchainData && (
             <div className="flex items-center justify-center gap-4">
-              <Button light={location?.pathname !== "/space"}>Spaces</Button>
+              <Button
+                light={location?.pathname !== "/space"}
+                onClick={() => navigate("/space")}
+              >
+                Spaces
+              </Button>
               <Button light={location?.pathname !== "/space/leaderboard"}>
                 Leaderboard
               </Button>
