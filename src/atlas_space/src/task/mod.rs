@@ -18,8 +18,13 @@ pub mod xp_reward;
 pub struct CreateTaskArgs {
     pub task_title: String,
     pub token_reward: TokenReward,
-    pub task_content: Vec<TaskContent>,
+    pub subtasks: Vec<CreateSubTaskArgs>,
     pub number_of_uses: u64,
+}
+#[derive(CandidType, Deserialize)]
+pub struct CreateSubTaskArgs {
+    pub kind: String,
+    pub content: TaskContent,
 }
 
 impl CreateTaskArgs {
@@ -29,12 +34,12 @@ impl CreateTaskArgs {
                 "Task title is too long (max length: 50)".into(),
             ));
         }
-        if self.task_content.len() > 10 {
+        if self.subtasks.len() > 10 {
             return Err(Error::InvalidTaskContent("Too many subtasks".into()));
         }
-        self.task_content
+        self.subtasks
             .iter()
-            .try_for_each(|content| content.validate())
+            .try_for_each(|sub| sub.content.validate())
     }
 }
 
@@ -72,23 +77,6 @@ impl TaskContent {
     }
 }
 
-impl From<&TaskContent> for TaskType {
-    fn from(content: &TaskContent) -> Self {
-        match content {
-            TaskContent::TitleAndDescription {
-                task_title,
-                task_description,
-            } => Self::GenericTask {
-                task_content: TaskContent::TitleAndDescription {
-                    task_title: task_title.clone(),
-                    task_description: task_description.clone(),
-                },
-                submission: Default::default(),
-            },
-        }
-    }
-}
-
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType)]
 pub enum TaskType {
     #[n(0)]
@@ -98,6 +86,13 @@ pub enum TaskType {
         #[cbor(n(1), with = "shared::cbor::principal::b_tree_map")]
         submission: BTreeMap<Principal, SubmissionData>,
     },
+    #[n(1)]
+    DiscordTask {
+        #[n(0)]
+        task_content: TaskContent,
+        #[cbor(n(1), with = "shared::cbor::principal_map")]
+        submission: BTreeMap<Principal, SubmissionData>,
+    }
 }
 
 impl TaskType {
@@ -118,6 +113,23 @@ impl TaskType {
                 };
 
                 submissions_map.insert(
+                    user,
+                    SubmissionData::new(submission, SubmissionState::default()),
+                );
+                Ok(())
+            }
+            TaskType::DiscordTask { task_content: _, submission: submission_map } => {
+                if submission_map.contains_key(&user) {
+                    return Err(Error::UserAlreadySubmitted);
+                }
+                if !submission.is_text() {
+                    return Err(Error::IncorrectSubmission("Text".to_string()));
+                }
+                match &submission {
+                    Submission::Text { content } => content.trim().len(),
+                };
+
+                submission_map.insert(
                     user,
                     SubmissionData::new(submission, SubmissionState::default()),
                 );
@@ -199,9 +211,18 @@ impl Task {
             creator,
             token_reward: create_task_args.token_reward,
             tasks: create_task_args
-                .task_content
+                .subtasks
                 .iter()
-                .map(|content| content.into())
+                .map(|sub| match sub.kind.as_str() {
+                    "discord" => TaskType::DiscordTask {
+                        task_content: sub.content.clone(),
+                        submission: Default::default(),
+                    },
+                    _ => TaskType::GenericTask {
+                        task_content: sub.content.clone(),
+                        submission: Default::default(),
+                    }
+                })
                 .collect(),
             number_of_uses: create_task_args.number_of_uses,
             task_title: create_task_args.task_title,

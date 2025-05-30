@@ -5,6 +5,7 @@ import type {
   Submission,
   Task,
   TaskContent,
+  CreateTaskArgs
 } from "../../../../declarations/atlas_space/atlas_space.did.js";
 import { unwrapCall } from "../delegatedCall.js";
 import { setSpace, setTasks } from "../../store/slices/spacesSlice.js";
@@ -40,7 +41,7 @@ interface CreateNewSpaceTaskArgs {
   authAtlasSpaceActor: ActorSubclass<_SERVICE>;
   numberOfUses: bigint;
   rewardPerUsage: bigint;
-  tasks: TaskContent[];
+  subtasks: CreateTaskArgs['subtasks'];
   taskTitle: string;
 }
 
@@ -48,7 +49,7 @@ export const createNewTask = async ({
   authAtlasSpaceActor,
   numberOfUses,
   rewardPerUsage,
-  tasks,
+  subtasks,
   taskTitle,
 }: CreateNewSpaceTaskArgs) => {
   const call = authAtlasSpaceActor.create_task({
@@ -58,7 +59,7 @@ export const createNewTask = async ({
         amount: rewardPerUsage,
       },
     },
-    task_content: tasks,
+    subtasks,
     number_of_uses: numberOfUses,
   });
 

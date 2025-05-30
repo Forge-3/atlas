@@ -1,15 +1,17 @@
 type CkUsdcLedger = record { fee : opt nat; "principal" : principal };
+type CreateSubTaskArgs = record { content : TaskContent; kind : text };
 type CreateTaskArgs = record {
   task_title : text;
   token_reward : TokenReward;
-  task_content : vec TaskContent;
   number_of_uses : nat64;
+  subtasks : vec CreateSubTaskArgs;
 };
 type Error = variant {
   BytecodeUpToDate;
   NotParent;
   UsageLimitExceeded;
   UserSubmissionNotFound;
+  NotAdminNorOwner;
   FailedToUpdateConfig : text;
   UserDoesNotBelongToSpace;
   TaskAlreadyExists : nat64;
@@ -77,6 +79,10 @@ type TaskContent = variant {
   TitleAndDescription : record { task_description : text; task_title : text };
 };
 type TaskType = variant {
+  DiscordTask : record {
+    task_content : TaskContent;
+    submission : vec record { principal; SubmissionData };
+  };
   GenericTask : record {
     task_content : TaskContent;
     submission : vec record { principal; SubmissionData };

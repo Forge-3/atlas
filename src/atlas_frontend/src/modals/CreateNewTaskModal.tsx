@@ -23,9 +23,10 @@ import { useSpaceId } from "../hooks/space";
 import toast from "react-hot-toast";
 import { setUserSpaceAllowanceIfNeeded } from "../canisters/ckUSDC/api";
 import { useAuth } from "@nfid/identitykit/react";
+import DiscordTask from "./tasks/Discord";
 
-type TaskType = "generic";
-const allowedTaskTypes = ["generic"] as const;
+type TaskType = "generic" | "discord";
+const allowedTaskTypes = ["generic", "discord"] as const;
 
 interface CreateNewTaskFormInput {
   numberOfUses: number;
@@ -145,80 +146,79 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     numberOfUsesBn * rewardPerUsageBn + numberOfUsesBn * ckUsdcFee + ckUsdcFee;
 
   const onSubmit: SubmitHandler<CreateNewTaskFormInput> = async ({
-    numberOfUses,
-    rewardPerUsage,
-    tasks,
-    taskTitle
-  }) => {
-    const numberOfUsesBn = BigInt(numberOfUses.toString());
-    const rewardPerUsageBn = parseUnits(rewardPerUsage.toString(), DECIMALS);
+  numberOfUses,
+  rewardPerUsage,
+  tasks,
+  taskTitle
+}) => {
+  const numberOfUsesBn = BigInt(numberOfUses.toString());
+  const rewardPerUsageBn = parseUnits(rewardPerUsage.toString(), DECIMALS);
 
-    if (
-      !authAtlasSpaceActor ||
-      !unAuthCkUSDCActor ||
-      !authCkUSDCActor ||
-      !user
-    ) {
-      toast.error("Session expired");
-      navigate("/");
-      return;
+  if (
+    !authAtlasSpaceActor ||
+    !unAuthCkUSDCActor ||
+    !authCkUSDCActor ||
+    !user
+  ) {
+    toast.error("Session expired");
+    navigate("/");
+    return;
+  }
+
+  const subtasks = tasks?.map((task) => ({
+    kind: task.taskType,
+    content: {
+      TitleAndDescription: {
+        task_title: task.title,
+        task_description: task.description,
+      }
     }
+  })) ?? [];
 
-    const taskContent = tasks
-      ?.map((task) => {
-        if (task.taskType === "generic") {
-          return {
-            TitleAndDescription: {
-              task_description: task.description,
-              task_title: task.title,
-            },
-          };
-        }
-      })
-      .filter((item) => item !== undefined);
+  if (subtasks.length === 0) {
+    toast.error("Invalid subtasks: the minimum number of subtasks is one.");
+    return;
+  }
 
-    if (!taskContent || taskContent.length === 0) {
-      toast.error("Invalid subtasks: the minimum number of subtasks is one.");
-      return;
-    }
+  const estimatedCost =
+    numberOfUsesBn * rewardPerUsageBn +
+    numberOfUsesBn * ckUsdcFee +
+    ckUsdcFee;
+  const getOrSetAllowance = setUserSpaceAllowanceIfNeeded({
+    unAuthCkUSD: unAuthCkUSDCActor,
+    authCkUSDC: authCkUSDCActor,
+    spacePrincipal: principal,
+    amount: estimatedCost,
+    userPrincipal: user.principal,
+  });
+  await toast.promise(getOrSetAllowance, {
+    loading: "Checking available funds...",
+    success: "Funds allowance granted successfully",
+    error: "Insufficient funds",
+  });
 
-    const estimatedCost =
-      numberOfUsesBn * rewardPerUsageBn +
-      numberOfUsesBn * ckUsdcFee +
-      ckUsdcFee;
-    const getOrSetAllowance = setUserSpaceAllowanceIfNeeded({
-      unAuthCkUSD: unAuthCkUSDCActor,
-      authCkUSDC: authCkUSDCActor,
-      spacePrincipal: principal,
-      amount: estimatedCost,
-      userPrincipal: user.principal,
-    });
-    await toast.promise(getOrSetAllowance, {
-      loading: "Checking available funds...",
-      success: "Funds allowance granted successfully",
-      error: "Insufficient funds",
-    });
+  const createNewTaskCall = createNewTask({
+    authAtlasSpaceActor,
+    numberOfUses: numberOfUsesBn,
+    rewardPerUsage: rewardPerUsageBn,
+    subtasks,
+    taskTitle,
+  });
 
-    const createNewTaskCall = createNewTask({
-      authAtlasSpaceActor,
-      numberOfUses: numberOfUsesBn,
-      rewardPerUsage: rewardPerUsageBn,
-      tasks: taskContent,
-      taskTitle,
-    });
-    const taskId = await toast.promise(createNewTaskCall, {
-      loading: "Creating new task...",
-      success: "Task created successfully",
-      error: "Failed to create task",
-    });
-    callback()
-        getSpaceTasks({
-          spaceId,
-          unAuthAtlasSpace: authAtlasSpaceActor,
-          dispatch,
-        });
-    navigate(`${location.pathname}/${taskId}`)
-  };
+  const taskId = await toast.promise(createNewTaskCall, {
+    loading: "Creating new task...",
+    success: "Task created successfully",
+    error: "Failed to create task",
+  });
+
+  callback();
+  getSpaceTasks({
+    spaceId,
+    unAuthAtlasSpace: authAtlasSpaceActor,
+    dispatch,
+  });
+  navigate(`${location.pathname}/${taskId}`);
+}
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -305,10 +305,20 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                       className="border-2 p-2 rounded-xl w-full"
                     >
                       <option value="generic">Generic text task</option>
+                      <option value="discord">Discord task</option>
                     </select>
 
                     {taskType === "generic" && (
                       <GenericTask
+                        register={register}
+                        index={index}
+                        errors={errors}
+                        maxTitleLength={maxSubtitleLength}
+                        maxDescriptionLength={maxDescriptionLength}
+                      />
+                    )}
+                    {taskType === "discord" && (
+                      <DiscordTask
                         register={register}
                         index={index}
                         errors={errors}
@@ -333,5 +343,6 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     </form>
   );
 };
+
 
 export default CreateNewTaskModal;
