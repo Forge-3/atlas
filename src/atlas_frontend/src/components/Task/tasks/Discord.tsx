@@ -1,26 +1,26 @@
+import type { TaskType } from "../../../../../declarations/atlas_space/atlas_space.did";
+import type { Principal } from "@dfinity/principal";
 import React from "react";
 import { useState } from "react";
-import type { TaskType } from "../../../../../declarations/atlas_space/atlas_space.did";
 import Button from "../../Shared/Button";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { submitSubtaskSubmission } from "../../../canisters/atlasSpace/api";
 import toast from "react-hot-toast";
-import type { Principal } from "@dfinity/principal";
 import { useAuthAtlasSpaceActor } from "../../../hooks/identityKit";
 import { useAuth } from "@nfid/identitykit/react";
 
-type GenericTaskType = Extract<TaskType, { GenericTask: unknown }>['GenericTask'];
+type DiscordTaskType = Extract<TaskType, { DiscordTask: unknown }>['DiscordTask'];
 
-interface GenericTaskProps {
-  genericTask: GenericTaskType;
+interface DiscordTaskProps {
+  discordTask: DiscordTaskType;
   spacePrincipal: Principal;
   taskId: string;
   subtaskId: number;
 }
 
-interface GenericTaskFormInput {
+interface DiscordTaskFormInput {
   taskSubmission: string;
 }
 
@@ -36,12 +36,12 @@ const schema = yup.object({
     .label("Task submission"),
 });
 
-const GenericTask = ({
-  genericTask,
+const DiscordTask = ({
+  discordTask,
   spacePrincipal,
   taskId,
   subtaskId,
-}: GenericTaskProps) => {
+}: DiscordTaskProps) => {
   const { user } = useAuth();
   const [openSubmission, setSubmission] = useState(false);
   const { register, handleSubmit } = useForm({
@@ -53,7 +53,7 @@ const GenericTask = ({
   const { connect } = useAuth();
   const authAtlasSpace = useAuthAtlasSpaceActor(spacePrincipal);
 
-  const onSubmit: SubmitHandler<GenericTaskFormInput> = async ({
+  const onSubmit: SubmitHandler<DiscordTaskFormInput> = async ({
     taskSubmission,
   }) => {
     console.log({ taskSubmission, authAtlasSpace });
@@ -74,7 +74,7 @@ const GenericTask = ({
   };
 
   const userSubmission = user?.principal
-    ? (genericTask.submission.find(
+    ? (discordTask.submission.find(
         ([principal]) => principal.toString() === user.principal.toString()
       ) ?? null)
     : null;
@@ -83,15 +83,6 @@ const GenericTask = ({
     ? Object.keys(userSubmission?.[1].state)[0]
     : null;
 
-  const taskContent = genericTask.task_content;
-
-  let title = "Nieznany tytuł";
-  let description = "Nieznany opis";
-
-  if ('TitleAndDescription' in taskContent && taskContent.TitleAndDescription) {
-    title = taskContent.TitleAndDescription.task_title ?? title;
-    description = taskContent.TitleAndDescription.task_description ?? description;
-  }
   return (
     <div className="flex mt-2">
       <div className="flex flex-col mr-4">
@@ -108,10 +99,10 @@ const GenericTask = ({
       <div className="bg-[#1E0F33] rounded-xl p-6 w-full">
         <div className="mb-4">
           <h4 className="text-xl font-medium font-poppins text-white mb-1">
-            {title}
+            {discordTask.task_content.TitleAndDescription.task_title}
           </h4>
           <p className="text-zinc-400">
-            {description}
+            {discordTask.task_content.TitleAndDescription.task_description}
           </p>
         </div>
 
@@ -144,4 +135,4 @@ const GenericTask = ({
   );
 };
 
-export default GenericTask;
+export default DiscordTask;

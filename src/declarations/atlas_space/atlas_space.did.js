@@ -4,7 +4,7 @@ export const idlFactory = ({ IDL }) => {
     'principal' : IDL.Principal,
   });
   const SpaceInitArg = IDL.Record({
-    'admin' : IDL.Principal,
+    'owner' : IDL.Principal,
     'ckusdc_ledger' : CkUsdcLedger,
     'space_symbol' : IDL.Opt(IDL.Text),
     'space_background' : IDL.Opt(IDL.Text),
@@ -26,14 +26,19 @@ export const idlFactory = ({ IDL }) => {
       'task_title' : IDL.Text,
     }),
   });
+  const CreateSubTaskArgs = IDL.Record({
+    'content' : TaskContent,
+    'kind' : IDL.Text,
+  });
   const CreateTaskArgs = IDL.Record({
     'task_title' : IDL.Text,
     'token_reward' : TokenReward,
-    'task_content' : IDL.Vec(TaskContent),
     'number_of_uses' : IDL.Nat64,
+    'subtasks' : IDL.Vec(CreateSubTaskArgs),
   });
   const Error = IDL.Variant({
     'BytecodeUpToDate' : IDL.Null,
+    'NotParent' : IDL.Null,
     'NotAdminNorOwner' : IDL.Null,
     'FailedToUpdateConfig' : IDL.Text,
     'TaskAlreadyExists' : IDL.Nat64,
@@ -65,6 +70,10 @@ export const idlFactory = ({ IDL }) => {
     'submission' : Submission,
   });
   const TaskType = IDL.Variant({
+    'DiscordTask' : IDL.Record({
+      'task_content' : TaskContent,
+      'submission' : IDL.Vec(IDL.Tuple(IDL.Principal, SubmissionData)),
+    }),
     'GenericTask' : IDL.Record({
       'task_content' : TaskContent,
       'submission' : IDL.Vec(IDL.Tuple(IDL.Principal, SubmissionData)),
@@ -117,7 +126,7 @@ export const init = ({ IDL }) => {
     'principal' : IDL.Principal,
   });
   const SpaceInitArg = IDL.Record({
-    'admin' : IDL.Principal,
+    'owner' : IDL.Principal,
     'ckusdc_ledger' : CkUsdcLedger,
     'space_symbol' : IDL.Opt(IDL.Text),
     'space_background' : IDL.Opt(IDL.Text),

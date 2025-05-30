@@ -3,13 +3,15 @@ import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
 export interface CkUsdcLedger { 'fee' : [] | [bigint], 'principal' : Principal }
+export interface CreateSubTaskArgs { 'content' : TaskContent, 'kind' : string }
 export interface CreateTaskArgs {
   'task_title' : string,
   'token_reward' : TokenReward,
-  'task_content' : Array<TaskContent>,
   'number_of_uses' : bigint,
+  'subtasks' : Array<CreateSubTaskArgs>,
 }
 export type Error = { 'BytecodeUpToDate' : null } |
+  { 'NotParent' : null } |
   { 'NotAdminNorOwner' : null } |
   { 'FailedToUpdateConfig' : string } |
   { 'TaskAlreadyExists' : bigint } |
@@ -39,7 +41,7 @@ export type Result_2 = { 'Ok' : null } |
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
   { 'InitArg' : SpaceInitArg };
 export interface SpaceInitArg {
-  'admin' : Principal,
+  'owner' : Principal,
   'ckusdc_ledger' : CkUsdcLedger,
   'space_symbol' : [] | [string],
   'space_background' : [] | [string],
@@ -78,6 +80,12 @@ export type TaskContent = {
     }
   };
 export type TaskType = {
+    'DiscordTask' : {
+      'task_content' : TaskContent,
+      'submission' : Array<[Principal, SubmissionData]>,
+    }
+  } |
+  {
     'GenericTask' : {
       'task_content' : TaskContent,
       'submission' : Array<[Principal, SubmissionData]>,

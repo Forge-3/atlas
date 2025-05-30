@@ -4,11 +4,12 @@ import { useSpaceId } from "../../hooks/space";
 import { useDispatch, useSelector } from "react-redux";
 import { customSerify, type RootState } from "../../store/store";
 import { deserify } from "@karmaniverous/serify-deserify";
-import type { Task as TaskType } from "../../../../declarations/atlas_space/atlas_space.did";
+import type { Task as TaskBackend } from "../../../../declarations/atlas_space/atlas_space.did";
 import { useEffect } from "react";
 import { useUnAuthAtlasSpaceActor } from "../../hooks/identityKit";
 import { getAtlasSpace, getSpaceTasks } from "../../canisters/atlasSpace/api";
 import GenericTask from "./tasks/GenericTask";
+import DiscordTask from "./tasks/Discord";
 import { FaWallet } from "react-icons/fa";
 
 const Task = () => {
@@ -28,7 +29,7 @@ const Task = () => {
   );
   const tasks = space?.tasks
     ? (deserify(space?.tasks, customSerify) as {
-        [key: string]: TaskType;
+        [key: string]: TaskBackend;
       })
     : null;
   const spaceData = space?.state;
@@ -89,15 +90,31 @@ const Task = () => {
                   {currentTask.task_title}
                 </h2>
                 <div className="mt-6">
-                  {currentTask.tasks.map((task, key) => (
-                    <GenericTask
-                      key={key}
-                      genericTask={task.GenericTask}
-                      spacePrincipal={principal}
-                      taskId={taskId}
-                      subtaskId={key}
-                    />
-                  ))}
+                  {currentTask.tasks.map((taskItem, key) => {
+                    if ('GenericTask' in taskItem) {
+                      return (
+                        <GenericTask
+                          key={key}
+                          genericTask={taskItem['GenericTask']}
+                          spacePrincipal={principal}
+                          taskId={taskId}
+                          subtaskId={key}
+                        />
+                      );
+                    }
+                    else if ('DiscordTask' in taskItem) {
+                      return (
+                        <DiscordTask
+                           key={key}
+                           discordTask={taskItem['DiscordTask']}
+                           spacePrincipal={principal}
+                           taskId={taskId}
+                           subtaskId={key}
+                         />
+                       );
+                     }
+                    return null;
+                  })}
                 </div>
                 <div className="flex mt-3 items-center justify-center">
                   <div className="mr-4">

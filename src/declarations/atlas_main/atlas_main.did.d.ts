@@ -26,10 +26,12 @@ export type Error = { 'UserRankNoMatch' : Rank } |
   { 'UserRichSpaceLimit' : { 'found' : bigint, 'expected' : bigint } } |
   { 'UserRankToHigh' : { 'found' : Rank, 'expected' : Rank } } |
   { 'UserAlreadyHaveExpectedRank' : Rank } |
+  { 'UserNotAnOwner' : Space } |
   { 'CountToHigh' : { 'max' : bigint, 'found' : bigint } } |
   { 'SpaceNotExist' : null } |
   { 'FailedToGetCanisterInfo' : string } |
   { 'FailedToInstallWASM' : string } |
+  { 'UserRankToLow' : { 'found' : Rank, 'expected' : Rank } } |
   { 'FailedToInitializeCanister' : string } |
   { 'CreationInProgress' : null } |
   { 'UserDoNotExist' : null } |
@@ -55,7 +57,7 @@ export interface Space { 'id' : Principal }
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
   { 'InitArg' : SpaceInitArg };
 export interface SpaceInitArg {
-  'admin' : Principal,
+  'owner' : Principal,
   'ckusdc_ledger' : CkUsdcLedger_1,
   'space_symbol' : [] | [string],
   'space_background' : [] | [string],

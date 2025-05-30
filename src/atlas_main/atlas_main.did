@@ -20,10 +20,12 @@ type Error = variant {
   UserRichSpaceLimit : record { found : nat64; expected : nat64 };
   UserRankToHigh : record { found : Rank; expected : Rank };
   UserAlreadyHaveExpectedRank : Rank;
+  UserNotAnOwner : Space;
   CountToHigh : record { max : nat64; found : nat64 };
   SpaceNotExist;
   FailedToGetCanisterInfo : text;
   FailedToInstallWASM : text;
+  UserRankToLow : record { found : Rank; expected : Rank };
   FailedToInitializeCanister : text;
   CreationInProgress;
   UserDoNotExist;
@@ -44,7 +46,7 @@ type SpaceArgs = variant {
   InitArg : SpaceInitArg;
 };
 type SpaceInitArg = record {
-  admin : principal;
+  owner : principal;
   ckusdc_ledger : CkUsdcLedger_1;
   space_symbol : opt text;
   space_background : opt text;

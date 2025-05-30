@@ -4,7 +4,7 @@ export const idlFactory = ({ IDL }) => {
     'principal' : IDL.Principal,
   });
   const SpaceInitArg = IDL.Record({
-    'admin' : IDL.Principal,
+    'owner' : IDL.Principal,
     'ckusdc_ledger' : CkUsdcLedger_1,
     'space_symbol' : IDL.Opt(IDL.Text),
     'space_background' : IDL.Opt(IDL.Text),
@@ -53,10 +53,12 @@ export const idlFactory = ({ IDL }) => {
     }),
     'UserRankToHigh' : IDL.Record({ 'found' : Rank, 'expected' : Rank }),
     'UserAlreadyHaveExpectedRank' : Rank,
+    'UserNotAnOwner' : Space,
     'CountToHigh' : IDL.Record({ 'max' : IDL.Nat64, 'found' : IDL.Nat64 }),
     'SpaceNotExist' : IDL.Null,
     'FailedToGetCanisterInfo' : IDL.Text,
     'FailedToInstallWASM' : IDL.Text,
+    'UserRankToLow' : IDL.Record({ 'found' : Rank, 'expected' : Rank }),
     'FailedToInitializeCanister' : IDL.Text,
     'CreationInProgress' : IDL.Null,
     'UserDoNotExist' : IDL.Null,
@@ -116,7 +118,7 @@ export const init = ({ IDL }) => {
     'principal' : IDL.Principal,
   });
   const SpaceInitArg = IDL.Record({
-    'admin' : IDL.Principal,
+    'owner' : IDL.Principal,
     'ckusdc_ledger' : CkUsdcLedger_1,
     'space_symbol' : IDL.Opt(IDL.Text),
     'space_background' : IDL.Opt(IDL.Text),

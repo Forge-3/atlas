@@ -17,8 +17,14 @@ const TaskCard = ({ startingIn, task, id, type}: TaskCardProps) => {
   const location = useLocation();
 
   const reward = formatUnits(task.token_reward.CkUsdc.amount, DECIMALS)
-  const lastTask = task.tasks.at(-1)?.GenericTask.submission.filter(([, submission]) => 'Accepted' in submission.state)
-
+  const lastTaskItem = task.tasks.at(-1);
+  let lastSubmissionCount = 0;
+  if (lastTaskItem && 'GenericTask' in lastTaskItem) {
+    lastSubmissionCount = lastTaskItem.GenericTask.submission.filter(([, submission]) => 'Accepted' in submission.state).length;
+  } else if (lastTaskItem && 'DiscordTask' in lastTaskItem) {
+    lastSubmissionCount = lastTaskItem.DiscordTask.submission.filter(([, submission]) => 'Accepted' in submission.state).length;
+  }
+  
   return (
     <a className="rounded-xl bg-gradient-to-b from-[#9173FF] to-transparent to-[150%] flex flex-col" onClick={() => navigate(`${location.pathname}/${id}`)}>
       <div
@@ -39,7 +45,7 @@ const TaskCard = ({ startingIn, task, id, type}: TaskCardProps) => {
           />
           <InfoBox type="steps" steps={task.tasks.length} />
           {/* //TODO: fix count of submission */}
-          <InfoBox type="uses" uses={`${lastTask?.length}/${task.number_of_uses}`} />
+          <InfoBox type="uses" uses={`${lastSubmissionCount}/${task.number_of_uses}`} />
         </div>
       </div>
     </a>
