@@ -71,4 +71,7 @@ pub enum Error {
 
     #[error("User already rewarded")]
     UserAlreadyRewarded,
+
+    #[error("Invalid Discord token")]
+    InvalidDiscordToken,
 }

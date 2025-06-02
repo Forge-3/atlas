@@ -11,12 +11,12 @@ type Error = variant {
   NotParent;
   UsageLimitExceeded;
   UserSubmissionNotFound;
-  NotAdminNorOwner;
   FailedToUpdateConfig : text;
   UserDoesNotBelongToSpace;
   TaskAlreadyExists : nat64;
   FailedToCallMain : text;
   ConfigNotSet;
+  InvalidDiscordToken;
   UserAlreadyRewarded;
   NotAdminNorOwnerNorParent;
   UserAlreadySubmitted;
@@ -39,6 +39,7 @@ type GetTasksRes = record {
 type Result = variant { Ok; Err : Error };
 type Result_1 = variant { Ok : nat64; Err : Error };
 type Result_2 = variant { Ok : GetTasksRes; Err : Error };
+type Result_3 = variant { Ok : bool; Err : Error };
 type SpaceArgs = variant {
   UpgradeArg : record { version : nat64 };
   InitArg : SpaceInitArg;
@@ -103,6 +104,7 @@ service : (SpaceArgs) -> {
   set_space_logo : (text) -> (Result);
   set_space_name : (text) -> (Result);
   submit_subtask_submission : (nat64, nat64, Submission) -> (Result);
+  verify_discord_token : (nat64, nat64, text, text) -> (Result_3);
   wallet_balance : () -> (nat) query;
   wallet_receive : () -> (WalletReceiveResult);
   withdraw_reward : (nat64) -> (Result);

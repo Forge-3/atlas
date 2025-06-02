@@ -21,6 +21,7 @@ import {
   getAtlasUserIsInHub,
 } from "../../canisters/atlasMain/api.ts";
 import { SPACE_BUILDER_PATH, SPACES_PATH } from "../../router/paths.ts";
+import { setUserDiscordAccessToken } from "../../store/slices/userSlice.ts";
 
 const ConnectButton = (props: ConnectWalletButtonProps) => (
   <Button
@@ -55,6 +56,9 @@ const DropdownMenuComponent = ({
     copy(connectedAccount);
   };
   const disconnectWallet = () => {
+    dispatch(setUserDiscordAccessToken(""));
+    localStorage.removeItem("discordUserAccessToken");
+    localStorage.removeItem("discordUserData");
     disconnect();
     window.location.href = "/";
   };
