@@ -1,3 +1,4 @@
+import React from "react";
 import { deserify } from "@karmaniverous/serify-deserify";
 import {
   useAuthAtlasSpaceActor,
@@ -5,16 +6,12 @@ import {
 } from "../../hooks/identityKit";
 import type {
   _SERVICE,
-  SubmissionData,
-  SubmissionState,
   Task,
   TaskType,
 } from "../../../../declarations/atlas_space/atlas_space.did";
 import { customSerify, type RootState } from "../../store/store";
 import { useDispatch, useSelector } from "react-redux";
-import { useAuth } from "@nfid/identitykit/react";
 import { useNavigate, useParams } from "react-router-dom";
-import { selectUserBlockchainData } from "../../store/slices/userSlice";
 import { useSpaceId } from "../../hooks/space";
 import { useEffect, useState } from "react";
 import {

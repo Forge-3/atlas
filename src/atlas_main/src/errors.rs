@@ -61,5 +61,5 @@ pub enum Error {
     UserNotAnOwner(Space),
 
     #[error("User already is hub member")]
-    UserAlreadyIsHubMember
+    UserAlreadyIsHubMember,
 }

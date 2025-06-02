@@ -1,4 +1,4 @@
-use std::{borrow::Cow, clone, fmt};
+use std::{borrow::Cow, fmt};
 
 use crate::errors::Error;
 use candid::{CandidType, Deserialize};

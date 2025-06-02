@@ -18,12 +18,20 @@ pub const SPACE_WASM: &[u8] =
 pub const SPACE_DEFAULT_CYCLES: u128 = 10_000_000_000_000;
 
 #[derive(
-    Debug, CandidType, minicbor::Decode, minicbor::Encode, Deserialize, Clone, Eq, PartialEq, Default
+    Debug,
+    CandidType,
+    minicbor::Decode,
+    minicbor::Encode,
+    Deserialize,
+    Clone,
+    Eq,
+    PartialEq,
+    Default,
 )]
 pub enum SpaceType {
     #[default]
     #[n(0)]
-    HUB
+    HUB,
 }
 
 #[derive(
@@ -33,7 +41,7 @@ pub struct Space {
     #[cbor(n(0), with = "shared::cbor::principal")]
     id: Principal,
     #[n(1)]
-    space_type: SpaceType
+    space_type: SpaceType,
 }
 
 impl fmt::Display for Space {

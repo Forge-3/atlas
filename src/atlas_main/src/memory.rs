@@ -54,7 +54,7 @@ thread_local! {
 pub fn mut_user(
     user_id: Principal,
     f: impl FnOnce(Option<User>) -> Result<User, Error>,
-)-> Result<Option<User>, Error>   {
+) -> Result<Option<User>, Error> {
     USERS_MAP.with_borrow_mut(|users| Ok(users.insert(user_id, f(users.get(&user_id))?)))
 }
 
@@ -111,9 +111,7 @@ where
 }
 
 pub fn get_space(space_index: u64) -> Option<Space> {
-    SPACES_VEC
-        .with_borrow(|space| space.get(space_index))
-        
+    SPACES_VEC.with_borrow(|space| space.get(space_index))
 }
 
 pub fn push_space(space_principal: &Space) -> Result<(), Error> {

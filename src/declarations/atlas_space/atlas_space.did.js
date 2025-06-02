@@ -20,12 +20,14 @@ export const idlFactory = ({ IDL }) => {
   const Error = IDL.Variant({
     'BytecodeUpToDate' : IDL.Null,
     'NotParent' : IDL.Null,
+    'UsageLimitExceeded' : IDL.Null,
     'UserSubmissionNotFound' : IDL.Null,
     'FailedToUpdateConfig' : IDL.Text,
     'UserDoesNotBelongToSpace' : IDL.Null,
     'TaskAlreadyExists' : IDL.Nat64,
     'FailedToCallMain' : IDL.Text,
     'ConfigNotSet' : IDL.Null,
+    'UserAlreadyRewarded' : IDL.Null,
     'NotAdminNorOwnerNorParent' : IDL.Null,
     'UserAlreadySubmitted' : IDL.Null,
     'NotAdmin' : IDL.Null,
@@ -37,6 +39,7 @@ export const idlFactory = ({ IDL }) => {
     'InvalidTaskContent' : IDL.Text,
     'TaskDoNotExists' : IDL.Nat64,
     'AnonymousCaller' : IDL.Null,
+    'SubmissionNotAccepted' : IDL.Null,
   });
   const Result = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });
   const TokenReward = IDL.Variant({
@@ -79,6 +82,7 @@ export const idlFactory = ({ IDL }) => {
     'creator' : IDL.Principal,
     'task_title' : IDL.Text,
     'token_reward' : TokenReward,
+    'rewarded' : IDL.Vec(IDL.Principal),
     'number_of_uses' : IDL.Nat64,
   });
   const GetTasksRes = IDL.Record({
@@ -122,6 +126,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'wallet_balance' : IDL.Func([], [IDL.Nat], ['query']),
     'wallet_receive' : IDL.Func([], [WalletReceiveResult], []),
+    'withdraw_reward' : IDL.Func([IDL.Nat64], [Result], []),
   });
 };
 export const init = ({ IDL }) => {

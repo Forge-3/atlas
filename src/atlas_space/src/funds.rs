@@ -1,5 +1,7 @@
 use candid::{Nat, Principal};
+use ic_ledger_types::TransferError;
 use icrc_ledger_types::icrc1::account::Account;
+use icrc_ledger_types::icrc1::transfer::TransferArg;
 use icrc_ledger_types::icrc2::transfer_from::{TransferFromArgs, TransferFromError};
 
 use crate::errors::Error;
@@ -38,6 +40,35 @@ pub async fn deposit_ckusdc(
     ic_cdk::call::<(TransferFromArgs,), (Result<Nat, TransferFromError>,)>(
         ckusdc_ledger.principal,
         "icrc2_transfer_from",
+        (transfer_args,),
+    )
+    .await
+    .map_err(|err| Error::FailedToTransfer(format!("Failed to call ledger: {:?}", err)))?
+    .0
+    .map_err(|err| Error::FailedToTransfer(format!("Ledger transfer error {:?}", err)))?;
+
+    Ok(())
+}
+
+pub async fn withdraw_ckusdc(
+    caller: Principal,
+    subaccount: [u8; 32],
+    amount: Nat,
+) -> Result<(), Error> {
+    let ckusdc_ledger = memory::read_config(|config| config.ckusdc_ledger.clone());
+
+    let transfer_args = TransferArg  {
+        to: Account::from(caller),
+        from_subaccount: Some(subaccount),
+        amount,
+        fee: None,
+        memo: None,
+        created_at_time: None,
+    };
+
+    ic_cdk::call::<(TransferArg ,), (Result<Nat, TransferError>,)>(
+        ckusdc_ledger.principal,
+        "icrc1_transfer",
         (transfer_args,),
     )
     .await

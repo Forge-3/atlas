@@ -1,6 +1,6 @@
 mod config;
 mod cycles;
-mod deposit;
+mod funds;
 mod errors;
 mod guard;
 mod lifecycle;
@@ -19,7 +19,7 @@ use crate::task::CreateTaskArgs;
 use crate::task::TaskId;
 
 use candid::Nat;
-use shared::SpaceArgs;
 use candid::Principal;
+use shared::SpaceArgs;
 
 ic_cdk::export_candid!();

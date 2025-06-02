@@ -1,6 +1,7 @@
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory};
 use ic_stable_structures::{DefaultMemoryImpl, StableBTreeMap, StableCell};
 use std::cell::RefCell;
+use std::future::Future;
 
 use crate::config::Config;
 use crate::errors::Error;
@@ -108,10 +109,10 @@ pub fn insert_open_task(task_id: TaskId, new_task: Task) -> Result<(), Error> {
     })
 }
 
-pub fn mut_open_task<T>(
-    task_id: TaskId,
-    f: impl FnOnce(&mut Option<Task>) -> T,
-) -> Result<T, Error> {
+pub fn mut_open_task<F, R>(task_id: TaskId, f: F) -> Result<R, Error>
+where
+    F: FnOnce(&mut Option<Task>) -> R,
+{
     OPEN_TASKS_MAP.with_borrow_mut(|tasks| {
         let mut task = tasks.get(&task_id);
         let result = f(&mut task);
@@ -129,6 +130,10 @@ where
     F: for<'a> FnOnce(Box<dyn Iterator<Item = (TaskId, Task)> + 'a>) -> R,
 {
     OPEN_TASKS_MAP.with_borrow(|tasks| f(Box::new(tasks.iter())))
+}
+
+pub fn get_open_tasks(task_id: &TaskId) -> Option<Task> {
+    OPEN_TASKS_MAP.with_borrow_mut(|tasks| tasks.get(task_id))
 }
 
 pub fn get_open_tasks_len() -> u64 {

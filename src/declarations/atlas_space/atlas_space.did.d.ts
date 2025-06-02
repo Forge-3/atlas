@@ -11,12 +11,14 @@ export interface CreateTaskArgs {
 }
 export type Error = { 'BytecodeUpToDate' : null } |
   { 'NotParent' : null } |
+  { 'UsageLimitExceeded' : null } |
   { 'UserSubmissionNotFound' : null } |
   { 'FailedToUpdateConfig' : string } |
   { 'UserDoesNotBelongToSpace' : null } |
   { 'TaskAlreadyExists' : bigint } |
   { 'FailedToCallMain' : string } |
   { 'ConfigNotSet' : null } |
+  { 'UserAlreadyRewarded' : null } |
   { 'NotAdminNorOwnerNorParent' : null } |
   { 'UserAlreadySubmitted' : null } |
   { 'NotAdmin' : null } |
@@ -27,7 +29,8 @@ export type Error = { 'BytecodeUpToDate' : null } |
   { 'FailedToTransfer' : string } |
   { 'InvalidTaskContent' : string } |
   { 'TaskDoNotExists' : bigint } |
-  { 'AnonymousCaller' : null };
+  { 'AnonymousCaller' : null } |
+  { 'SubmissionNotAccepted' : null };
 export interface GetTasksArgs { 'count' : bigint, 'start' : bigint }
 export interface GetTasksRes {
   'tasks' : Array<[bigint, Task]>,
@@ -72,6 +75,7 @@ export interface Task {
   'creator' : Principal,
   'task_title' : string,
   'token_reward' : TokenReward,
+  'rewarded' : Array<Principal>,
   'number_of_uses' : bigint,
 }
 export type TaskContent = {
@@ -112,6 +116,7 @@ export interface _SERVICE {
   >,
   'wallet_balance' : ActorMethod<[], bigint>,
   'wallet_receive' : ActorMethod<[], WalletReceiveResult>,
+  'withdraw_reward' : ActorMethod<[bigint], Result>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

@@ -1,6 +1,6 @@
 use crate::{
     errors::Error,
-    guard::{authenticated_guard, parent_or_owner_or_admin_guard, user_is_in_space},
+    guard::{parent_or_owner_or_admin_guard, user_is_in_space},
     memory,
     task::{submission::Submission, CreateTaskArgs, Task, TaskId},
 };
@@ -79,7 +79,7 @@ pub async fn submit_subtask_submission(
 pub async fn accept_subtask_submission(
     user: Principal,
     task_id: TaskId,
-    subtask_id: usize
+    subtask_id: usize,
 ) -> Result<(), Error> {
     parent_or_owner_or_admin_guard().await?;
     memory::mut_open_task(task_id.clone(), |maybe_task| {
@@ -95,7 +95,7 @@ pub async fn accept_subtask_submission(
 pub async fn reject_subtask_submission(
     user: Principal,
     task_id: TaskId,
-    subtask_id: usize
+    subtask_id: usize,
 ) -> Result<(), Error> {
     parent_or_owner_or_admin_guard().await?;
     memory::mut_open_task(task_id.clone(), |maybe_task| {
@@ -106,3 +106,22 @@ pub async fn reject_subtask_submission(
 
     Ok(())
 }
+
+#[update]
+pub async fn withdraw_reward(
+    task_id: TaskId,
+) -> Result<(), Error> {
+    let caller = user_is_in_space().await?;
+    let mut old_task = memory::get_open_tasks(&task_id).ok_or(Error::TaskDoNotExists(task_id))?;
+    let subaccount = sha2::Sha256::digest(task_id.u64().to_bytes()).into();
+    old_task.claim_reward(caller, subaccount).await?;
+
+    memory::mut_open_task(task_id.clone(), |maybe_task| {
+        let task = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
+        *task = old_task;
+        Ok(())
+    })??;
+    Ok(())
+}
+
+

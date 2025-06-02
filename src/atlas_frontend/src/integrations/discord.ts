@@ -1,5 +1,5 @@
 import axios from "axios";
-import { DISCORD_CALLBACK_PATH } from "../router";
+import { DISCORD_CALLBACK_PATH } from "../router/paths";
 
 export interface UserData {
   accent_color: null | string;

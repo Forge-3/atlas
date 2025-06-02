@@ -44,7 +44,11 @@ impl SubmissionData {
         Self { submission, state }
     }
 
-    pub fn set_state(&mut self, state: SubmissionState)  {
+    pub fn set_state(&mut self, state: SubmissionState) {
         self.state = state
+    }
+
+    pub fn get_state(&self) -> &SubmissionState {
+        &self.state
     }
 }

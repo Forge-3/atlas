@@ -6,8 +6,8 @@ import { customSerify, type RootState } from "../../store/store";
 import { deserify } from "@karmaniverous/serify-deserify";
 import type { Task as TaskType } from "../../../../declarations/atlas_space/atlas_space.did";
 import { useEffect } from "react";
-import { useUnAuthAtlasSpaceActor } from "../../hooks/identityKit";
-import { getAtlasSpace, getSpaceTasks } from "../../canisters/atlasSpace/api";
+import { useAuthAtlasSpaceActor, useUnAuthAtlasSpaceActor } from "../../hooks/identityKit";
+import { getAtlasSpace, getSpaceTasks, withdrawReward } from "../../canisters/atlasSpace/api";
 import GenericTask from "./tasks/GenericTask";
 import { FaWallet } from "react-icons/fa";
 import { useAuth } from "@nfid/identitykit/react";
@@ -18,6 +18,7 @@ import {
   getUsersSubmissions,
   UserSubmissions,
 } from "../../canisters/atlasSpace/tasks";
+import toast from "react-hot-toast";
 
 const Task = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -32,7 +33,7 @@ const Task = () => {
   });
   if (!principal) return <></>;
   const spaceId = principal.toString();
-
+  const authAtlasSpace = useAuthAtlasSpaceActor(principal);
   const space = useSelector(
     (state: RootState) => state.spaces?.spaces?.[principal.toString()] ?? null
   );
@@ -76,6 +77,21 @@ const Task = () => {
   if (!user?.principal) return <></>;
 
   const isAccepted = usersSubmissions.isAccepted(user.principal.toText());
+
+  const withdraw = async () => {
+    if (!authAtlasSpace) {
+      navigate("/")
+      return;
+    }
+    await toast.promise(withdrawReward({
+      authAtlasSpace,
+      taskId: BigInt(taskId)
+    }), {
+      loading: "Withdrawing funds...",
+      success: "Funds withdrawn successfully.",
+      error: "Failed to withdraw funds",
+    });
+  }
 
   return (
     <div className="container mx-auto my-4">
@@ -143,6 +159,11 @@ const Task = () => {
                     <FaWallet color="1E0F33" />
                   </div>
                 </div>
+                {isAccepted && (
+                  <div className="flex justify-end mt-4">
+                    <Button onClick={withdraw}>Withdraw reward</Button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

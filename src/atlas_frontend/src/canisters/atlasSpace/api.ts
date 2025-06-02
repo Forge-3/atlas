@@ -121,41 +121,41 @@ export const getSpaceTasks = async ({
           spaceId,
         },
         customSerify
-      ) as { tasks: { [key: string]: Task; }; spaceId: string; }
+      ) as { tasks: { [key: string]: Task }; spaceId: string }
     )
   );
 };
 
 interface SubmitSubtaskSubmissionArgs {
   authAtlasSpace: ActorSubclass<_SERVICE>;
-  taskId: bigint,
-  subtaskId: bigint,
-  submission: Submission
+  taskId: bigint;
+  subtaskId: bigint;
+  submission: Submission;
 }
 
 export const submitSubtaskSubmission = async ({
   authAtlasSpace,
   taskId,
   subtaskId,
-  submission
+  submission,
 }: SubmitSubtaskSubmissionArgs) => {
   const call = authAtlasSpace.submit_subtask_submission(
     taskId,
     subtaskId,
     submission
-  )
+  );
 
   await unwrapCall<null>({
     call,
     errMsg: "Failed to send subtask submission",
   });
-}
+};
 
 interface SubtaskSubmission {
   authAtlasSpace: ActorSubclass<_SERVICE>;
-  userPrincipal: Principal,
-  taskId: bigint,
-  subtaskId: bigint,
+  userPrincipal: Principal;
+  taskId: bigint;
+  subtaskId: bigint;
 }
 
 export const acceptSubtaskSubmission = async ({
@@ -167,14 +167,14 @@ export const acceptSubtaskSubmission = async ({
   const call = authAtlasSpace.accept_subtask_submission(
     userPrincipal,
     taskId,
-    subtaskId,
-  )
+    subtaskId
+  );
 
   await unwrapCall<null>({
     call,
     errMsg: "Failed to accept submission",
   });
-}
+};
 
 export const rejectSubtaskSubmission = async ({
   authAtlasSpace,
@@ -185,11 +185,28 @@ export const rejectSubtaskSubmission = async ({
   const call = authAtlasSpace.reject_subtask_submission(
     userPrincipal,
     taskId,
-    subtaskId,
-  )
+    subtaskId
+  );
 
   await unwrapCall<null>({
     call,
     errMsg: "Failed to accept submission",
   });
+};
+
+interface WithdrawReward {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  taskId: bigint;
 }
+
+export const withdrawReward = async ({
+  authAtlasSpace,
+  taskId,
+}: WithdrawReward) => {
+  const call = authAtlasSpace.withdraw_reward(taskId);
+
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to withdraw rewards",
+  });
+};

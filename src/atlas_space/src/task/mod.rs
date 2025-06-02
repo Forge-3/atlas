@@ -1,9 +1,10 @@
 use std::{borrow::Cow, collections::BTreeMap, fmt};
 
-use candid::{CandidType, Principal};
+use candid::{CandidType, Nat, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
+use sha2::Digest;
 use submission::{Submission, SubmissionData, SubmissionState};
 use token_reward::TokenReward;
 
@@ -94,7 +95,7 @@ pub enum TaskType {
     GenericTask {
         #[n(0)]
         task_content: TaskContent,
-        #[cbor(n(1), with = "shared::cbor::principal_map")]
+        #[cbor(n(1), with = "shared::cbor::principal::b_tree_map")]
         submission: BTreeMap<Principal, SubmissionData>,
     },
 }
@@ -130,7 +131,9 @@ impl TaskType {
                 task_content: _,
                 submission: submissions_map,
             } => {
-                let submission = submissions_map.get_mut(&user).ok_or(Error::UserSubmissionNotFound)?;
+                let submission = submissions_map
+                    .get_mut(&user)
+                    .ok_or(Error::UserSubmissionNotFound)?;
                 submission.set_state(SubmissionState::Accepted);
             }
         }
@@ -143,12 +146,25 @@ impl TaskType {
                 task_content: _,
                 submission: submissions_map,
             } => {
-                let submission = submissions_map.get_mut(&user).ok_or(Error::UserSubmissionNotFound)?;
+                let submission = submissions_map
+                    .get_mut(&user)
+                    .ok_or(Error::UserSubmissionNotFound)?;
                 submission.set_state(SubmissionState::Rejected);
             }
         }
 
         Ok(())
+    }
+
+    pub fn get_submission(&self, user: Principal) -> Result<&SubmissionData, Error> {
+        match self {
+            TaskType::GenericTask {
+                task_content: _,
+                submission: submissions_map,
+            } => Ok(submissions_map
+                .get(&user)
+                .ok_or(Error::UserSubmissionNotFound)?),
+        }
     }
 }
 
@@ -164,6 +180,8 @@ pub struct Task {
     number_of_uses: u64,
     #[n(4)]
     task_title: String,
+    #[cbor(n(5), with = "shared::cbor::principal::vec")]
+    rewarded: Vec<Principal>,
 }
 
 impl Task {
@@ -172,8 +190,8 @@ impl Task {
         create_task_args: CreateTaskArgs,
         subaccount: [u8; 32],
     ) -> Result<Self, Error> {
-        let token_reward = create_task_args.token_reward.clone();
-        token_reward
+        create_task_args
+            .token_reward
             .deposit_reward(creator, subaccount, create_task_args.number_of_uses)
             .await?;
 
@@ -187,6 +205,7 @@ impl Task {
                 .collect(),
             number_of_uses: create_task_args.number_of_uses,
             task_title: create_task_args.task_title,
+            rewarded: Vec::new(),
         })
     }
 
@@ -232,6 +251,29 @@ impl Task {
 
         Ok(())
     }
+
+    pub async fn claim_reward(
+        &mut self,
+        user: Principal,
+        subaccount: [u8; 32],
+    ) -> Result<(), Error> {
+        let subtask = self.tasks.iter().all(|task| {
+            let state = task.get_submission(user).unwrap().get_state();
+            state == &SubmissionState::Accepted
+        });
+        if !subtask {
+            return Err(Error::SubmissionNotAccepted);
+        }
+        if Nat::from(self.rewarded.len()) >= self.number_of_uses {
+            return Err(Error::UsageLimitExceeded);
+        }
+        if self.rewarded.contains(&user) {
+            return Err(Error::UserAlreadyRewarded);
+        }
+        self.token_reward.withdraw_reward(user, subaccount).await?;
+        self.rewarded.push(user);
+        Ok(())
+    }
 }
 
 impl Storable for Task {
@@ -249,7 +291,9 @@ impl Storable for Task {
     const BOUND: Bound = Bound::Unbounded;
 }
 
-#[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, PartialOrd, Ord, CandidType, Deserialize)]
+#[derive(
+    Eq, PartialEq, Debug, Decode, Encode, Clone, PartialOrd, Ord, CandidType, Deserialize, Copy,
+)]
 pub struct TaskId(#[n(0)] u64);
 
 impl fmt::Display for TaskId {

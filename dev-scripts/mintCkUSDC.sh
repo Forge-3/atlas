@@ -8,3 +8,6 @@ dfx canister call ckusdc_canister icrc1_transfer "(record {
     };
     amount = 100_000_000_000_000_000
 })"
+dfx canister call ckusdc_canister icrc1_balance_of "(record {
+    owner = principal \"$PRINCIPAL_ID\"
+})"

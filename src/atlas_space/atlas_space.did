@@ -8,12 +8,14 @@ type CreateTaskArgs = record {
 type Error = variant {
   BytecodeUpToDate;
   NotParent;
+  UsageLimitExceeded;
   UserSubmissionNotFound;
   FailedToUpdateConfig : text;
   UserDoesNotBelongToSpace;
   TaskAlreadyExists : nat64;
   FailedToCallMain : text;
   ConfigNotSet;
+  UserAlreadyRewarded;
   NotAdminNorOwnerNorParent;
   UserAlreadySubmitted;
   NotAdmin;
@@ -25,6 +27,7 @@ type Error = variant {
   InvalidTaskContent : text;
   TaskDoNotExists : nat64;
   AnonymousCaller;
+  SubmissionNotAccepted;
 };
 type GetTasksArgs = record { count : nat64; start : nat64 };
 type GetTasksRes = record {
@@ -67,6 +70,7 @@ type Task = record {
   creator : principal;
   task_title : text;
   token_reward : TokenReward;
+  rewarded : vec principal;
   number_of_uses : nat64;
 };
 type TaskContent = variant {
@@ -95,4 +99,5 @@ service : (SpaceArgs) -> {
   submit_subtask_submission : (nat64, nat64, Submission) -> (Result);
   wallet_balance : () -> (nat) query;
   wallet_receive : () -> (WalletReceiveResult);
+  withdraw_reward : (nat64) -> (Result);
 }

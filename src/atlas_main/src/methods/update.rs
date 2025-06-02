@@ -176,10 +176,13 @@ pub fn join_space(space_id: Principal) -> Result<(), Error> {
     if space.space_type() == SpaceType::HUB {
         let user = memory::get_user(&caller).unwrap_or_default();
         let is_hub_member = user.belonging_to_spaces().iter().any(|space_index| {
-            memory::get_space(*space_index).expect("Space do  not exist?!").space_type() == SpaceType::HUB
+            memory::get_space(*space_index)
+                .expect("Space do  not exist?!")
+                .space_type()
+                == SpaceType::HUB
         });
         if is_hub_member {
-            return Err(Error::UserAlreadyIsHubMember)
+            return Err(Error::UserAlreadyIsHubMember);
         }
     }
 

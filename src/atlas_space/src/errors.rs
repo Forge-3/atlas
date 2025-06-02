@@ -61,5 +61,14 @@ pub enum Error {
     FailedToCallMain(String),
 
     #[error("User does not belong to space")]
-    UserDoesNotBelongToSpace
+    UserDoesNotBelongToSpace,
+
+    #[error("Submission is not accepted")]
+    SubmissionNotAccepted,
+
+    #[error("Usage limit exceeded")]
+    UsageLimitExceeded,
+
+    #[error("User already rewarded")]
+    UserAlreadyRewarded
 }

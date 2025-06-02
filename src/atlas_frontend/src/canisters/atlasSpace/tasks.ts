@@ -52,7 +52,9 @@ export class UserSubmissions {
   }
 
   isAccepted(principal: string) {
-    return Object.values(this.userSubmissionsData[principal]).every(
+    const tasksData = this.userSubmissionsData[principal]
+    if (!tasksData) return false
+    return Object.values(tasksData).every(
       (task) =>
         (Object.keys(task.submissionData.state)[0] as keyof SubmissionState) ===
         "Accepted"
@@ -60,7 +62,9 @@ export class UserSubmissions {
   }
 
   isRejected(principal: string) {
-    return Object.values(this.userSubmissionsData[principal]).some(
+    const tasksData = this.userSubmissionsData[principal]
+    if (!tasksData) return false
+    return Object.values(tasksData).some(
       (task) =>
         (Object.keys(task.submissionData.state)[0] as keyof SubmissionState) ===
         "Rejected"
@@ -68,7 +72,9 @@ export class UserSubmissions {
   }
 
   isWaitingForReview(principal: string) {
-    return Object.values(this.userSubmissionsData[principal]).some(
+    const tasksData = this.userSubmissionsData[principal]
+    if (!tasksData) return false
+    return Object.values(tasksData).some(
       (task) =>
         (Object.keys(task.submissionData.state)[0] as keyof SubmissionState) ===
         "WaitingForReview"
