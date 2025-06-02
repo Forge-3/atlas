@@ -61,6 +61,7 @@ const SpaceBuilder = () => {
   }, [errors]);
 
   const onSubmit: SubmitHandler<SpaceBuilderFormInput> = async (data) => {
+    console.log({authAtlasMain})
     if (!authAtlasMain) {
       return;
     }
@@ -76,6 +77,7 @@ const SpaceBuilder = () => {
       logo: builderAvatarImg,
       background: builderBackgroundImg,
     });
+    console.log({createSpaceCall})
     const space = await toast.promise(createSpaceCall, {
       loading: "Creating new space...",
       success: "Space created successfully",

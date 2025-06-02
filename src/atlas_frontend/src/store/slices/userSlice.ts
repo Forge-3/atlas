@@ -87,6 +87,7 @@ export const userSlice = createSlice({
       state.blockchain = { ...state.blockchain, ...action.payload };
     },
     setIsUserInHub: (state, action: PayloadAction<Principal | null>) => {
+      if (!action.payload) return;
       const principal = (deserify(action.payload, customSerify) as Principal).toText()
       localStorage.setItem("userHub", principal);
       state.userHub = action.payload;

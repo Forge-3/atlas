@@ -24,7 +24,7 @@ export const useAuthAgent = () => {
     }
   );
 
-  return useMemo(() => agent ?? null, [agent]);
+  return useMemo(() => agent ? agent : tempAgent, [agent, tempAgent]);
 };
 
 export const useUnAuthAgent = () => {
@@ -41,7 +41,7 @@ export const useUnAuthAgent = () => {
     }
   );
 
-  return useMemo(() => agent ?? null, [agent]);
+  return useMemo(() => agent ?? tempAgent, [agent]);
 };
 
 export const useAuthAtlasMainActor = () => {

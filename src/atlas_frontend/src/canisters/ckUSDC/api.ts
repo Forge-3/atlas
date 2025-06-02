@@ -79,20 +79,13 @@ export const setUserSpaceAllowanceIfNeeded = async ({
     spacePrincipal,
     userPrincipal,
   });
-  console.log({ allowance, amount });
   if (amount < allowance) {
     return;
   }
-  console.log(123123);
+
   await setUserSpaceAllowance({
     authCkUSDC,
     spacePrincipal,
-    amount,
-  });
-
-  console.log({
-    spacePrincipal: spacePrincipal.toString(),
-    userPrincipal: userPrincipal.toString(),
     amount,
   });
 };
