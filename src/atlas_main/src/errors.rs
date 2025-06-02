@@ -58,7 +58,7 @@ pub enum Error {
     UserRankToLow { expected: Rank, found: Rank },
 
     #[error("User is not an owner of the space {0}")]
-    UserNotAnOwner(Space),
+    UserNotAnOwner(Principal),
 
     #[error("User already is hub member")]
     UserAlreadyIsHubMember,

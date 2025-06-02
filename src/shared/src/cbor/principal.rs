@@ -38,11 +38,11 @@ pub mod option {
 }
 
 pub mod b_tree_map {
-    use std::collections::BTreeMap;
     use minicbor::{Decode, Encode};
+    use std::collections::BTreeMap;
 
     use super::*;
-    
+
     pub fn encode<Ctx, W: Write, Value: Encode<Ctx>>(
         map: &BTreeMap<Principal, Value>,
         e: &mut Encoder<W>,
@@ -55,7 +55,7 @@ pub mod b_tree_map {
         }
         Ok(())
     }
-    
+
     pub fn decode<'b, Ctx, Value>(
         d: &mut Decoder<'b>,
         ctx: &mut Ctx,
@@ -90,16 +90,15 @@ pub mod vec {
         Ok(())
     }
 
-    pub fn decode<'b, Ctx>(
-        d: &mut Decoder<'b>,
-        _ctx: &mut Ctx,
-    ) -> Result<Vec<Principal>, Error> {
-        let len = d.array()?.ok_or(Error::message("Failed to get array length"))?;
+    pub fn decode<'b, Ctx>(d: &mut Decoder<'b>, _ctx: &mut Ctx) -> Result<Vec<Principal>, Error> {
+        let len = d
+            .array()?
+            .ok_or(Error::message("Failed to get array length"))?;
         let mut vec = Vec::with_capacity(len as usize);
         for _ in 0..len {
             let bytes = d.bytes()?;
-            let principal = Principal::try_from_slice(bytes)
-                .map_err(|e| Error::message(e.to_string()))?;
+            let principal =
+                Principal::try_from_slice(bytes).map_err(|e| Error::message(e.to_string()))?;
             vec.push(principal);
         }
         Ok(vec)

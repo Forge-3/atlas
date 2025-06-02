@@ -70,5 +70,5 @@ pub enum Error {
     UsageLimitExceeded,
 
     #[error("User already rewarded")]
-    UserAlreadyRewarded
+    UserAlreadyRewarded,
 }

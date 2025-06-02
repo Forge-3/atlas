@@ -108,9 +108,7 @@ pub async fn reject_subtask_submission(
 }
 
 #[update]
-pub async fn withdraw_reward(
-    task_id: TaskId,
-) -> Result<(), Error> {
+pub async fn withdraw_reward(task_id: TaskId) -> Result<(), Error> {
     let caller = user_is_in_space().await?;
     let mut old_task = memory::get_open_tasks(&task_id).ok_or(Error::TaskDoNotExists(task_id))?;
     let subaccount = sha2::Sha256::digest(task_id.u64().to_bytes()).into();
@@ -123,5 +121,3 @@ pub async fn withdraw_reward(
     })??;
     Ok(())
 }
-
-

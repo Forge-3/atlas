@@ -105,7 +105,7 @@ pub async fn create_new_space(
 }
 
 #[update]
-pub async fn upgrade_space(space_id: Space) -> Result<(), Error> {
+pub async fn upgrade_space(space_id: Principal) -> Result<(), Error> {
     let (_, user) = admin_or_space_lead_guard()?;
     if user.rank() == &Rank::SpaceLead {
         let owned_spaces: Vec<_> = user
@@ -114,18 +114,19 @@ pub async fn upgrade_space(space_id: Space) -> Result<(), Error> {
             .filter_map(|&i| memory::get_space(i))
             .collect();
 
-        if !owned_spaces.contains(&space_id) {
+         
+        if owned_spaces.iter().find(|space| space.principal() == space_id).is_none() {
             return Err(Error::UserNotAnOwner(space_id));
         }
     }
 
     let current_bytecode_version = super::query::get_current_space_bytecode_version();
     let current_space_bytecode_version =
-        ic_cdk::call::<((),), (u64,)>(space_id.principal(), "get_current_bytecode_version", ((),))
+        ic_cdk::call::<((),), (u64,)>(space_id, "get_current_bytecode_version", ((),))
             .await
             .map_err(|err| Error::FailedToCallSpace {
                 err: format!("{:?}", err),
-                principal: space_id.principal(),
+                principal: space_id,
             })?
             .0;
 
@@ -146,7 +147,7 @@ pub async fn upgrade_space(space_id: Space) -> Result<(), Error> {
         let arg = Some(SpaceArgs::UpgradeArg { version });
         let args = InstallCodeArgument {
             mode: CanisterInstallMode::Upgrade(None),
-            canister_id: space_id.principal(),
+            canister_id: space_id,
             wasm_module: next_bytecode,
             arg: Encode!(&arg).expect("Failed to decode args"),
         };

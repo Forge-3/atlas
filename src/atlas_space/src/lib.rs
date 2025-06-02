@@ -1,7 +1,7 @@
 mod config;
 mod cycles;
-mod funds;
 mod errors;
+mod funds;
 mod guard;
 mod lifecycle;
 mod memory;

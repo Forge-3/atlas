@@ -57,7 +57,7 @@ pub async fn withdraw_ckusdc(
 ) -> Result<(), Error> {
     let ckusdc_ledger = memory::read_config(|config| config.ckusdc_ledger.clone());
 
-    let transfer_args = TransferArg  {
+    let transfer_args = TransferArg {
         to: Account::from(caller),
         from_subaccount: Some(subaccount),
         amount,
@@ -66,7 +66,7 @@ pub async fn withdraw_ckusdc(
         created_at_time: None,
     };
 
-    ic_cdk::call::<(TransferArg ,), (Result<Nat, TransferError>,)>(
+    ic_cdk::call::<(TransferArg,), (Result<Nat, TransferError>,)>(
         ckusdc_ledger.principal,
         "icrc1_transfer",
         (transfer_args,),
