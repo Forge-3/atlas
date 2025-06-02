@@ -85,8 +85,8 @@ const GenericTask = ({
 
   const taskContent = genericTask.task_content;
 
-  let title = "Nieznany tytuł";
-  let description = "Nieznany opis";
+  let title = "Unknown title";
+  let description = "Unknown description";
 
   if ('TitleAndDescription' in taskContent && taskContent.TitleAndDescription) {
     title = taskContent.TitleAndDescription.task_title ?? title;

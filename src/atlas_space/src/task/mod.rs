@@ -1,11 +1,14 @@
 use std::{borrow::Cow, collections::BTreeMap, fmt};
 
 use candid::{CandidType, Principal};
+use ic_cdk::update;
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
 use submission::{Submission, SubmissionData, SubmissionState};
 use token_reward::TokenReward;
+use ic_cdk::api::management_canister::http_request::{ CanisterHttpRequestArgument, HttpHeader, HttpMethod, HttpResponse};
+use serde_json;
 
 use crate::errors::Error;
 
@@ -24,6 +27,11 @@ pub struct CreateTaskArgs {
 pub struct CreateSubTaskArgs {
     pub kind: String,
     pub content: TaskContent,
+}
+#[derive(Debug, serde::Deserialize)]
+struct DiscordGuild {
+    id: String,
+    name: String,
 }
 
 impl CreateTaskArgs {
@@ -50,6 +58,7 @@ pub enum TaskContent {
         task_title: String,
         #[n(1)]
         task_description: String,
+
     },
 }
 
@@ -243,4 +252,64 @@ impl Storable for TaskId {
     }
 
     const BOUND: Bound = Bound::Unbounded;
+}
+#[update]
+async fn verify_discord_token(
+    task_id: u64,
+    subtask_id: u64,
+    discord_token: String,
+    guild_id: String,
+) -> Result<bool, Error> {
+    ic_cdk::println!("VERIFY DISCORD TOKEN START: task_id={} subtask_id={} guild_id={}", task_id, subtask_id, guild_id);
+    let verified = verify_token_with_discord(&discord_token, &guild_id)
+        .await
+        .map_err(|e| Error::InvalidDiscordToken)?;
+    Ok(verified)
+}
+
+async fn verify_token_with_discord(discord_token: &str, guild_id: &str) -> Result<bool, String> {
+    let request = CanisterHttpRequestArgument {
+        url: "https://discord.com/api/users/@me/guilds".to_string(),
+        method: HttpMethod::GET,
+        headers: vec![
+            HttpHeader {
+                name: "Authorization".to_string(),
+                value: format!("Bearer {}", discord_token),
+            },
+            HttpHeader {
+                name: "Content-Type".to_string(),
+                value: "application/json".to_string(),
+            },
+        ],
+        body: None,
+        max_response_bytes: Some(2_000_000),
+        transform: None,
+    };
+
+    let cycles: u128 = 100_000_000_000;
+    let (response,): (HttpResponse,) = ic_cdk::api::management_canister::http_request::http_request(
+    request,
+    cycles
+    ).await.map_err(|e| {
+        ic_cdk::println!("Błąd HTTP: {:?}", e);
+        format!("HTTP request failed: {:?}", e)
+    })?;
+     
+    ic_cdk::println!("Discord response status: {:?}", response.status);
+    ic_cdk::println!("Discord response body: {:?}", String::from_utf8_lossy(&response.body));
+
+    if response.status != 200u64 {
+        return Err(format!("Discord API returned status code {}", response.status));
+    }
+
+    let guilds: Vec<DiscordGuild> = serde_json::from_slice(&response.body)
+        .map_err(|e| format!("Failed to deserialize Discord guilds: {:?}", e))?;
+
+    ic_cdk::println!("Parsed guilds: {:?}", guilds);
+
+    let is_member= guilds.iter().any(|guild| guild.id == guild_id);
+
+    ic_cdk::println!("IS MEMBER? {} (Searching: {})", is_member, guild_id);
+
+    Ok(is_member)
 }

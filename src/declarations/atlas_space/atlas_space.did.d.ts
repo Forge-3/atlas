@@ -17,6 +17,7 @@ export type Error = { 'BytecodeUpToDate' : null } |
   { 'TaskAlreadyExists' : bigint } |
   { 'FailedToCallMain' : string } |
   { 'ConfigNotSet' : null } |
+  { 'InvalidDiscordToken' : null } |
   { 'UserAlreadySubmitted' : null } |
   { 'NotAdmin' : null } |
   { 'IncorrectSubmission' : string } |
@@ -37,6 +38,8 @@ export type Result = { 'Ok' : bigint } |
 export type Result_1 = { 'Ok' : GetTasksRes } |
   { 'Err' : Error };
 export type Result_2 = { 'Ok' : null } |
+  { 'Err' : Error };
+export type Result_3 = { 'Ok' : boolean } |
   { 'Err' : Error };
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
   { 'InitArg' : SpaceInitArg };
@@ -106,6 +109,10 @@ export interface _SERVICE {
   'submit_subtask_submission' : ActorMethod<
     [bigint, bigint, Submission],
     Result_2
+  >,
+  'verify_discord_token' : ActorMethod<
+    [bigint, bigint, string, string],
+    Result_3
   >,
   'wallet_balance' : ActorMethod<[], bigint>,
   'wallet_receive' : ActorMethod<[], WalletReceiveResult>,

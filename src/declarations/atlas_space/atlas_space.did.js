@@ -44,6 +44,7 @@ export const idlFactory = ({ IDL }) => {
     'TaskAlreadyExists' : IDL.Nat64,
     'FailedToCallMain' : IDL.Text,
     'ConfigNotSet' : IDL.Null,
+    'InvalidDiscordToken' : IDL.Null,
     'UserAlreadySubmitted' : IDL.Null,
     'NotAdmin' : IDL.Null,
     'IncorrectSubmission' : IDL.Text,
@@ -100,6 +101,7 @@ export const idlFactory = ({ IDL }) => {
     'space_description' : IDL.Text,
   });
   const Result_2 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });
+  const Result_3 = IDL.Variant({ 'Ok' : IDL.Bool, 'Err' : Error });
   const WalletReceiveResult = IDL.Record({ 'accepted' : IDL.Nat64 });
   return IDL.Service({
     'create_task' : IDL.Func([CreateTaskArgs], [Result], []),
@@ -114,6 +116,11 @@ export const idlFactory = ({ IDL }) => {
     'submit_subtask_submission' : IDL.Func(
         [IDL.Nat64, IDL.Nat64, Submission],
         [Result_2],
+        [],
+      ),
+    'verify_discord_token' : IDL.Func(
+        [IDL.Nat64, IDL.Nat64, IDL.Text, IDL.Text],
+        [Result_3],
         [],
       ),
     'wallet_balance' : IDL.Func([], [IDL.Nat], ['query']),

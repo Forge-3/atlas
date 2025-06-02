@@ -21,7 +21,7 @@ pub enum Submission {
     Text {
         #[n(0)]
         content: String,
-    },
+    }
 }
 
 impl Submission {

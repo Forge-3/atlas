@@ -56,4 +56,6 @@ pub enum Error {
 
     #[error("Failed to call main app (Error: {0})")]
     FailedToCallMain(String),
+    #[error("Invalid Discord token:")]
+    InvalidDiscordToken,
 }

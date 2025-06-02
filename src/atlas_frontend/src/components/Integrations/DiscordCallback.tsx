@@ -11,6 +11,11 @@ const DiscordCallback = () => {
     const state = query.get("state");
     const expiresIn = query.get("expires_in");
 
+    console.log("DISCORD CALLBACK tokenType:", tokenType);
+    console.log("DISCORD CALLBACK accessToken:", accessToken);
+    console.log("DISCORD CALLBACK state:", state);
+    console.log("DISCORD CALLBACK expiresIn:", expiresIn);
+
     if (
       !tokenType ||
       !accessToken ||

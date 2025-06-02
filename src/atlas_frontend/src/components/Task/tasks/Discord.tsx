@@ -10,8 +10,16 @@ import { submitSubtaskSubmission } from "../../../canisters/atlasSpace/api";
 import toast from "react-hot-toast";
 import { useAuthAtlasSpaceActor } from "../../../hooks/identityKit";
 import { useAuth } from "@nfid/identitykit/react";
+import DiscordButton from "../../DiscordButton";
+import DiscordCheckButton from "../../DiscordCheckButton";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { selectUserDiscordData, setUserDiscordAccessToken, setUserDiscordData } from "../../../store/slices/userSlice";
+import { getOAuth2URL, getUserData } from "../../../integrations/discord";
 
 type DiscordTaskType = Extract<TaskType, { DiscordTask: unknown }>['DiscordTask'];
+
+const GUILD_ID = "1359198898752852110";
 
 interface DiscordTaskProps {
   discordTask: DiscordTaskType;
@@ -83,6 +91,56 @@ const DiscordTask = ({
     ? Object.keys(userSubmission?.[1].state)[0]
     : null;
 
+  const dispatch = useDispatch();
+  const { accessToken } = useSelector(selectUserDiscordData)
+  console.log("Redux Discord accessToken:", accessToken);
+
+  useEffect(() => {
+  const handleMessage = (event: MessageEvent) => {
+    if (event.origin !== window.location.origin) return;
+    const { accessToken } = event.data as {accessToken?: string};
+    if (accessToken) {
+      dispatch(setUserDiscordAccessToken(accessToken));
+      window.open("https://discord.gg/NMErQhPCGw", "_blank");
+    }
+  };
+  window.addEventListener("message", handleMessage);
+  return () => window.removeEventListener("message", handleMessage);
+}, [dispatch]);
+
+const handleDiscordCheck = async () => {
+  if (!authAtlasSpace) {
+    toast.error("Session expired");
+    return;
+  }
+  if (!accessToken) {
+    toast.error("Discord access token not found. Please connect your Discord account.");
+    return;
+  }
+
+  const toastId = toast.loading("Checking Discord membership...");
+
+  try {
+    const isMember = await authAtlasSpace.verify_discord_token(
+        BigInt(taskId),
+        BigInt(subtaskId),
+        accessToken,
+        GUILD_ID
+      );
+      toast.dismiss(toastId);
+      console.log("isMember raw:", isMember, typeof isMember);
+    
+    if (isMember && "Ok" in isMember && isMember.Ok === true) {
+      toast.success("Discord membership verified!");
+    } else {
+      toast.error("You are NOT a member of the Discord server.");
+    }
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to verify Discord membership (exception)");
+  }
+};
+
   return (
     <div className="flex mt-2">
       <div className="flex flex-col mr-4">
@@ -108,15 +166,12 @@ const DiscordTask = ({
 
         {user && !userSubmission && openSubmission && (
           <form onSubmit={handleSubmit(onSubmit)}>
-            <div>
-              <p className="text-white font-semibold mb-1">Submit response:</p>
-              <textarea
-                {...register("taskSubmission")}
-                className="border-2 border-[#9173FF]/20 p-2 rounded-xl w-full mb-4 bg-[#9173FF]/20 text-white"
-              ></textarea>
-            </div>
-            <div className="flex justify-end">
-              <Button>Submit</Button>
+            <div className="flex justify-end flex gap-2">
+              { !accessToken && (
+              <DiscordButton/>)}
+              { accessToken && (
+              <DiscordCheckButton onCheck={handleDiscordCheck}/>)}
+               
             </div>
           </form>
         )}

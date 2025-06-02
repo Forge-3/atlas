@@ -33,7 +33,7 @@ export const getOAuth2URL = (stateData?: string) => {
     new URL(DISCORD_CALLBACK_PATH, window.location.origin).toString()
   );
   url.searchParams.set("response_type", "token");
-  url.searchParams.set("scope", "identify");
+  url.searchParams.set("scope", "identify guilds");
   stateData && url.searchParams.set("state", stateData);
 
   return url.toString();
@@ -41,7 +41,7 @@ export const getOAuth2URL = (stateData?: string) => {
 
 export const getUserData = async (token: string) => {
   const { data } = await axios.get<UserData>(
-    "https://discord.com/api/users/@me",
+    "https://discord.com/api/users/@me/guilds",
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -51,3 +51,5 @@ export const getUserData = async (token: string) => {
 
   return data
 };
+
+
