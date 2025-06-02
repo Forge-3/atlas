@@ -114,8 +114,10 @@ pub async fn upgrade_space(space_id: Principal) -> Result<(), Error> {
             .filter_map(|&i| memory::get_space(i))
             .collect();
 
-         
-        if owned_spaces.iter().find(|space| space.principal() == space_id).is_none() {
+        if owned_spaces
+            .iter()
+            .any(|space| space.principal() == space_id)
+        {
             return Err(Error::UserNotAnOwner(space_id));
         }
     }
