@@ -1,12 +1,14 @@
 import React from "react";
 
-const ReferalCard = ({
-  title,
-  subtitle,
-}: {
+interface ReferralCardProps {
   title: string;
   subtitle: string;
-}) => {
+}
+
+const ReferralCard = ({
+  title,
+  subtitle,
+}: ReferralCardProps) => {
   return (
     <div className="rounded-2xl pl-3  bg-[#9173FF] h-[457px] flex flex-col justify-between shadow-lg shadow-[#1E0F33]/50 max-w-[418px] sm:w-[45%]  dlg:w-[30%]">
       <div className="flex gap-4 p-4">
@@ -24,4 +26,4 @@ const ReferalCard = ({
   );
 };
 
-export default ReferalCard;
+export default ReferralCard;
