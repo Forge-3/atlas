@@ -10,13 +10,13 @@ use crate::user::{Rank, User};
 
 type VMem = VirtualMemory<DefaultMemoryImpl>;
 
-const CONFIG_MEMORY_ID: MemoryId = MemoryId::new(0);
-const USERS_MAP_MEMORY_ID: MemoryId = MemoryId::new(1);
-const SPACES_VEC_MEMORY_ID: MemoryId = MemoryId::new(2);
-const SPACES_WASM_MEMORY_ID: MemoryId = MemoryId::new(3);
+pub const CONFIG_MEMORY_ID: MemoryId = MemoryId::new(0);
+pub const USERS_MAP_MEMORY_ID: MemoryId = MemoryId::new(1);
+pub const SPACES_VEC_MEMORY_ID: MemoryId = MemoryId::new(2);
+pub const SPACES_WASM_MEMORY_ID: MemoryId = MemoryId::new(3);
 
 thread_local! {
-    static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(
+    pub static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(
         MemoryManager::init(DefaultMemoryImpl::default())
     );
 
@@ -54,7 +54,7 @@ thread_local! {
 pub fn mut_user(
     user_id: Principal,
     f: impl FnOnce(Option<User>) -> Result<User, Error>,
-) -> Result<Option<User>, Error> {
+)-> Result<Option<User>, Error>   {
     USERS_MAP.with_borrow_mut(|users| Ok(users.insert(user_id, f(users.get(&user_id))?)))
 }
 
@@ -62,12 +62,12 @@ pub fn insert_user(user_id: Principal, user_data: User) -> Option<User> {
     USERS_MAP.with_borrow_mut(|users| users.insert(user_id, user_data))
 }
 
-pub fn user_rank_match(user_id: &Principal, rank: &Rank) -> Result<User, Error> {
+pub fn user_rank_match(user_id: &Principal, rank: &[Rank]) -> Result<User, Error> {
     USERS_MAP.with_borrow(|users| {
         users
-            .get(&user_id)
-            .filter(|user| user.rank() == rank)
-            .ok_or(Error::UserRankNoMatch(rank.clone()))
+            .get(user_id)
+            .filter(|user| rank.contains(user.rank()))
+            .ok_or(Error::UserRankNoMatch(rank.to_vec()))
     })
 }
 
@@ -110,6 +110,12 @@ where
     SPACES_VEC.with_borrow(|space| f(Box::new(space.iter())))
 }
 
+pub fn get_space(space_index: u64) -> Option<Space> {
+    SPACES_VEC
+        .with_borrow(|space| space.get(space_index))
+        
+}
+
 pub fn push_space(space_principal: &Space) -> Result<(), Error> {
     SPACES_VEC
         .with_borrow_mut(|space| space.push(space_principal))
@@ -117,10 +123,13 @@ pub fn push_space(space_principal: &Space) -> Result<(), Error> {
     Ok(())
 }
 
-// Spaces WASM 
+// Spaces WASM
 
 pub fn insert_new_version(version: u64, bytecode: Vec<u8>) {
-    if WASM_SPACES_MAP.with_borrow_mut(|code_map| code_map.insert(version, bytecode)).is_some() {
+    if WASM_SPACES_MAP
+        .with_borrow_mut(|code_map| code_map.insert(version, bytecode))
+        .is_some()
+    {
         ic_cdk::trap("Fatal: Old bytecode was overwritten!")
     }
 }

@@ -2,7 +2,8 @@ use std::{borrow::Cow, fmt};
 
 use candid::{CandidType, Encode, Principal};
 use ic_cdk::api::management_canister::main::{
-    canister_info, create_canister, install_code, CanisterInfoRequest, CanisterSettings, CreateCanisterArgument, InstallCodeArgument, UpdateSettingsArgument
+    canister_info, create_canister, install_code, CanisterInfoRequest, CanisterSettings,
+    CreateCanisterArgument, InstallCodeArgument,
 };
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor;
@@ -16,24 +17,41 @@ pub const SPACE_WASM: &[u8] =
     std::include_bytes!("../../../target/wasm32-unknown-unknown/release/atlas_space-opt.wasm.gz");
 pub const SPACE_DEFAULT_CYCLES: u128 = 10_000_000_000_000;
 
-#[derive(Debug, CandidType, minicbor::Decode, minicbor::Encode, Deserialize, Clone, Eq, PartialEq)]
+#[derive(
+    Debug, CandidType, minicbor::Decode, minicbor::Encode, Deserialize, Clone, Eq, PartialEq, Default
+)]
+pub enum SpaceType {
+    #[default]
+    #[n(0)]
+    HUB
+}
+
+#[derive(
+    Debug, CandidType, minicbor::Decode, minicbor::Encode, Deserialize, Clone, Eq, PartialEq,
+)]
 pub struct Space {
     #[cbor(n(0), with = "shared::cbor::principal")]
     id: Principal,
+    #[n(1)]
+    space_type: SpaceType
 }
 
 impl fmt::Display for Space {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", self.id)
     }
 }
 
 impl Space {
-    pub fn new(id: Principal) -> Self {
-        Self { id }
+    pub fn new(id: Principal, space_type: SpaceType) -> Self {
+        Self { id, space_type }
     }
 
-    pub async fn create_space(arg: SpaceInitArg) -> Result<Self, Error> {
+    pub fn space_type(&self) -> SpaceType {
+        self.space_type.clone()
+    }
+
+    pub async fn create_space(arg: SpaceInitArg, space_type: SpaceType) -> Result<Self, Error> {
         let mut archive_controllers = vec![ic_cdk::id()];
         let (info,) = canister_info(CanisterInfoRequest {
             canister_id: ic_cdk::id(),
@@ -45,9 +63,9 @@ impl Space {
         if !info.controllers.is_empty() {
             archive_controllers.extend(info.controllers);
         }
-        let init_arg = Encode!(&SpaceArgs::InitArg(arg)).expect("Failed to encode init args?!");
+        let init_arg =
+            Encode!(&SpaceArgs::InitArg(Box::new(arg))).expect("Failed to encode init args?!");
 
-        ic_cdk::println!("qwe {:?}", archive_controllers.iter().map(|x| x.to_text()).collect::<Vec<String>>());
         let (principal,) = create_canister(
             CreateCanisterArgument {
                 settings: Some(CanisterSettings {
@@ -74,7 +92,7 @@ impl Space {
         .await
         .map_err(|err| Error::FailedToInstallWASM(format!("{:?}", err)))?;
 
-        Ok(Space::new(principal.canister_id))
+        Ok(Space::new(principal.canister_id, space_type))
     }
 
     pub fn principal(&self) -> Principal {

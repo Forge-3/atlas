@@ -12,7 +12,7 @@ pub enum SubmissionState {
     Accepted,
 
     #[n(2)]
-    Rejected
+    Rejected,
 }
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType, Deserialize)]
@@ -41,11 +41,10 @@ pub struct SubmissionData {
 
 impl SubmissionData {
     pub fn new(submission: Submission, state: SubmissionState) -> Self {
-        Self {
-            submission,
-            state
-        }
+        Self { submission, state }
+    }
+
+    pub fn set_state(&mut self, state: SubmissionState)  {
+        self.state = state
     }
 }
-
-

@@ -62,6 +62,7 @@ const SpacePage = () => {
 
   return (
     <Space
+      spaceId={principal}
       name={spaceData.space_name}
       description={spaceData.space_description}
       symbol={spaceData.space_symbol}

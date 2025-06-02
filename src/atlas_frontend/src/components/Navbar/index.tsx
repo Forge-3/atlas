@@ -14,9 +14,13 @@ import { motion } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../store/store.ts";
 import { useUnAuthAtlasMainActor } from "../../hooks/identityKit.ts";
-import { selectUserBlockchainData } from "../../store/slices/userSlice.ts";
-import { SPACE_BUILDER_PATH } from "../../router/index.tsx";
-import { getAtlasConfig, getAtlasUser } from "../../canisters/atlasMain/api.ts";
+import { selectUserBlockchainData, selectUserHub } from "../../store/slices/userSlice.ts";
+import {
+  getAtlasConfig,
+  getAtlasUser,
+  getAtlasUserIsInHub,
+} from "../../canisters/atlasMain/api.ts";
+import { SPACE_BUILDER_PATH, SPACES_PATH } from "../../router/paths.ts";
 
 const ConnectButton = (props: ConnectWalletButtonProps) => (
   <Button
@@ -45,6 +49,7 @@ const DropdownMenuComponent = ({
   const appConfig = useSelector(
     (state: RootState) => state.app.blockchainConfig
   );
+  const isUserInHub = useSelector(selectUserHub);
 
   const copyAccount = () => {
     copy(connectedAccount);
@@ -64,17 +69,26 @@ const DropdownMenuComponent = ({
 
   useEffect(() => {
     if (user?.principal && unAuthAtlasMain) {
-      if (!appConfig)
+      if (!appConfig) {
         getAtlasConfig({
           dispatch,
           unAuthAtlasMain,
         });
-      if (!userBlockchainData)
+      }
+      if (!userBlockchainData) {
         getAtlasUser({
           dispatch,
           userId: user.principal,
           unAuthAtlasMain,
         });
+      }
+      if (isUserInHub == null) {
+        getAtlasUserIsInHub({
+          dispatch,
+          userId: user.principal,
+          unAuthAtlasMain,
+        });
+      }
     }
   }, [unAuthAtlasMain, user, dispatch]);
 
@@ -88,7 +102,7 @@ const DropdownMenuComponent = ({
     }
     if (
       ownedSpacesCount < appConfig?.spaces_per_space_lead &&
-      userBlockchainData?.getRank() === "SpaceLead"
+      userBlockchainData?.isSpaceLead()
     ) {
       navigate(SPACE_BUILDER_PATH);
       return;
@@ -169,7 +183,7 @@ const Navbar = () => {
             <div className="flex items-center justify-center gap-4">
               <Button
                 light={location?.pathname !== "/space"}
-                onClick={() => navigate("/space")}
+                onClick={() => navigate(SPACES_PATH)}
               >
                 Spaces
               </Button>

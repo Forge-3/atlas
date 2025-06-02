@@ -194,9 +194,9 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
       userPrincipal: user.principal,
     });
     await toast.promise(getOrSetAllowance, {
-      loading: "Checking available allowance...",
-      success: "Allowance granted successfully",
-      error: "Failed to granted allowance",
+      loading: "Checking available funds...",
+      success: "Funds allowance granted successfully",
+      error: "Insufficient funds",
     });
 
     const createNewTaskCall = createNewTask({

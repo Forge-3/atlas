@@ -24,8 +24,8 @@ pub enum Error {
     #[error("Caller is not an parent")]
     NotParent,
 
-    #[error("Caller is not an admin nor Owner")]
-    NotAdminNorOwner,
+    #[error("Caller is not an admin, owner, parent")]
+    NotAdminNorOwnerNorParent,
 
     #[error("Task already exists ({0})")]
     TaskAlreadyExists(TaskId),
@@ -48,6 +48,9 @@ pub enum Error {
     #[error("User already submitted submission")]
     UserAlreadySubmitted,
 
+    #[error("User submission not found")]
+    UserSubmissionNotFound,
+
     #[error("Incorrect type of submission (expected: {0})")]
     IncorrectSubmission(String),
 
@@ -56,4 +59,7 @@ pub enum Error {
 
     #[error("Failed to call main app (Error: {0})")]
     FailedToCallMain(String),
+
+    #[error("User does not belong to space")]
+    UserDoesNotBelongToSpace
 }

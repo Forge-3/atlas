@@ -46,15 +46,6 @@ impl Config {
     pub fn parent(&self) -> Principal {
         self.parent
     }
-
-    pub fn bump_version(&mut self) -> u64 {
-        let new_version = self
-        .current_wasm_version
-        .checked_add(1)
-        .expect("Version is out of scope!?");
-        self.current_wasm_version = new_version;
-        new_version
-    }
 }
 
 impl Storable for Config {

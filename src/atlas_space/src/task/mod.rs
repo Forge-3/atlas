@@ -113,7 +113,7 @@ impl TaskType {
                     return Err(Error::IncorrectSubmission("Text".to_string()));
                 }
                 match &submission {
-                    Submission::Text { content } => content.trim().len() ,
+                    Submission::Text { content } => content.trim().len(),
                 };
 
                 submissions_map.insert(
@@ -123,6 +123,32 @@ impl TaskType {
                 Ok(())
             }
         }
+    }
+    pub fn accept(&mut self, user: Principal) -> Result<(), Error> {
+        match self {
+            TaskType::GenericTask {
+                task_content: _,
+                submission: submissions_map,
+            } => {
+                let submission = submissions_map.get_mut(&user).ok_or(Error::UserSubmissionNotFound)?;
+                submission.set_state(SubmissionState::Accepted);
+            }
+        }
+
+        Ok(())
+    }
+    pub fn reject(&mut self, user: Principal) -> Result<(), Error> {
+        match self {
+            TaskType::GenericTask {
+                task_content: _,
+                submission: submissions_map,
+            } => {
+                let submission = submissions_map.get_mut(&user).ok_or(Error::UserSubmissionNotFound)?;
+                submission.set_state(SubmissionState::Rejected);
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -164,12 +190,45 @@ impl Task {
         })
     }
 
-    pub fn submit_subtask_submission(&mut self, user: Principal, subtask_id: usize, submission: Submission) -> Result<(), Error> {
+    pub fn submit_subtask_submission(
+        &mut self,
+        user: Principal,
+        subtask_id: usize,
+        submission: Submission,
+    ) -> Result<(), Error> {
         let subtask = self
             .tasks
             .get_mut(subtask_id)
             .ok_or(Error::SubtaskDoNotExists(subtask_id))?;
         subtask.submit(user, submission)?;
+
+        Ok(())
+    }
+
+    pub fn accept_subtask_submission(
+        &mut self,
+        user: Principal,
+        subtask_id: usize,
+    ) -> Result<(), Error> {
+        let subtask = self
+            .tasks
+            .get_mut(subtask_id)
+            .ok_or(Error::SubtaskDoNotExists(subtask_id))?;
+        subtask.accept(user)?;
+
+        Ok(())
+    }
+
+    pub fn reject_subtask_submission(
+        &mut self,
+        user: Principal,
+        subtask_id: usize,
+    ) -> Result<(), Error> {
+        let subtask = self
+            .tasks
+            .get_mut(subtask_id)
+            .ok_or(Error::SubtaskDoNotExists(subtask_id))?;
+        subtask.reject(user)?;
 
         Ok(())
     }

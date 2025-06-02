@@ -13,6 +13,7 @@ import type { UnknownAction } from "@reduxjs/toolkit";
 import { storableState } from "./storable.js";
 import { serify } from "@karmaniverous/serify-deserify";
 import { customSerify } from "../../store/store.js";
+import type { Principal } from "@dfinity/principal";
 
 interface GetAtlasSpaceArgs {
   unAuthAtlasSpace: ActorSubclass<_SERVICE>;
@@ -147,5 +148,48 @@ export const submitSubtaskSubmission = async ({
   await unwrapCall<null>({
     call,
     errMsg: "Failed to send subtask submission",
+  });
+}
+
+interface SubtaskSubmission {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  userPrincipal: Principal,
+  taskId: bigint,
+  subtaskId: bigint,
+}
+
+export const acceptSubtaskSubmission = async ({
+  authAtlasSpace,
+  userPrincipal,
+  taskId,
+  subtaskId,
+}: SubtaskSubmission) => {
+  const call = authAtlasSpace.accept_subtask_submission(
+    userPrincipal,
+    taskId,
+    subtaskId,
+  )
+
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to accept submission",
+  });
+}
+
+export const rejectSubtaskSubmission = async ({
+  authAtlasSpace,
+  userPrincipal,
+  taskId,
+  subtaskId,
+}: SubtaskSubmission) => {
+  const call = authAtlasSpace.reject_subtask_submission(
+    userPrincipal,
+    taskId,
+    subtaskId,
+  )
+
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to accept submission",
   });
 }

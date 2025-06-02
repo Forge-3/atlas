@@ -18,13 +18,11 @@ pub struct SpaceInitArg {
     pub space_logo: Option<String>,
     pub space_background: Option<String>,
     pub ckusdc_ledger: CkUsdcLedger,
-    pub current_wasm_version: u64
+    pub current_wasm_version: u64,
 }
 
 #[derive(Deserialize, CandidType, Clone)]
 pub enum SpaceArgs {
-    InitArg(SpaceInitArg),
-    UpgradeArg {
-        version: u64
-    },
+    InitArg(Box<SpaceInitArg>),
+    UpgradeArg { version: u64 },
 }

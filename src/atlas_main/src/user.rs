@@ -1,11 +1,11 @@
-use std::{borrow::Cow, fmt};
+use std::{borrow::Cow, clone, fmt};
 
 use crate::errors::Error;
 use candid::{CandidType, Deserialize};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 
-#[derive(Eq, PartialEq, Debug, Decode, Encode, Default, CandidType)]
+#[derive(Eq, PartialEq, Debug, Decode, Encode, Default, CandidType, Clone)]
 pub struct Integrations {
     #[n(0)]
     discord_id: Option<String>,
@@ -35,24 +35,33 @@ pub enum Rank {
     SpaceLead,
     #[n(2)]
     Admin,
+    #[n(3)]
+    SuperAdmin,
 }
 
 impl fmt::Display for Rank {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        match self {
+            Rank::User => write!(f, "User"),
+            Rank::SpaceLead => write!(f, "SpaceLead"),
+            Rank::Admin => write!(f, "Admin"),
+            Rank::SuperAdmin => write!(f, "SuperAdmin"),
+        }
     }
 }
 
-#[derive(Eq, PartialEq, Debug, Decode, Encode, Default, CandidType)]
+#[derive(Eq, PartialEq, Debug, Decode, Encode, Default, CandidType, Clone)]
 pub struct User {
     #[n(0)]
-    integrations: Integrations,
+    pub(crate) integrations: Integrations,
     #[n(1)]
-    rank: Rank,
+    pub(crate) rank: Rank,
     #[n(2)]
-    owned_spaces: Vec<u64>,
+    pub(crate) owned_spaces: Vec<u64>,
     #[n(3)]
-    space_creation_in_progress: bool,
+    pub(crate) space_creation_in_progress: bool,
+    #[n(4)]
+    pub(crate) belonging_to_spaces: Vec<u64>,
 }
 
 impl User {
@@ -62,7 +71,16 @@ impl User {
             rank,
             owned_spaces: Vec::new(),
             space_creation_in_progress: false,
+            belonging_to_spaces: Vec::new(),
         }
+    }
+
+    pub fn belonging_to_spaces(&self) -> &Vec<u64> {
+        &self.belonging_to_spaces
+    }
+
+    pub fn join_space(&mut self, space_id: u64) {
+        self.belonging_to_spaces.push(space_id);
     }
 
     pub fn rank(&self) -> &Rank {
@@ -71,6 +89,24 @@ impl User {
 
     pub fn owned_spaces(&self) -> &Vec<u64> {
         &self.owned_spaces
+    }
+
+    pub fn promote_to_admin(&mut self) -> Result<(), Error> {
+        match self.rank() {
+            Rank::User => {
+                self.rank = Rank::Admin;
+                Ok(())
+            }
+            Rank::Admin => Err(Error::UserAlreadyHaveExpectedRank(Rank::Admin)),
+            Rank::SpaceLead => Err(Error::UserRankToHigh {
+                expected: self.rank().clone(),
+                found: Rank::User,
+            }),
+            Rank::SuperAdmin => Err(Error::UserRankToHigh {
+                expected: self.rank().clone(),
+                found: Rank::User,
+            }),
+        }
     }
 
     pub fn promote_to_space_lead(&mut self) -> Result<(), Error> {
@@ -84,6 +120,10 @@ impl User {
                 found: Rank::User,
             }),
             Rank::SpaceLead => Err(Error::UserAlreadyHaveExpectedRank(Rank::SpaceLead)),
+            Rank::SuperAdmin => Err(Error::UserRankToHigh {
+                expected: self.rank().clone(),
+                found: Rank::User,
+            }),
         }
     }
 

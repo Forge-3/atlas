@@ -51,9 +51,12 @@ impl State {
     }
 
     pub fn get_next_task_id(&mut self) -> u64 {
-        let next_task_id = self.tasks_count.checked_add(1).expect("TaskId out of range!?");
+        let next_task_id = self
+            .tasks_count
+            .checked_add(1)
+            .expect("TaskId out of range!?");
         self.tasks_count = next_task_id;
-        return next_task_id;
+        next_task_id
     }
 }
 

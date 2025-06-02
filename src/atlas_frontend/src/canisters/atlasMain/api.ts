@@ -7,14 +7,19 @@ import type {
 import type { Principal } from "@dfinity/principal";
 import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import { setUserBlockchainData } from "../../store/slices/userSlice.js";
+import {
+  setIsUserInHub,
+  setUserBlockchainData,
+} from "../../store/slices/userSlice.js";
 import { unwrapCall } from "../delegatedCall.js";
 import { setConfig } from "../../store/slices/appSlice.js";
 import type { _SERVICE as _SERVICE_SPACE } from "../../../../declarations/atlas_space/atlas_space.did.js";
 import { setSpaces } from "../../store/slices/spacesSlice.js";
+import { customSerify } from "../../store/store.js";
+import { deserify, serify } from "@karmaniverous/serify-deserify";
 
 interface CreateNewSpaceArgs {
-  authenticatedAtlasMain: ActorSubclass<_SERVICE_MAIN>;
+  authAtlasMain: ActorSubclass<_SERVICE_MAIN>;
   name: string;
   description: string;
   symbol: string | null;
@@ -22,19 +27,20 @@ interface CreateNewSpaceArgs {
   background: string | null;
 }
 export const createNewSpace = async ({
-  authenticatedAtlasMain,
+  authAtlasMain,
   name,
   description,
   symbol,
   logo,
   background,
 }: CreateNewSpaceArgs) => {
-  const call = authenticatedAtlasMain.create_new_space(
+  const call = authAtlasMain.create_new_space(
     name,
     description,
     symbol ? [symbol] : [],
     logo ? [logo] : [],
-    background ? [background] : []
+    background ? [background] : [],
+    { HUB: null }
   );
 
   return unwrapCall<Space>({
@@ -61,8 +67,24 @@ export const getAtlasUser = async ({
     setUserBlockchainData({
       ...userData,
       owned_spaces: Array.from(userData.owned_spaces),
+      belonging_to_spaces: Array.from(userData.owned_spaces),
     })
   );
+};
+
+export const getAtlasUserIsInHub = async ({
+  unAuthAtlasMain,
+  userId,
+  dispatch,
+}: GetAtlasUserArgs) => {
+  const isInHub = await unAuthAtlasMain.get_user_hub(userId);
+  const principal = isInHub.pop()?.id;
+  if (principal) {
+    
+    dispatch(setIsUserInHub(serify(principal, customSerify) as Principal));
+  } else {
+    dispatch(setIsUserInHub(null));
+  }
 };
 
 interface GetAtlasData {
@@ -126,4 +148,19 @@ export const getAtlasConfig = async ({
       },
     })
   );
+};
+
+interface JoinAtlasSpaceArgs {
+  authAtlasMain: ActorSubclass<_SERVICE_MAIN>;
+  space: Principal;
+}
+export const joinAtlasSpace = async ({
+  authAtlasMain,
+  space,
+}: JoinAtlasSpaceArgs) => {
+  const call = authAtlasMain.join_space(space);
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to join space",
+  });
 };

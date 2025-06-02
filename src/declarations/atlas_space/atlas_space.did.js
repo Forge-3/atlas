@@ -4,7 +4,7 @@ export const idlFactory = ({ IDL }) => {
     'principal' : IDL.Principal,
   });
   const SpaceInitArg = IDL.Record({
-    'admin' : IDL.Principal,
+    'owner' : IDL.Principal,
     'ckusdc_ledger' : CkUsdcLedger,
     'space_symbol' : IDL.Opt(IDL.Text),
     'space_background' : IDL.Opt(IDL.Text),
@@ -17,6 +17,28 @@ export const idlFactory = ({ IDL }) => {
     'UpgradeArg' : IDL.Record({ 'version' : IDL.Nat64 }),
     'InitArg' : SpaceInitArg,
   });
+  const Error = IDL.Variant({
+    'BytecodeUpToDate' : IDL.Null,
+    'NotParent' : IDL.Null,
+    'UserSubmissionNotFound' : IDL.Null,
+    'FailedToUpdateConfig' : IDL.Text,
+    'UserDoesNotBelongToSpace' : IDL.Null,
+    'TaskAlreadyExists' : IDL.Nat64,
+    'FailedToCallMain' : IDL.Text,
+    'ConfigNotSet' : IDL.Null,
+    'NotAdminNorOwnerNorParent' : IDL.Null,
+    'UserAlreadySubmitted' : IDL.Null,
+    'NotAdmin' : IDL.Null,
+    'IncorrectSubmission' : IDL.Text,
+    'CountToHigh' : IDL.Record({ 'max' : IDL.Nat64, 'found' : IDL.Nat64 }),
+    'SubtaskDoNotExists' : IDL.Nat64,
+    'NotOwner' : IDL.Null,
+    'FailedToTransfer' : IDL.Text,
+    'InvalidTaskContent' : IDL.Text,
+    'TaskDoNotExists' : IDL.Nat64,
+    'AnonymousCaller' : IDL.Null,
+  });
+  const Result = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });
   const TokenReward = IDL.Variant({
     'CkUsdc' : IDL.Record({ 'amount' : IDL.Nat }),
   });
@@ -32,25 +54,7 @@ export const idlFactory = ({ IDL }) => {
     'task_content' : IDL.Vec(TaskContent),
     'number_of_uses' : IDL.Nat64,
   });
-  const Error = IDL.Variant({
-    'BytecodeUpToDate' : IDL.Null,
-    'NotAdminNorOwner' : IDL.Null,
-    'FailedToUpdateConfig' : IDL.Text,
-    'TaskAlreadyExists' : IDL.Nat64,
-    'FailedToCallMain' : IDL.Text,
-    'ConfigNotSet' : IDL.Null,
-    'UserAlreadySubmitted' : IDL.Null,
-    'NotAdmin' : IDL.Null,
-    'IncorrectSubmission' : IDL.Text,
-    'CountToHigh' : IDL.Record({ 'max' : IDL.Nat64, 'found' : IDL.Nat64 }),
-    'SubtaskDoNotExists' : IDL.Nat64,
-    'NotOwner' : IDL.Null,
-    'FailedToTransfer' : IDL.Text,
-    'InvalidTaskContent' : IDL.Text,
-    'TaskDoNotExists' : IDL.Nat64,
-    'AnonymousCaller' : IDL.Null,
-  });
-  const Result = IDL.Variant({ 'Ok' : IDL.Nat64, 'Err' : Error });
+  const Result_1 = IDL.Variant({ 'Ok' : IDL.Nat64, 'Err' : Error });
   const GetTasksArgs = IDL.Record({ 'count' : IDL.Nat64, 'start' : IDL.Nat64 });
   const SubmissionState = IDL.Variant({
     'Rejected' : IDL.Null,
@@ -81,7 +85,7 @@ export const idlFactory = ({ IDL }) => {
     'tasks' : IDL.Vec(IDL.Tuple(IDL.Nat64, Task)),
     'tasks_count' : IDL.Nat64,
   });
-  const Result_1 = IDL.Variant({ 'Ok' : GetTasksRes, 'Err' : Error });
+  const Result_2 = IDL.Variant({ 'Ok' : GetTasksRes, 'Err' : Error });
   const State = IDL.Record({
     'space_symbol' : IDL.Opt(IDL.Text),
     'space_background' : IDL.Opt(IDL.Text),
@@ -90,21 +94,30 @@ export const idlFactory = ({ IDL }) => {
     'tasks_count' : IDL.Nat64,
     'space_description' : IDL.Text,
   });
-  const Result_2 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });
   const WalletReceiveResult = IDL.Record({ 'accepted' : IDL.Nat64 });
   return IDL.Service({
-    'create_task' : IDL.Func([CreateTaskArgs], [Result], []),
-    'get_closed_tasks' : IDL.Func([GetTasksArgs], [Result_1], ['query']),
+    'accept_subtask_submission' : IDL.Func(
+        [IDL.Principal, IDL.Nat64, IDL.Nat64],
+        [Result],
+        [],
+      ),
+    'create_task' : IDL.Func([CreateTaskArgs], [Result_1], []),
+    'get_closed_tasks' : IDL.Func([GetTasksArgs], [Result_2], ['query']),
     'get_current_bytecode_version' : IDL.Func([], [IDL.Nat64], ['query']),
-    'get_open_tasks' : IDL.Func([GetTasksArgs], [Result_1], ['query']),
+    'get_open_tasks' : IDL.Func([GetTasksArgs], [Result_2], ['query']),
     'get_state' : IDL.Func([], [State], ['query']),
-    'set_space_background' : IDL.Func([IDL.Text], [Result_2], []),
-    'set_space_description' : IDL.Func([IDL.Text], [Result_2], []),
-    'set_space_logo' : IDL.Func([IDL.Text], [Result_2], []),
-    'set_space_name' : IDL.Func([IDL.Text], [Result_2], []),
+    'reject_subtask_submission' : IDL.Func(
+        [IDL.Principal, IDL.Nat64, IDL.Nat64],
+        [Result],
+        [],
+      ),
+    'set_space_background' : IDL.Func([IDL.Text], [Result], []),
+    'set_space_description' : IDL.Func([IDL.Text], [Result], []),
+    'set_space_logo' : IDL.Func([IDL.Text], [Result], []),
+    'set_space_name' : IDL.Func([IDL.Text], [Result], []),
     'submit_subtask_submission' : IDL.Func(
         [IDL.Nat64, IDL.Nat64, Submission],
-        [Result_2],
+        [Result],
         [],
       ),
     'wallet_balance' : IDL.Func([], [IDL.Nat], ['query']),
@@ -117,7 +130,7 @@ export const init = ({ IDL }) => {
     'principal' : IDL.Principal,
   });
   const SpaceInitArg = IDL.Record({
-    'admin' : IDL.Principal,
+    'owner' : IDL.Principal,
     'ckusdc_ledger' : CkUsdcLedger,
     'space_symbol' : IDL.Opt(IDL.Text),
     'space_background' : IDL.Opt(IDL.Text),

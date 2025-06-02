@@ -2,7 +2,13 @@ use candid::{CandidType, Principal};
 use ic_cdk::query;
 use serde::Deserialize;
 
-use crate::{config::Config, errors::Error, memory, space::{Space, SPACE_WASM}, user::User};
+use crate::{
+    config::Config,
+    errors::Error,
+    memory,
+    space::{Space, SpaceType},
+    user::{Rank, User},
+};
 
 const MAX_SPACES_PER_RESPONSE: u8 = 200;
 
@@ -65,4 +71,55 @@ pub fn get_current_space_bytecode_version() -> u64 {
 #[query]
 pub fn get_space_bytecode_by_version(version: u64) -> Option<Vec<u8>> {
     memory::get_bytecode_by_version(&version)
+}
+
+#[query]
+pub fn user_is_admin(user: Principal) -> bool {
+    memory::get_user(&user).unwrap_or_default().rank() == &Rank::Admin
+}
+
+#[query]
+pub fn user_is_in_space(user: Principal, space_id: Principal) -> bool {
+    let user = memory::get_user(&user).unwrap_or_default();
+    let belonging_to_spaces = user.belonging_to_spaces();
+    let (space_index, _) = memory::with_space_vec_iter(|spaces| {
+        spaces
+            .enumerate()
+            .find(|(_, space)| space.principal() == space_id)
+    })
+    .expect("Space do not exist");
+    belonging_to_spaces.contains(&space_index.try_into().unwrap())
+}
+
+#[query]
+pub fn user_is_in_hub(user: Principal) -> bool {
+    let user = memory::get_user(&user).unwrap_or_default();
+    let belonging_to_spaces = user.belonging_to_spaces();
+    let maybe_space = memory::with_space_vec_iter(|spaces| {
+        spaces.enumerate().find(|(index, space)| {
+            space.space_type() == SpaceType::HUB
+                && belonging_to_spaces.contains(&(*index).try_into().unwrap())
+        })
+    });
+    if let Some((space_index, _)) = maybe_space {
+        belonging_to_spaces.contains(&space_index.try_into().unwrap())
+    } else {
+        false
+    }
+}
+
+#[query]
+pub fn get_user_hub(user: Principal) -> Option<Space> {
+    let user = memory::get_user(&user).unwrap_or_default();
+    let belonging_to_spaces = user.belonging_to_spaces();
+    let maybe_space = memory::with_space_vec_iter(|spaces| {
+        spaces.enumerate().find(|(index, space)| {
+            space.space_type() == SpaceType::HUB
+                && belonging_to_spaces.contains(&(*index).try_into().unwrap())
+        })
+    });
+    if let Some((_, space)) = maybe_space {
+        return Some(space);
+    }
+    None
 }

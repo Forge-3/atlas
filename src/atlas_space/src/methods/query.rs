@@ -4,7 +4,12 @@ use candid::CandidType;
 use ic_cdk::query;
 use serde::Deserialize;
 
-use crate::{errors::Error, memory, state::State, task::{Task, TaskId}};
+use crate::{
+    errors::Error,
+    memory,
+    state::State,
+    task::{Task, TaskId},
+};
 
 const MAX_TASKS_PER_RESPONSE: u8 = 200;
 
@@ -26,7 +31,7 @@ pub struct GetTasksRes {
 }
 
 #[query]
-pub fn get_open_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error>  {
+pub fn get_open_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
     if args.count > MAX_TASKS_PER_RESPONSE as usize {
         return Err(Error::CountToHigh {
             max: MAX_TASKS_PER_RESPONSE as usize,
@@ -48,7 +53,7 @@ pub fn get_open_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error>  {
 }
 
 #[query]
-pub fn get_closed_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error>  {
+pub fn get_closed_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
     if args.count > MAX_TASKS_PER_RESPONSE as usize {
         return Err(Error::CountToHigh {
             max: MAX_TASKS_PER_RESPONSE as usize,

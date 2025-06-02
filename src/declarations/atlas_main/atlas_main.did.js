@@ -4,7 +4,7 @@ export const idlFactory = ({ IDL }) => {
     'principal' : IDL.Principal,
   });
   const SpaceInitArg = IDL.Record({
-    'admin' : IDL.Principal,
+    'owner' : IDL.Principal,
     'ckusdc_ledger' : CkUsdcLedger_1,
     'space_symbol' : IDL.Opt(IDL.Text),
     'space_background' : IDL.Opt(IDL.Text),
@@ -33,14 +33,16 @@ export const idlFactory = ({ IDL }) => {
     }),
     'InitArg' : Config,
   });
-  const Space = IDL.Record({ 'id' : IDL.Principal });
+  const SpaceType = IDL.Variant({ 'HUB' : IDL.Null });
+  const Space = IDL.Record({ 'id' : IDL.Principal, 'space_type' : SpaceType });
   const Rank = IDL.Variant({
     'SpaceLead' : IDL.Null,
     'User' : IDL.Null,
+    'SuperAdmin' : IDL.Null,
     'Admin' : IDL.Null,
   });
   const Error = IDL.Variant({
-    'UserRankNoMatch' : Rank,
+    'UserRankNoMatch' : IDL.Vec(Rank),
     'FailedToCallSpace' : IDL.Record({
       'err' : IDL.Text,
       'principal' : IDL.Principal,
@@ -53,14 +55,17 @@ export const idlFactory = ({ IDL }) => {
     }),
     'UserRankToHigh' : IDL.Record({ 'found' : Rank, 'expected' : Rank }),
     'UserAlreadyHaveExpectedRank' : Rank,
+    'UserNotAnOwner' : Space,
     'CountToHigh' : IDL.Record({ 'max' : IDL.Nat64, 'found' : IDL.Nat64 }),
     'SpaceNotExist' : IDL.Null,
     'FailedToGetCanisterInfo' : IDL.Text,
     'FailedToInstallWASM' : IDL.Text,
+    'UserRankToLow' : IDL.Record({ 'found' : Rank, 'expected' : Rank }),
     'FailedToInitializeCanister' : IDL.Text,
     'CreationInProgress' : IDL.Null,
     'UserDoNotExist' : IDL.Null,
     'FailedToUpdateCanisterSettings' : IDL.Text,
+    'UserAlreadyIsHubMember' : IDL.Null,
     'AnonymousCaller' : IDL.Null,
   });
   const Result = IDL.Variant({ 'Ok' : Space, 'Err' : Error });
@@ -79,6 +84,7 @@ export const idlFactory = ({ IDL }) => {
     'integrations' : Integrations,
     'rank' : Rank,
     'space_creation_in_progress' : IDL.Bool,
+    'belonging_to_spaces' : IDL.Vec(IDL.Nat64),
     'owned_spaces' : IDL.Vec(IDL.Nat64),
   });
   const Result_2 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });
@@ -92,6 +98,7 @@ export const idlFactory = ({ IDL }) => {
           IDL.Opt(IDL.Text),
           IDL.Opt(IDL.Text),
           IDL.Opt(IDL.Text),
+          SpaceType,
         ],
         [Result],
         [],
@@ -104,8 +111,18 @@ export const idlFactory = ({ IDL }) => {
       ),
     'get_spaces' : IDL.Func([GetSpacesArgs], [Result_1], ['query']),
     'get_user' : IDL.Func([GetUserBy], [User], ['query']),
+    'get_user_hub' : IDL.Func([IDL.Principal], [IDL.Opt(Space)], ['query']),
+    'join_space' : IDL.Func([IDL.Principal], [Result_2], []),
+    'set_user_admin' : IDL.Func([IDL.Principal], [Result_2], []),
     'set_user_space_lead' : IDL.Func([IDL.Principal], [Result_2], []),
     'upgrade_space' : IDL.Func([Space], [Result_2], []),
+    'user_is_admin' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
+    'user_is_in_hub' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
+    'user_is_in_space' : IDL.Func(
+        [IDL.Principal, IDL.Principal],
+        [IDL.Bool],
+        ['query'],
+      ),
     'wallet_balance' : IDL.Func([], [IDL.Nat], ['query']),
     'wallet_receive' : IDL.Func([], [WalletReceiveResult], []),
   });
@@ -116,7 +133,7 @@ export const init = ({ IDL }) => {
     'principal' : IDL.Principal,
   });
   const SpaceInitArg = IDL.Record({
-    'admin' : IDL.Principal,
+    'owner' : IDL.Principal,
     'ckusdc_ledger' : CkUsdcLedger_1,
     'space_symbol' : IDL.Opt(IDL.Text),
     'space_background' : IDL.Opt(IDL.Text),

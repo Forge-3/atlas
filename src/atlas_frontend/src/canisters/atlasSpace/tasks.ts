@@ -1,0 +1,91 @@
+import type {
+  SubmissionData,
+  SubmissionState,
+  TaskType,
+} from "../../../../declarations/atlas_space/atlas_space.did";
+
+export interface TaskData {
+  submissionData: SubmissionData;
+  taskType: keyof TaskType;
+}
+
+export interface TasksData {
+  [key: string]: {
+    submissionData: SubmissionData;
+    taskType: keyof TaskType;
+  };
+}
+
+export interface UserSubmissionsData {
+  [key: string]: TasksData;
+}
+
+export const getUsersSubmissions = (tasks: TaskType[]) => {
+  const data = tasks.reduce((acc, task, index) => {
+    if ("GenericTask" in task) {
+      const genericTask = task.GenericTask;
+      genericTask.submission.forEach(([principal, submissionData]) => {
+        const principalText = principal.toText();
+        if (!acc[principalText]) {
+          acc[principalText] = {};
+        }
+        if (!acc[principalText][`${index}`]) {
+          acc[principalText][`${index}`] = {
+            submissionData,
+            taskType: "GenericTask",
+          };
+        }
+      });
+      return acc;
+    }
+    return acc;
+  }, {} as UserSubmissionsData);
+
+  return new UserSubmissions(data);
+};
+
+export class UserSubmissions {
+  constructor(public userSubmissionsData: UserSubmissionsData) {}
+
+  getSubmission(principal: string, taskId: string) {
+    return this.userSubmissionsData?.[principal]?.[taskId];
+  }
+
+  isAccepted(principal: string) {
+    return Object.values(this.userSubmissionsData[principal]).every(
+      (task) =>
+        (Object.keys(task.submissionData.state)[0] as keyof SubmissionState) ===
+        "Accepted"
+    );
+  }
+
+  isRejected(principal: string) {
+    return Object.values(this.userSubmissionsData[principal]).some(
+      (task) =>
+        (Object.keys(task.submissionData.state)[0] as keyof SubmissionState) ===
+        "Rejected"
+    );
+  }
+
+  isWaitingForReview(principal: string) {
+    return Object.values(this.userSubmissionsData[principal]).some(
+      (task) =>
+        (Object.keys(task.submissionData.state)[0] as keyof SubmissionState) ===
+        "WaitingForReview"
+    );
+  }
+
+  getSubmissionState(principal: string) {
+    if (this.isRejected(principal)) {
+      return "Rejected";
+    }
+    if (this.isWaitingForReview(principal)) {
+      return "WaitingForReview";
+    }
+    if (this.isAccepted(principal)) {
+      return "Accepted";
+    }
+
+    throw new Error("Failed to get submission state");
+  }
+}

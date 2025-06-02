@@ -1,21 +1,30 @@
 import React from "react";
 import { useState } from "react";
-import type { TaskType } from "../../../../../declarations/atlas_space/atlas_space.did";
+import type {
+  _SERVICE,
+  TaskType,
+} from "../../../../../declarations/atlas_space/atlas_space.did";
 import Button from "../../Shared/Button";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { submitSubtaskSubmission } from "../../../canisters/atlasSpace/api";
+import {
+  getSpaceTasks,
+  submitSubtaskSubmission,
+} from "../../../canisters/atlasSpace/api";
 import toast from "react-hot-toast";
 import type { Principal } from "@dfinity/principal";
 import { useAuthAtlasSpaceActor } from "../../../hooks/identityKit";
 import { useAuth } from "@nfid/identitykit/react";
+import { useDispatch } from "react-redux";
+import type { ActorSubclass } from "@dfinity/agent";
 
 interface GenericTaskProps {
   genericTask: TaskType["GenericTask"];
   spacePrincipal: Principal;
   taskId: string;
   subtaskId: number;
+  unAuthAtlasSpace: ActorSubclass<_SERVICE> | null;
 }
 
 interface GenericTaskFormInput {
@@ -39,7 +48,9 @@ const GenericTask = ({
   spacePrincipal,
   taskId,
   subtaskId,
+  unAuthAtlasSpace,
 }: GenericTaskProps) => {
+  const dispatch = useDispatch();
   const { user } = useAuth();
   const [openSubmission, setSubmission] = useState(false);
   const { register, handleSubmit } = useForm({
@@ -54,8 +65,7 @@ const GenericTask = ({
   const onSubmit: SubmitHandler<GenericTaskFormInput> = async ({
     taskSubmission,
   }) => {
-    console.log({ taskSubmission, authAtlasSpace });
-    if (!authAtlasSpace) return;
+    if (!authAtlasSpace || !unAuthAtlasSpace) return;
     const call = submitSubtaskSubmission({
       authAtlasSpace,
       taskId: BigInt(taskId),
@@ -69,6 +79,11 @@ const GenericTask = ({
     });
 
     setSubmission(false);
+    getSpaceTasks({
+      spaceId: spacePrincipal.toString(),
+      unAuthAtlasSpace,
+      dispatch,
+    });
   };
 
   const userSubmission = user?.principal
@@ -95,10 +110,10 @@ const GenericTask = ({
       </div>
       <div className="bg-[#1E0F33] rounded-xl p-6 w-full">
         <div className="mb-4">
-          <h4 className="text-xl font-medium font-poppins text-white mb-1">
+          <h4 className="text-xl font-medium font-poppins text-white mb-1 text-wrap break-all">
             {genericTask.task_content.TitleAndDescription.task_title}
           </h4>
-          <p className="text-zinc-400">
+          <p className="text-zinc-400 text-wrap break-all">
             {genericTask.task_content.TitleAndDescription.task_description}
           </p>
         </div>

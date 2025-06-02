@@ -15,10 +15,10 @@ import * as yup from "yup";
 import { toast } from "react-hot-toast";
 import { formatFormError } from "../../utils/errors.ts";
 import { useNavigate } from "react-router-dom";
-import { SPACE_PATH } from "../../router/index.tsx";
 import { useAuth } from "@nfid/identitykit/react";
 import { useDispatch, useSelector } from "react-redux";
 import { selectUserBlockchainData } from "../../store/slices/userSlice.ts";
+import { getSpacePath } from "../../router/paths.ts";
 
 interface SpaceBuilderFormInput {
   space_symbol?: string;
@@ -46,7 +46,7 @@ const SpaceBuilder = () => {
     resolver: yupResolver(schema),
   });
   const userBlockchainData = useSelector(selectUserBlockchainData);
-  const authenticatedAtlasMain = useAuthAtlasMainActor();
+  const authAtlasMain = useAuthAtlasMainActor();
   const { user } = useAuth();
   const dispatch = useDispatch();
   const unAuthAtlasMain = useUnAuthAtlasMainActor();
@@ -61,7 +61,7 @@ const SpaceBuilder = () => {
   }, [errors]);
 
   const onSubmit: SubmitHandler<SpaceBuilderFormInput> = async (data) => {
-    if (!authenticatedAtlasMain) {
+    if (!authAtlasMain) {
       return;
     }
     const name = data.space_name.trim();
@@ -69,7 +69,7 @@ const SpaceBuilder = () => {
     const symbol =
       data.space_symbol !== "" && data.space_symbol ? data.space_symbol : null;
     const createSpaceCall = createNewSpace({
-      authenticatedAtlasMain,
+      authAtlasMain,
       name,
       description,
       symbol,
@@ -89,7 +89,7 @@ const SpaceBuilder = () => {
       });
     }
 
-    navigate(SPACE_PATH.replace(":spacePrincipal", space.id.toText()));
+    navigate(getSpacePath(space.id));
   };
 
   const getDropzoneOptions = (

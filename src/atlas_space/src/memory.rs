@@ -108,7 +108,10 @@ pub fn insert_open_task(task_id: TaskId, new_task: Task) -> Result<(), Error> {
     })
 }
 
-pub fn mut_open_task<T>(task_id: TaskId, f: impl FnOnce(&mut Option<Task>) -> T) -> Result<T, Error> {
+pub fn mut_open_task<T>(
+    task_id: TaskId,
+    f: impl FnOnce(&mut Option<Task>) -> T,
+) -> Result<T, Error> {
     OPEN_TASKS_MAP.with_borrow_mut(|tasks| {
         let mut task = tasks.get(&task_id);
         let result = f(&mut task);
@@ -116,7 +119,7 @@ pub fn mut_open_task<T>(task_id: TaskId, f: impl FnOnce(&mut Option<Task>) -> T)
         if let Some(task) = task {
             tasks.insert(task_id, task);
         }
-        
+
         Ok(result)
     })
 }

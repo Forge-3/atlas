@@ -10,8 +10,8 @@ import type { RootState } from "../../../store/store";
 import { Principal } from "@dfinity/principal";
 import { getAtlasSpace } from "../../../canisters/atlasSpace/api";
 import SpaceItem from "./SpaceItem";
-import { SPACE_PATH } from "../../../router";
 import { useNavigate } from "react-router-dom";
+import { getSpacePath } from "../../../router/paths";
 
 const SpacesList = () => {
   const dispatch = useDispatch();
@@ -66,7 +66,7 @@ const SpacesList = () => {
         {spacesEntries.map(
           ([key, value]) =>
             value?.state && (
-              <a key={key} href={SPACE_PATH.replace(":spacePrincipal", key)}>
+              <a key={key} href={getSpacePath(Principal.from(key))}>
                 <SpaceItem
                   name={value.state.space_name}
                   description={value.state.space_description}

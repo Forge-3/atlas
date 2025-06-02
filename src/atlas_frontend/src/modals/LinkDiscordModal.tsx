@@ -88,7 +88,7 @@ const LastStep = () => {
     <div className="absolute inset-0 z-50 flex items-center justify-center">
       <div className="flex flex-col rounded-xl bg-white p-[20px] gap-[10px]">
         <h2 className="flex items-center justify-between font-semibold font-montserrat">
-          One more step
+          Join 
         </h2>
         <p className="mb-6 text-gray-600">
           Connect your discord account to find corresponding HUB

@@ -11,7 +11,6 @@ pub struct CkUsdcLedger {
     pub(crate) principal: Principal,
     #[cbor(n(1), with = "shared::cbor::nat::option")]
     pub(crate) fee: Option<Nat>,
-
 }
 
 #[derive(Eq, PartialEq, Debug, Deserialize, CandidType, Clone)]
@@ -35,7 +34,7 @@ impl Config {
         Self {
             spaces_per_space_lead,
             ckusdc_ledger,
-            current_space_version: 0
+            current_space_version: 0,
         }
     }
 

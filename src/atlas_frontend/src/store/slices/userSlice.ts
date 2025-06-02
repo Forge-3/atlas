@@ -1,21 +1,25 @@
+import { deserify, serify } from "@karmaniverous/serify-deserify";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { UserData } from "../../integrations/discord.ts";
 import type {
   Integrations,
   Rank,
+  Space,
   User,
 } from "../../../../declarations/atlas_main/atlas_main.did.js";
-
+import type { Principal } from "@dfinity/principal";
+import { customSerify } from "../store.ts";
 
 interface StorableUser extends User {
-  "owned_spaces": Array<bigint>;
+  owned_spaces: Array<bigint>;
 }
 export class BlockchainUser implements StorableUser {
   "integrations": Integrations;
   "rank": Rank;
   "owned_spaces": Array<bigint>;
-  'space_creation_in_progress': boolean;
-  
+  "space_creation_in_progress": boolean;
+  "belonging_to_spaces": Array<bigint>;
+
   constructor(user: StorableUser) {
     this.integrations = user.integrations;
     this.rank = user.rank;
@@ -27,11 +31,15 @@ export class BlockchainUser implements StorableUser {
   }
 
   isSpaceLead() {
-    return Object.keys(this.rank)[0] as keyof Rank === "SpaceLead"; 
+    return this.getRank() === "SpaceLead";
   }
 
   isAdmin() {
-    return Object.keys(this.rank)[0] as keyof Rank === "Admin"; 
+    return this.getRank() === "Admin";
+  }
+
+  isSuperAdmin() {
+    return this.getRank() === "SuperAdmin";
   }
 }
 
@@ -43,6 +51,7 @@ interface UserState {
       userData: UserData | null;
     };
   };
+  userHub: Principal | null;
 }
 
 const initialState = (): UserState => {
@@ -50,6 +59,7 @@ const initialState = (): UserState => {
   const userData = localStorage.getItem("discordUserData");
 
   return {
+    userHub: null,
     blockchain: null,
     integrations: {
       discord: {
@@ -65,7 +75,8 @@ export const userSlice = createSlice({
   initialState,
   reducers: {
     setUserDiscordData: (state, action: PayloadAction<UserData>) => {
-      localStorage.setItem("discordUserData", JSON.stringify(action.payload));
+      //const principal = (serify(action.payload, customSerify) as Principal).toText()
+      //localStorage.setItem("discordUserData", (action.payload));
       state.integrations.discord.userData = action.payload;
     },
     setUserDiscordAccessToken: (state, action: PayloadAction<string>) => {
@@ -73,7 +84,12 @@ export const userSlice = createSlice({
       state.integrations.discord.accessToken = action.payload;
     },
     setUserBlockchainData: (state, action: PayloadAction<StorableUser>) => {
-      state.blockchain = action.payload
+      state.blockchain = { ...state.blockchain, ...action.payload };
+    },
+    setIsUserInHub: (state, action: PayloadAction<Principal | null>) => {
+      const principal = (deserify(action.payload, customSerify) as Principal).toText()
+      localStorage.setItem("userHub", principal);
+      state.userHub = action.payload;
     },
   },
   selectors: {
@@ -97,6 +113,12 @@ export const userSlice = createSlice({
       if (!userState.blockchain) return null;
       return new BlockchainUser(userState.blockchain);
     },
+    selectUserHub: (userState: UserState) => {
+      if (userState.userHub) return userState.userHub;
+      const userHub = localStorage.getItem("userHub");
+      if (userHub) return serify(userHub, customSerify)
+      return null;
+    },
   },
 });
 
@@ -104,6 +126,8 @@ export const {
   setUserDiscordData,
   setUserDiscordAccessToken,
   setUserBlockchainData,
+  setIsUserInHub,
 } = userSlice.actions;
-export const { selectUserDiscordData, selectUserBlockchainData } = userSlice.selectors;
+export const { selectUserDiscordData, selectUserBlockchainData, selectUserHub } =
+  userSlice.selectors;
 export default userSlice.reducer;

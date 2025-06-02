@@ -1,6 +1,6 @@
+use ic_ledger_types::Tokens;
 use minicbor::decode::{Decoder, Error};
 use minicbor::encode::{Encoder, Write};
-use ic_ledger_types::Tokens;
 
 pub fn decode<Ctx>(d: &mut Decoder<'_>, _ctx: &mut Ctx) -> Result<Tokens, Error> {
     let e8s = d.u64()?;

@@ -14,7 +14,7 @@ import { store } from "../store/store.ts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import Main from "./Main.tsx";
-import { SPACES_PATH } from "../router/index.tsx";
+import { SPACES_PATH } from "../router/paths.ts";
 
 const InternetIdentityWallet =
   process.env.DFX_NETWORK === "local"

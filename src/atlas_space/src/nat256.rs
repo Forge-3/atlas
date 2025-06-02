@@ -1,10 +1,16 @@
-use std::{borrow::Cow, fmt::{Debug, Display, Formatter}};
+use std::{
+    borrow::Cow,
+    fmt::{Debug, Display, Formatter},
+};
 
-use candid::{types::{Serializer, Type}, CandidType, Nat};
+use candid::{
+    types::{Serializer, Type},
+    CandidType, Nat,
+};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
-use serde::{Deserialize, Serialize};
 use num_bigint::BigUint;
+use serde::{Deserialize, Serialize};
 
 /// A `Nat` that is guaranteed to fit in 256 bits.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, Decode, Encode)]

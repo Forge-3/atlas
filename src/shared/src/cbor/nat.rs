@@ -16,12 +16,9 @@ pub fn decode<Ctx>(d: &mut Decoder<'_>, _ctx: &mut Ctx) -> Result<Nat, Error> {
     }
 
     let tag = d.tag()?;
-    let iana_tag: IanaTag = tag.try_into().map_err(|err| 
-        Error::message(format!(
-            "failed to map Tag into IanaTag: {}",
-            err
-        ))
-    )?;
+    let iana_tag: IanaTag = tag
+        .try_into()
+        .map_err(|err| Error::message(format!("failed to map Tag into IanaTag: {}", err)))?;
     if iana_tag != IanaTag::PosBignum {
         return Err(Error::message(
             "failed to parse Nat: expected the PosBignum tag",

@@ -1,6 +1,10 @@
 use candid::Principal;
 
-use crate::{errors::Error, memory, user::{Rank, User}};
+use crate::{
+    errors::Error,
+    memory,
+    user::{Rank, User},
+};
 
 #[inline(always)]
 pub fn authenticated_guard() -> Result<Principal, Error> {
@@ -16,11 +20,12 @@ pub fn admin_or_space_lead_guard() -> Result<(Principal, User), Error> {
     let user = memory::get_user(&principal).ok_or(Error::UserDoNotExist)?;
     let rank = user.rank();
     match rank {
-        Rank::User => Err(Error::UserRankToLow{
+        Rank::User => Err(Error::UserRankToLow {
             expected: Rank::SpaceLead,
-            found: Rank::User
+            found: Rank::User,
         }),
         Rank::SpaceLead => Ok((principal, user)),
         Rank::Admin => Ok((principal, user)),
+        Rank::SuperAdmin => Ok((principal, user)),
     }
 }

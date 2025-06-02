@@ -10,11 +10,21 @@ import { useUnAuthAtlasSpaceActor } from "../../hooks/identityKit";
 import { getAtlasSpace, getSpaceTasks } from "../../canisters/atlasSpace/api";
 import GenericTask from "./tasks/GenericTask";
 import { FaWallet } from "react-icons/fa";
+import { useAuth } from "@nfid/identitykit/react";
+import { selectUserBlockchainData } from "../../store/slices/userSlice";
+import Button from "../Shared/Button";
+import { getSubmissionsPath } from "../../router/paths";
+import {
+  getUsersSubmissions,
+  UserSubmissions,
+} from "../../canisters/atlasSpace/tasks";
 
 const Task = () => {
   const { spacePrincipal, taskId } = useParams();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const userBlockchainData = useSelector(selectUserBlockchainData);
 
   const principal = useSpaceId({
     spacePrincipal,
@@ -59,10 +69,27 @@ const Task = () => {
     return <></>;
   }
 
+  const usersSubmissions = currentTask?.tasks
+    ? getUsersSubmissions(currentTask.tasks)
+    : new UserSubmissions({});
+
+  if (!user?.principal) return <></>;
+
+  const isAccepted = usersSubmissions.isAccepted(user.principal.toText());
+
   return (
     <div className="container mx-auto my-4">
       <div className="w-full px-3">
-        <div className="relative w-full rounded-xl bg-[#1E0F33]/60 mb-1 h-[1000px]">
+        {user && userBlockchainData?.isSpaceLead() && (
+          <div className="mb-2 flex justify-end">
+            <Button
+              onClick={() => navigate(getSubmissionsPath(principal, taskId))}
+            >
+              Review submission
+            </Button>
+          </div>
+        )}
+        <div className="relative w-full rounded-xl bg-[#1E0F33]/60 mb-1">
           <div className="px-16 py-12">
             <div className="flex items-center gap-4">
               <div className="bg-white flex rounded-2xl w-fit h-fit flex-none">
@@ -96,22 +123,24 @@ const Task = () => {
                       spacePrincipal={principal}
                       taskId={taskId}
                       subtaskId={key}
+                      unAuthAtlasSpace={unAuthAtlasSpace}
                     />
                   ))}
                 </div>
                 <div className="flex mt-3 items-center justify-center">
                   <div className="mr-4">
                     <div className="bg-[#1E0F33] p-1 w-[32px] h-[32px] rounded-lg relative">
-                      {/* TODO: add reward receive */}
-                      {/* <img
-                        src="/icons/check-in-box.svg"
-                        className="w-6 h-6 relative"
-                      /> */}
+                      {isAccepted && (
+                        <img
+                          src="/icons/check-in-box.svg"
+                          className="w-6 h-6 relative"
+                        />
+                      )}
                     </div>
                   </div>
                   <div className="bg-[#9173FF] rounded-xl p-6 text-lg font-medium font-poppins w-full flex items-center justify-between">
                     <div>Reward</div>
-                    <FaWallet color="1E0F33"/>
+                    <FaWallet color="1E0F33" />
                   </div>
                 </div>
               </div>

@@ -8,15 +8,15 @@ use shared::{SpaceArgs, SpaceInitArg};
 use crate::{
     errors::Error,
     guard::{admin_or_space_lead_guard, authenticated_guard},
-    management, memory,
-    space::{self, Space},
+    memory,
+    space::{self, Space, SpaceType},
     user::{Rank, User},
 };
 
 #[update]
 pub fn set_user_space_lead(user_id: Principal) -> Result<(), Error> {
     let caller = authenticated_guard()?;
-    memory::user_rank_match(&caller, &Rank::Admin)?;
+    memory::user_rank_match(&caller, &[Rank::Admin, Rank::SuperAdmin])?;
 
     if let Some(mut user) = memory::get_user(&user_id) {
         user.promote_to_space_lead()?;
@@ -28,15 +28,29 @@ pub fn set_user_space_lead(user_id: Principal) -> Result<(), Error> {
 }
 
 #[update]
+pub fn set_user_admin(user_id: Principal) -> Result<(), Error> {
+    let caller = authenticated_guard()?;
+    memory::user_rank_match(&caller, &[Rank::SuperAdmin])?;
+    if let Some(mut user) = memory::get_user(&user_id) {
+        user.promote_to_admin()?;
+        memory::insert_user(user_id, user);
+    } else {
+        memory::insert_user(user_id, User::new(Rank::Admin));
+    }
+    Ok(())
+}
+
+#[update]
 pub async fn create_new_space(
     space_name: String,
     space_description: String,
     space_symbol: Option<String>,
     space_logo: Option<String>,
     space_background: Option<String>,
+    space_type: SpaceType,
 ) -> Result<Space, Error> {
     let caller = authenticated_guard()?;
-    let user = memory::user_rank_match(&caller, &Rank::SpaceLead)?;
+    let user = memory::user_rank_match(&caller, &[Rank::SpaceLead])?;
     let config = memory::read_config(|local_config| local_config.clone());
 
     if user.owned_spaces_count() >= config.spaces_per_space_lead as usize {
@@ -55,7 +69,7 @@ pub async fn create_new_space(
         user.set_space_creation(true);
         Ok(user)
     })?;
-    // TODO: set owner
+
     let space_init_args = SpaceInitArg {
         owner: caller,
         space_name,
@@ -69,7 +83,7 @@ pub async fn create_new_space(
         },
         current_wasm_version: config.current_space_version,
     };
-    let space = Space::create_space(space_init_args).await;
+    let space = Space::create_space(space_init_args, space_type).await;
     memory::mut_user(caller, |maybe_user| {
         let mut user = maybe_user.expect("User do not exist?!");
         user.set_space_creation(false);
@@ -94,17 +108,12 @@ pub async fn create_new_space(
 pub async fn upgrade_space(space_id: Space) -> Result<(), Error> {
     let (_, user) = admin_or_space_lead_guard()?;
     if user.rank() == &Rank::SpaceLead {
-        let owned_spaces: Vec<Space> = memory::with_space_vec_iter(|spaces| {
-            let spaces = spaces.collect::<Vec<_>>();
-            user.owned_spaces()
-                .iter()
-                .filter_map(|&i| {
-                    spaces
-                        .get(usize::try_from(i).expect("Value out of range for usize"))
-                        .cloned()
-                })
-                .collect()
-        });
+        let owned_spaces: Vec<_> = user
+            .owned_spaces()
+            .iter()
+            .filter_map(|&i| memory::get_space(i))
+            .collect();
+
         if !owned_spaces.contains(&space_id) {
             return Err(Error::UserNotAnOwner(space_id));
         }
@@ -150,6 +159,35 @@ pub async fn upgrade_space(space_id: Space) -> Result<(), Error> {
             version
         );
     }
+
+    Ok(())
+}
+
+#[update]
+pub fn join_space(space_id: Principal) -> Result<(), Error> {
+    let caller = authenticated_guard()?;
+    let (index, space) = memory::with_space_vec_iter(|spaces| {
+        spaces
+            .enumerate()
+            .find(|(_, space)| space.principal() == space_id)
+    })
+    .ok_or(Error::SpaceNotExist)?;
+
+    if space.space_type() == SpaceType::HUB {
+        let user = memory::get_user(&caller).unwrap_or_default();
+        let is_hub_member = user.belonging_to_spaces().iter().any(|space_index| {
+            memory::get_space(*space_index).expect("Space do  not exist?!").space_type() == SpaceType::HUB
+        });
+        if is_hub_member {
+            return Err(Error::UserAlreadyIsHubMember)
+        }
+    }
+
+    memory::mut_user(caller, |maybe_user| {
+        let mut user = maybe_user.unwrap_or_default();
+        user.join_space(index.try_into().unwrap());
+        Ok(user)
+    })?;
 
     Ok(())
 }

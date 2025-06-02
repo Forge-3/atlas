@@ -19,21 +19,24 @@ export interface Config {
   'ckusdc_ledger' : CkUsdcLedger_1,
   'current_space_version' : bigint,
 }
-export type Error = { 'UserRankNoMatch' : Rank } |
+export type Error = { 'UserRankNoMatch' : Array<Rank> } |
   { 'FailedToCallSpace' : { 'err' : string, 'principal' : Principal } } |
   { 'FailedToSaveSpace' : string } |
   { 'FailedToUpdateConfig' : string } |
   { 'UserRichSpaceLimit' : { 'found' : bigint, 'expected' : bigint } } |
   { 'UserRankToHigh' : { 'found' : Rank, 'expected' : Rank } } |
   { 'UserAlreadyHaveExpectedRank' : Rank } |
+  { 'UserNotAnOwner' : Space } |
   { 'CountToHigh' : { 'max' : bigint, 'found' : bigint } } |
   { 'SpaceNotExist' : null } |
   { 'FailedToGetCanisterInfo' : string } |
   { 'FailedToInstallWASM' : string } |
+  { 'UserRankToLow' : { 'found' : Rank, 'expected' : Rank } } |
   { 'FailedToInitializeCanister' : string } |
   { 'CreationInProgress' : null } |
   { 'UserDoNotExist' : null } |
   { 'FailedToUpdateCanisterSettings' : string } |
+  { 'UserAlreadyIsHubMember' : null } |
   { 'AnonymousCaller' : null };
 export interface GetSpacesArgs { 'count' : bigint, 'start' : bigint }
 export interface GetSpacesRes {
@@ -44,6 +47,7 @@ export type GetUserBy = { 'Principal' : Principal };
 export interface Integrations { 'discord_id' : [] | [string] }
 export type Rank = { 'SpaceLead' : null } |
   { 'User' : null } |
+  { 'SuperAdmin' : null } |
   { 'Admin' : null };
 export type Result = { 'Ok' : Space } |
   { 'Err' : Error };
@@ -51,11 +55,11 @@ export type Result_1 = { 'Ok' : GetSpacesRes } |
   { 'Err' : Error };
 export type Result_2 = { 'Ok' : null } |
   { 'Err' : Error };
-export interface Space { 'id' : Principal }
+export interface Space { 'id' : Principal, 'space_type' : SpaceType }
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
   { 'InitArg' : SpaceInitArg };
 export interface SpaceInitArg {
-  'admin' : Principal,
+  'owner' : Principal,
   'ckusdc_ledger' : CkUsdcLedger_1,
   'space_symbol' : [] | [string],
   'space_background' : [] | [string],
@@ -64,6 +68,7 @@ export interface SpaceInitArg {
   'space_name' : string,
   'space_description' : string,
 }
+export type SpaceType = { 'HUB' : null };
 export interface UpdateConfig {
   'spaces_per_space_lead' : [] | [number],
   'ckusdc_ledger' : [] | [CkUsdcLedger_1],
@@ -72,13 +77,14 @@ export interface User {
   'integrations' : Integrations,
   'rank' : Rank,
   'space_creation_in_progress' : boolean,
+  'belonging_to_spaces' : BigUint64Array | bigint[],
   'owned_spaces' : BigUint64Array | bigint[],
 }
 export interface WalletReceiveResult { 'accepted' : bigint }
 export interface _SERVICE {
   'app_config' : ActorMethod<[], Config>,
   'create_new_space' : ActorMethod<
-    [string, string, [] | [string], [] | [string], [] | [string]],
+    [string, string, [] | [string], [] | [string], [] | [string], SpaceType],
     Result
   >,
   'get_current_space_bytecode_version' : ActorMethod<[], bigint>,
@@ -88,8 +94,14 @@ export interface _SERVICE {
   >,
   'get_spaces' : ActorMethod<[GetSpacesArgs], Result_1>,
   'get_user' : ActorMethod<[GetUserBy], User>,
+  'get_user_hub' : ActorMethod<[Principal], [] | [Space]>,
+  'join_space' : ActorMethod<[Principal], Result_2>,
+  'set_user_admin' : ActorMethod<[Principal], Result_2>,
   'set_user_space_lead' : ActorMethod<[Principal], Result_2>,
   'upgrade_space' : ActorMethod<[Space], Result_2>,
+  'user_is_admin' : ActorMethod<[Principal], boolean>,
+  'user_is_in_hub' : ActorMethod<[Principal], boolean>,
+  'user_is_in_space' : ActorMethod<[Principal, Principal], boolean>,
   'wallet_balance' : ActorMethod<[], bigint>,
   'wallet_receive' : ActorMethod<[], WalletReceiveResult>,
 }

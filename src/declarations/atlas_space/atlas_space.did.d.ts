@@ -10,11 +10,14 @@ export interface CreateTaskArgs {
   'number_of_uses' : bigint,
 }
 export type Error = { 'BytecodeUpToDate' : null } |
-  { 'NotAdminNorOwner' : null } |
+  { 'NotParent' : null } |
+  { 'UserSubmissionNotFound' : null } |
   { 'FailedToUpdateConfig' : string } |
+  { 'UserDoesNotBelongToSpace' : null } |
   { 'TaskAlreadyExists' : bigint } |
   { 'FailedToCallMain' : string } |
   { 'ConfigNotSet' : null } |
+  { 'NotAdminNorOwnerNorParent' : null } |
   { 'UserAlreadySubmitted' : null } |
   { 'NotAdmin' : null } |
   { 'IncorrectSubmission' : string } |
@@ -30,16 +33,16 @@ export interface GetTasksRes {
   'tasks' : Array<[bigint, Task]>,
   'tasks_count' : bigint,
 }
-export type Result = { 'Ok' : bigint } |
+export type Result = { 'Ok' : null } |
   { 'Err' : Error };
-export type Result_1 = { 'Ok' : GetTasksRes } |
+export type Result_1 = { 'Ok' : bigint } |
   { 'Err' : Error };
-export type Result_2 = { 'Ok' : null } |
+export type Result_2 = { 'Ok' : GetTasksRes } |
   { 'Err' : Error };
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
   { 'InitArg' : SpaceInitArg };
 export interface SpaceInitArg {
-  'admin' : Principal,
+  'owner' : Principal,
   'ckusdc_ledger' : CkUsdcLedger,
   'space_symbol' : [] | [string],
   'space_background' : [] | [string],
@@ -86,18 +89,26 @@ export type TaskType = {
 export type TokenReward = { 'CkUsdc' : { 'amount' : bigint } };
 export interface WalletReceiveResult { 'accepted' : bigint }
 export interface _SERVICE {
-  'create_task' : ActorMethod<[CreateTaskArgs], Result>,
-  'get_closed_tasks' : ActorMethod<[GetTasksArgs], Result_1>,
+  'accept_subtask_submission' : ActorMethod<
+    [Principal, bigint, bigint],
+    Result
+  >,
+  'create_task' : ActorMethod<[CreateTaskArgs], Result_1>,
+  'get_closed_tasks' : ActorMethod<[GetTasksArgs], Result_2>,
   'get_current_bytecode_version' : ActorMethod<[], bigint>,
-  'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_1>,
+  'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_2>,
   'get_state' : ActorMethod<[], State>,
-  'set_space_background' : ActorMethod<[string], Result_2>,
-  'set_space_description' : ActorMethod<[string], Result_2>,
-  'set_space_logo' : ActorMethod<[string], Result_2>,
-  'set_space_name' : ActorMethod<[string], Result_2>,
+  'reject_subtask_submission' : ActorMethod<
+    [Principal, bigint, bigint],
+    Result
+  >,
+  'set_space_background' : ActorMethod<[string], Result>,
+  'set_space_description' : ActorMethod<[string], Result>,
+  'set_space_logo' : ActorMethod<[string], Result>,
+  'set_space_name' : ActorMethod<[string], Result>,
   'submit_subtask_submission' : ActorMethod<
     [bigint, bigint, Submission],
-    Result_2
+    Result
   >,
   'wallet_balance' : ActorMethod<[], bigint>,
   'wallet_receive' : ActorMethod<[], WalletReceiveResult>,

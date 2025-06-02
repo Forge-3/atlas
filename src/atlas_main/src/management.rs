@@ -1,12 +1,8 @@
-use candid::{Encode, Principal};
-use futures::future::join_all;
+use candid::Encode;
 use ic_cdk::api::management_canister::main::{CanisterInstallMode, InstallCodeArgument};
 use shared::SpaceArgs;
 
-use crate::{
-    memory,
-    space::{Space, SPACE_WASM},
-};
+use crate::{memory, space::Space};
 
 pub async fn upgrade_spaces(space: Space, version: u64, upgrade_space_arg: Option<SpaceArgs>) {
     ic_cdk::println!("Preparation for upgrade of spaces {}", space.principal());

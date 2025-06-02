@@ -1,26 +1,28 @@
 import React from "react";
 import InfoBox from "./InfoBox.tsx";
 import type { Task } from "../../../../../declarations/atlas_space/atlas_space.did";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { formatUnits } from "ethers";
 import { DECIMALS } from "../../../canisters/ckUSDC/constans.ts";
+import type { Principal } from "@dfinity/principal";
+import { getTaskPath } from "../../../router/paths.ts";
 
 interface TaskCardProps {
   type: "ongoing" | "starting" | "expired";
   startingIn?: string;
   id: string,
   task: Task;
+  spaceId: Principal
 }
 
-const TaskCard = ({ startingIn, task, id, type}: TaskCardProps) => {
+const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const reward = formatUnits(task.token_reward.CkUsdc.amount, DECIMALS)
   const lastTask = task.tasks.at(-1)?.GenericTask.submission.filter(([, submission]) => 'Accepted' in submission.state)
 
   return (
-    <a className="rounded-xl bg-gradient-to-b from-[#9173FF] to-transparent to-[150%] flex flex-col" onClick={() => navigate(`${location.pathname}/${id}`)}>
+    <a className="rounded-xl bg-gradient-to-b from-[#9173FF] to-transparent to-[150%] flex flex-col" onClick={() => navigate(getTaskPath(spaceId, id))}>
       <div
         className={`h-40 p-4 rounded-t-xl ${
           type === "ongoing" && "bg-[#9173FF]/20"

@@ -18,8 +18,8 @@ pub enum Error {
     #[error("User already have this rank ({0})")]
     UserAlreadyHaveExpectedRank(Rank),
 
-    #[error("User rank do not match (expected: {0})")]
-    UserRankNoMatch(Rank),
+    #[error("User rank do not match (expected: {0:?})")]
+    UserRankNoMatch(Vec<Rank>),
 
     #[error("User rich space limit (expected: {expected:?}, found: {found:?})")]
     UserRichSpaceLimit { expected: usize, found: usize },
@@ -52,14 +52,14 @@ pub enum Error {
     SpaceNotExist,
 
     #[error("Failed to call space {principal} ({err})")]
-    FailedToCallSpace{
-        principal: Principal,
-        err: String
-    },
+    FailedToCallSpace { principal: Principal, err: String },
 
     #[error("User rank is to low (expected: {expected:?} or above, found: {found:?})")]
     UserRankToLow { expected: Rank, found: Rank },
 
     #[error("User is not an owner of the space {0}")]
-    UserNotAnOwner(Space)
+    UserNotAnOwner(Space),
+
+    #[error("User already is hub member")]
+    UserAlreadyIsHubMember
 }
