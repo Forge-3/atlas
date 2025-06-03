@@ -10,6 +10,15 @@ import type {
 import type { Principal } from "@dfinity/principal";
 import { customSerify } from "../store.ts";
 
+export interface DiscordIntegrationState {
+  accessToken: string | null;
+  userData: UserData | null;
+  tokenType: string | null;
+  state: string | null;
+  expiresIn: number | null;
+  guildId: string | null;
+}
+
 interface StorableUser extends User {
   owned_spaces: Array<bigint>;
 }
@@ -46,25 +55,27 @@ export class BlockchainUser implements StorableUser {
 interface UserState {
   blockchain: StorableUser | null;
   integrations: {
-    discord: {
-      accessToken: string | null;
-      userData: UserData | null;
+    discord: DiscordIntegrationState;
     };
-  };
   userHub: Principal | null;
 }
 
 const initialState = (): UserState => {
-  const accessToken = localStorage.getItem("discordUserAccessToken");
-  const userData = localStorage.getItem("discordUserData");
+  const storedAccessToken = localStorage.getItem("discordUserAccessToken");
+  const storedUserData = localStorage.getItem("discordUserData");
+  const parsedUserData = storedUserData !== null ? JSON.parse(storedUserData) : null;
 
   return {
     userHub: null,
     blockchain: null,
     integrations: {
       discord: {
-        accessToken,
-        userData: userData !== null ? JSON.parse(userData) : null,
+        accessToken: storedAccessToken,
+        userData: parsedUserData,
+        tokenType: null,
+        state: null,
+        expiresIn: null,
+        guildId: null,
       },
     },
   };
@@ -74,14 +85,35 @@ export const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    setUserDiscordData: (state, action: PayloadAction<UserData>) => {
-      //const principal = (serify(action.payload, customSerify) as Principal).toText()
-      //localStorage.setItem("discordUserData", (action.payload));
-      state.integrations.discord.userData = action.payload;
+    setDiscordIntegrationData: (state, action: PayloadAction<{
+      tokenType: string;
+      accessToken: string;
+      state: string;
+      expiresIn: number;
+      guildId: string;
+      userData?: UserData;
+    }>) => {
+      localStorage.setItem("discordUserAccessToken", action.payload.accessToken);
+      if (action.payload.userData) {
+        localStorage.setItem("discordUserData", JSON.stringify(action.payload.userData));
+      }
+
+      state.integrations.discord.accessToken = action.payload.accessToken;
+      state.integrations.discord.tokenType = action.payload.tokenType;
+      state.integrations.discord.state = action.payload.state;
+      state.integrations.discord.expiresIn = action.payload.expiresIn;
+      state.integrations.discord.guildId = action.payload.guildId;
+      if (action.payload.userData) {
+        state.integrations.discord.userData = action.payload.userData;
+      }
     },
-    setUserDiscordAccessToken: (state, action: PayloadAction<string>) => {
-      localStorage.setItem("discordUserAccessToken", action.payload);
-      state.integrations.discord.accessToken = action.payload;
+    clearDiscordIntegrationData: (state) => {
+      state.integrations.discord.accessToken = null;
+      state.integrations.discord.userData = null;
+      state.integrations.discord.tokenType = null;
+      state.integrations.discord.state = null;
+      state.integrations.discord.expiresIn = null;
+      state.integrations.discord.guildId = null;
     },
     setUserBlockchainData: (state, action: PayloadAction<StorableUser>) => {
       state.blockchain = { ...state.blockchain, ...action.payload };
@@ -94,20 +126,7 @@ export const userSlice = createSlice({
   },
   selectors: {
     selectUserDiscordData: (userState: UserState) => {
-      const localUserData = localStorage.getItem("discordUserData");
-      const parsedLocalUserData =
-        localUserData !== null ? JSON.parse(localUserData) : null;
-
-      const accessToken =
-        userState.integrations.discord.accessToken ||
-        localStorage.getItem("discordUserAccessToken");
-      const userData =
-        userState.integrations.discord.userData || parsedLocalUserData;
-
-      return {
-        accessToken,
-        userData,
-      };
+      return userState.integrations.discord;
     },
     selectUserBlockchainData: (userState: UserState) => {
       if (!userState.blockchain) return null;
@@ -123,10 +142,13 @@ export const userSlice = createSlice({
 });
 
 export const {
-  setUserDiscordData,
-  setUserDiscordAccessToken,
+  setDiscordIntegrationData,
   setUserBlockchainData,
+<<<<<<< HEAD
   setIsUserInHub,
+=======
+  clearDiscordIntegrationData,
+>>>>>>> 63e0bd6 (Unify Subtask Submission & Refactor getUserData to getGuildData)
 } = userSlice.actions;
 export const { selectUserDiscordData, selectUserBlockchainData, selectUserHub } =
   userSlice.selectors;

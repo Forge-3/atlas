@@ -23,6 +23,8 @@ import {
 import { SPACE_BUILDER_PATH, SPACES_PATH } from "../../router/paths.ts";
 import { setUserDiscordAccessToken } from "../../store/slices/userSlice.ts";
 
+
+
 const ConnectButton = (props: ConnectWalletButtonProps) => (
   <Button
     onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) =>
@@ -210,3 +212,7 @@ const Navbar = () => {
 };
 
 export default Navbar;
+function setUserDiscordAccessToken(arg0: string): any {
+  throw new Error("Function not implemented.");
+}
+

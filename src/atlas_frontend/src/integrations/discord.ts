@@ -20,6 +20,15 @@ export interface UserData {
   public_flags: number;
   username: string;
   verified: boolean;
+  tokenType: string;
+}
+
+export interface DiscordAuthData {
+  tokenType: string;
+  accessToken: string;
+  state: string;
+  expiresIn: number;
+  guildId: string;
 }
 
 export const getOAuth2URL = (stateData?: string) => {
@@ -39,7 +48,7 @@ export const getOAuth2URL = (stateData?: string) => {
   return url.toString();
 };
 
-export const getUserData = async (token: string) => {
+export const getGuildsData = async (token: string) => {
   const { data } = await axios.get<UserData>(
     "https://discord.com/api/users/@me/guilds",
     {

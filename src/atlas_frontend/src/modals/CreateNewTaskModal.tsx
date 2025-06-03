@@ -151,6 +151,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   tasks,
   taskTitle
 }) => {
+  console.log("1. onSubmit started");
   const numberOfUsesBn = BigInt(numberOfUses.toString());
   const rewardPerUsageBn = parseUnits(rewardPerUsage.toString(), DECIMALS);
 
@@ -210,14 +211,24 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     success: "Task created successfully",
     error: "Failed to create task",
   });
+  console.log("2. createNewTaskCall promise resolved. TaskId:", taskId);
 
   callback();
+  console.log("3. Callback executed, modal should close.");
   getSpaceTasks({
     spaceId,
     unAuthAtlasSpace: authAtlasSpaceActor,
     dispatch,
   });
-  navigate(`${location.pathname}/${taskId}`);
+  console.log("4. getSpaceTasks finished.");
+
+  const targetUrl = `${location.pathname}/${taskId}`;
+  console.log("Redirecting to:", targetUrl);
+  console.log("Created task ID:", taskId);
+  navigate(targetUrl);
+  console.log("7. navigate called.");
+
+  
 }
 
   return (

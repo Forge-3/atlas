@@ -36,10 +36,16 @@ type GetTasksRes = record {
   tasks : vec record { nat64; Task };
   tasks_count : nat64;
 };
+<<<<<<< HEAD
 type Result = variant { Ok; Err : Error };
 type Result_1 = variant { Ok : nat64; Err : Error };
 type Result_2 = variant { Ok : GetTasksRes; Err : Error };
 type Result_3 = variant { Ok : bool; Err : Error };
+=======
+type Result = variant { Ok : nat64; Err : Error };
+type Result_1 = variant { Ok : GetTasksRes; Err : Error };
+type Result_2 = variant { Ok; Err : Error };
+>>>>>>> 63e0bd6 (Unify Subtask Submission & Refactor getUserData to getGuildData)
 type SpaceArgs = variant {
   UpgradeArg : record { version : nat64 };
   InitArg : SpaceInitArg;
@@ -62,18 +68,26 @@ type State = record {
   tasks_count : nat64;
   space_description : text;
 };
-type Submission = variant { Text : record { content : text } };
+type Submission = variant {
+  Text : record { content : text };
+  Discord : record { guild_id : text; access_token : text };
+};
 type SubmissionData = record {
   state : SubmissionState;
   submission : Submission;
 };
 type SubmissionState = variant { Rejected; WaitingForReview; Accepted };
 type Task = record {
-  tasks : vec TaskType;
-  creator : principal;
-  task_title : text;
+  tasks : vec record { nat64; TaskType };
+  title : text;
+  subaccount : blob;
   token_reward : TokenReward;
+<<<<<<< HEAD
   rewarded : vec principal;
+=======
+  created_at : nat64;
+  created_by : principal;
+>>>>>>> 63e0bd6 (Unify Subtask Submission & Refactor getUserData to getGuildData)
   number_of_uses : nat64;
 };
 type TaskContent = variant {
@@ -98,6 +112,7 @@ service : (SpaceArgs) -> {
   get_current_bytecode_version : () -> (nat64) query;
   get_open_tasks : (GetTasksArgs) -> (Result_2) query;
   get_state : () -> (State) query;
+<<<<<<< HEAD
   reject_subtask_submission : (principal, nat64, nat64) -> (Result);
   set_space_background : (text) -> (Result);
   set_space_description : (text) -> (Result);
@@ -105,6 +120,13 @@ service : (SpaceArgs) -> {
   set_space_name : (text) -> (Result);
   submit_subtask_submission : (nat64, nat64, Submission) -> (Result);
   verify_discord_token : (nat64, nat64, text, text) -> (Result_3);
+=======
+  set_space_background : (text) -> (Result_2);
+  set_space_description : (text) -> (Result_2);
+  set_space_logo : (text) -> (Result_2);
+  set_space_name : (text) -> (Result_2);
+  submit_subtask_submission : (nat64, nat64, Submission) -> (Result_2);
+>>>>>>> 63e0bd6 (Unify Subtask Submission & Refactor getUserData to getGuildData)
   wallet_balance : () -> (nat) query;
   wallet_receive : () -> (WalletReceiveResult);
   withdraw_reward : (nat64) -> (Result);

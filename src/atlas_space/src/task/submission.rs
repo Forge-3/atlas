@@ -21,12 +21,22 @@ pub enum Submission {
     Text {
         #[n(0)]
         content: String,
+    },
+    #[n(1)]
+    Discord {
+        #[n(0)]
+        access_token: String,
+        #[n(1)]
+        guild_id: String,
     }
 }
 
 impl Submission {
     pub fn is_text(&self) -> bool {
         matches!(self, Submission::Text { .. })
+    }
+    pub fn is_discord(&self) -> bool {
+        matches!(self, Submission::Discord { .. })
     }
 }
 
