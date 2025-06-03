@@ -28,11 +28,6 @@ pub struct CreateSubTaskArgs {
     pub kind: String,
     pub content: TaskContent,
 }
-#[derive(Debug, serde::Deserialize)]
-struct DiscordGuild {
-    id: String,
-    name: String,
-}
 
 impl CreateTaskArgs {
     pub fn validate(&self) -> Result<(), Error> {
@@ -46,7 +41,19 @@ impl CreateTaskArgs {
         }
         self.subtasks
             .iter()
-            .try_for_each(|sub| sub.content.validate())
+            .try_for_each(|subtask_arg| subtask_arg.content.validate())
+    }
+}
+impl CreateSubTaskArgs {
+    pub fn validate(&self) -> Result<(), Error> {
+        match self.kind.as_str() {
+            "generic" => self.content.validate(),
+            "discord" => self.content.validate(),
+            _ => Err(Error::InvalidTaskContent(format!(
+                "Unknown subtask kind: {}",
+                self.kind
+            ))),
+        }
     }
 }
 
@@ -104,45 +111,40 @@ pub enum TaskType {
 }
 
 impl TaskType {
-    pub fn submit(&mut self, user: Principal, submission: Submission) -> Result<(), Error> {
+    pub fn validate(&self) -> Result<(), Error> {
         match self {
-            TaskType::GenericTask {
-                task_content: _,
-                submission: submissions_map,
-            } => {
-                if submissions_map.contains_key(&user) {
-                    return Err(Error::UserAlreadySubmitted);
-                }
-                if !submission.is_text() {
-                    return Err(Error::IncorrectSubmission("Text".to_string()));
-                }
-                match &submission {
-                    Submission::Text { content } => content.trim().len() ,
-                };
+            TaskType::GenericTask { task_content, .. } => task_content.validate(),
+            TaskType::DiscordTask { task_content, .. } => task_content.validate(),
+        }
+    }
 
-                submissions_map.insert(
-                    user,
-                    SubmissionData::new(submission, SubmissionState::default()),
-                );
+    pub fn submit(&mut self, user: Principal, submission_data: Submission) -> Result<(), Error> {
+        if self.get_submission_by_user(&user).is_some() {
+            return Err(Error::UserAlreadySubmitted);
+        }
+
+        match self {
+            TaskType::GenericTask { submission, .. } => {
+                if !submission_data.is_text() {
+                    return Err(Error::IncorrectSubmission("Expected text submission".to_string()));
+                }
+                submission.insert(user, SubmissionData::new(submission_data, SubmissionState::WaitingForReview));
                 Ok(())
             }
-            TaskType::DiscordTask { task_content: _, submission: submission_map } => {
-                if submission_map.contains_key(&user) {
-                    return Err(Error::UserAlreadySubmitted);
-                }
-                if !submission.is_text() {
-                    return Err(Error::IncorrectSubmission("Text".to_string()));
-                }
-                match &submission {
-                    Submission::Text { content } => content.trim().len(),
+            TaskType::DiscordTask { submission, .. } => {
+                let Submission::Discord { access_token, guild_id } = submission_data else {
+                    return Err(Error::IncorrectSubmission("Expected Discord submission".to_string()));
                 };
-
-                submission_map.insert(
-                    user,
-                    SubmissionData::new(submission, SubmissionState::default()),
-                );
+                submission.insert(user, SubmissionData::new(Submission::Discord { access_token, guild_id }, SubmissionState::WaitingForReview));
                 Ok(())
             }
+        }
+    }
+
+    pub fn get_submission_by_user(&self, user: &Principal) -> Option<&SubmissionData> {
+        match self {
+            TaskType::GenericTask { submission, .. } => submission.get(user),
+            TaskType::DiscordTask { submission, .. } => submission.get(user),
         }
     }
 }
@@ -150,54 +152,58 @@ impl TaskType {
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType)]
 pub struct Task {
     #[cbor(n(0), with = "shared::cbor::principal")]
-    creator: Principal,
+    pub created_by: Principal,
     #[n(1)]
-    token_reward: TokenReward,
+    pub created_at: u64,
     #[n(2)]
-    tasks: Vec<TaskType>,
+    pub title: String,
     #[n(3)]
-    number_of_uses: u64,
+    pub token_reward: TokenReward,
     #[n(4)]
-    task_title: String,
+    pub tasks: BTreeMap<usize, TaskType>,
+    #[n(5)]
+    pub number_of_uses: u64,
+    #[n(6)]
+    pub subaccount: [u8; 32],
 }
 
 impl Task {
     pub async fn new(
-        creator: Principal,
-        create_task_args: CreateTaskArgs,
+        caller: Principal,
+        args: CreateTaskArgs,
         subaccount: [u8; 32],
     ) -> Result<Self, Error> {
-        let token_reward = create_task_args.token_reward.clone();
-        token_reward
-            .deposit_reward(creator, subaccount, create_task_args.number_of_uses)
-            .await?;
+        let mut tasks_map = BTreeMap::new();
+        for (index, subtask_arg) in args.subtasks.into_iter().enumerate() {
+            let task_type = match subtask_arg.kind.as_str() {
+                "generic" => TaskType::GenericTask {
+                    task_content: subtask_arg.content,
+                    submission: BTreeMap::new(),
+                },
+                "discord" => TaskType::DiscordTask {
+                    task_content: subtask_arg.content,
+                    submission: BTreeMap::new(),
+                },
+                _ => return Err(Error::InvalidTaskContent("Unknown subtask kind".to_string())),
+            };
+            tasks_map.insert(index, task_type);
+        }
 
         Ok(Self {
-            creator,
-            token_reward: create_task_args.token_reward,
-            tasks: create_task_args
-                .subtasks
-                .iter()
-                .map(|sub| match sub.kind.as_str() {
-                    "discord" => TaskType::DiscordTask {
-                        task_content: sub.content.clone(),
-                        submission: Default::default(),
-                    },
-                    _ => TaskType::GenericTask {
-                        task_content: sub.content.clone(),
-                        submission: Default::default(),
-                    }
-                })
-                .collect(),
-            number_of_uses: create_task_args.number_of_uses,
-            task_title: create_task_args.task_title,
+            created_by: caller,
+            created_at: ic_cdk::api::time(),
+            title: args.task_title,
+            token_reward: args.token_reward,
+            tasks: tasks_map,
+            number_of_uses: args.number_of_uses,
+            subaccount,
         })
     }
 
     pub fn submit_subtask_submission(&mut self, user: Principal, subtask_id: usize, submission: Submission) -> Result<(), Error> {
         let subtask = self
             .tasks
-            .get_mut(subtask_id)
+            .get_mut(&subtask_id)
             .ok_or(Error::SubtaskDoNotExists(subtask_id))?;
         subtask.submit(user, submission)?;
 
@@ -252,64 +258,4 @@ impl Storable for TaskId {
     }
 
     const BOUND: Bound = Bound::Unbounded;
-}
-#[update]
-async fn verify_discord_token(
-    task_id: u64,
-    subtask_id: u64,
-    discord_token: String,
-    guild_id: String,
-) -> Result<bool, Error> {
-    ic_cdk::println!("VERIFY DISCORD TOKEN START: task_id={} subtask_id={} guild_id={}", task_id, subtask_id, guild_id);
-    let verified = verify_token_with_discord(&discord_token, &guild_id)
-        .await
-        .map_err(|e| Error::InvalidDiscordToken)?;
-    Ok(verified)
-}
-
-async fn verify_token_with_discord(discord_token: &str, guild_id: &str) -> Result<bool, String> {
-    let request = CanisterHttpRequestArgument {
-        url: "https://discord.com/api/users/@me/guilds".to_string(),
-        method: HttpMethod::GET,
-        headers: vec![
-            HttpHeader {
-                name: "Authorization".to_string(),
-                value: format!("Bearer {}", discord_token),
-            },
-            HttpHeader {
-                name: "Content-Type".to_string(),
-                value: "application/json".to_string(),
-            },
-        ],
-        body: None,
-        max_response_bytes: Some(2_000_000),
-        transform: None,
-    };
-
-    let cycles: u128 = 100_000_000_000;
-    let (response,): (HttpResponse,) = ic_cdk::api::management_canister::http_request::http_request(
-    request,
-    cycles
-    ).await.map_err(|e| {
-        ic_cdk::println!("Błąd HTTP: {:?}", e);
-        format!("HTTP request failed: {:?}", e)
-    })?;
-     
-    ic_cdk::println!("Discord response status: {:?}", response.status);
-    ic_cdk::println!("Discord response body: {:?}", String::from_utf8_lossy(&response.body));
-
-    if response.status != 200u64 {
-        return Err(format!("Discord API returned status code {}", response.status));
-    }
-
-    let guilds: Vec<DiscordGuild> = serde_json::from_slice(&response.body)
-        .map_err(|e| format!("Failed to deserialize Discord guilds: {:?}", e))?;
-
-    ic_cdk::println!("Parsed guilds: {:?}", guilds);
-
-    let is_member= guilds.iter().any(|guild| guild.id == guild_id);
-
-    ic_cdk::println!("IS MEMBER? {} (Searching: {})", is_member, guild_id);
-
-    Ok(is_member)
 }

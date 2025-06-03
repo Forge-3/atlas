@@ -1,7 +1,10 @@
-import type { TaskType } from "../../../../../declarations/atlas_space/atlas_space.did";
+import type {
+  TaskType,
+  Submission as CandidSubmission
+} from "../../../../../declarations/atlas_space/atlas_space.did";
 import type { Principal } from "@dfinity/principal";
 import React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Button from "../../Shared/Button";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -11,15 +14,16 @@ import toast from "react-hot-toast";
 import { useAuthAtlasSpaceActor } from "../../../hooks/identityKit";
 import { useAuth } from "@nfid/identitykit/react";
 import DiscordButton from "../../DiscordButton";
-import DiscordCheckButton from "../../DiscordCheckButton";
-import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { selectUserDiscordData, setUserDiscordAccessToken, setUserDiscordData } from "../../../store/slices/userSlice";
-import { getOAuth2URL, getUserData } from "../../../integrations/discord";
-
-type DiscordTaskType = Extract<TaskType, { DiscordTask: unknown }>['DiscordTask'];
+import { selectUserDiscordData, setDiscordIntegrationData } from "../../../store/slices/userSlice";
+import { unwrapCall } from "../../../canisters/delegatedCall";
+import { getSpaceTasks } from "../../../canisters/atlasSpace/api";
 
 const GUILD_ID = "1359198898752852110";
+
+type Submission = CandidSubmission;
+
+type DiscordTaskType = Extract<TaskType, { DiscordTask: unknown }>['DiscordTask'];
 
 interface DiscordTaskProps {
   discordTask: DiscordTaskType;
@@ -29,20 +33,9 @@ interface DiscordTaskProps {
 }
 
 interface DiscordTaskFormInput {
-  taskSubmission: string;
 }
 
-const maxDescriptionLength = 500;
-
-const schema = yup.object({
-  taskSubmission: yup
-    .string()
-    .max(maxDescriptionLength)
-    .trim()
-    .min(2)
-    .required()
-    .label("Task submission"),
-});
+const schema = yup.object({});
 
 const DiscordTask = ({
   discordTask,
@@ -50,106 +43,129 @@ const DiscordTask = ({
   taskId,
   subtaskId,
 }: DiscordTaskProps) => {
-  const { user } = useAuth();
-  const [openSubmission, setSubmission] = useState(false);
-  const { register, handleSubmit } = useForm({
-    resolver: yupResolver(schema),
-    defaultValues: {
-      taskSubmission: "",
-    },
-  });
-  const { connect } = useAuth();
-  const authAtlasSpace = useAuthAtlasSpaceActor(spacePrincipal);
-
-  const onSubmit: SubmitHandler<DiscordTaskFormInput> = async ({
-    taskSubmission,
-  }) => {
-    console.log({ taskSubmission, authAtlasSpace });
-    if (!authAtlasSpace) return;
-    const call = submitSubtaskSubmission({
-      authAtlasSpace,
-      taskId: BigInt(taskId),
-      subtaskId: BigInt(subtaskId),
-      submission: { Text: { content: taskSubmission } },
-    });
-    await toast.promise(call, {
-      loading: "Submitting response...",
-      success: "Submitted response",
-      error: "Failed to submit response",
-    });
-
-    setSubmission(false);
-  };
-
-  const userSubmission = user?.principal
-    ? (discordTask.submission.find(
-        ([principal]) => principal.toString() === user.principal.toString()
-      ) ?? null)
-    : null;
-
-  const submissionState = userSubmission?.[1].state
-    ? Object.keys(userSubmission?.[1].state)[0]
-    : null;
-
+  console.log("DiscordTask component rendered with props:")
+  const { user, connect } = useAuth();
+  const actor = useAuthAtlasSpaceActor(spacePrincipal);
   const dispatch = useDispatch();
-  const { accessToken } = useSelector(selectUserDiscordData)
-  console.log("Redux Discord accessToken:", accessToken);
+
+  const userDiscordData = useSelector(selectUserDiscordData);
+  const accessToken = userDiscordData?.accessToken;
+
+  const [openSubmission, setSubmission] = useState(false);
+
+  const userSubmissionEntry = discordTask.submission.find(
+    ([principal]) => principal.toText() === user?.principal.toText()
+  );
+
+  const submissionState = userSubmissionEntry ? userSubmissionEntry[1].state : null;
+
+  const { handleSubmit, formState: { errors } } = useForm<DiscordTaskFormInput>({
+    resolver: yupResolver(schema),
+  });
 
   useEffect(() => {
-  const handleMessage = (event: MessageEvent) => {
-    if (event.origin !== window.location.origin) return;
-    const { accessToken } = event.data as {accessToken?: string};
-    if (accessToken) {
-      dispatch(setUserDiscordAccessToken(accessToken));
-      window.open("https://discord.gg/NMErQhPCGw", "_blank");
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      const { tokenType, accessToken, state, expiresIn } = event.data;
+
+      if (tokenType && accessToken && state && expiresIn && user?.principal.toString() === state) {
+        dispatch(setDiscordIntegrationData({
+          tokenType,
+          accessToken,
+          state,
+          expiresIn: parseInt(expiresIn, 10),
+          guildId: GUILD_ID
+        }));
+        toast.success("Successfully connected to Discord!");
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, [dispatch, user?.principal]);
+
+
+  const onSubmit: SubmitHandler<DiscordTaskFormInput> = async () => {
+    if (!actor) {
+      toast.error("Actor not initialized.");
+      return;
     }
+
+    if (!user) {
+      toast.error("Please connect your wallet first.");
+      return;
+    }
+
+    if (!accessToken) {
+      toast.error("Please connect to Discord first by clicking 'Sign in with Discord'.");
+      return;
+    }
+
+    const submission: Submission = {
+      Discord: {
+        access_token: accessToken,
+        guild_id: GUILD_ID,
+      },
+    };
+
+    try {
+      const submissionPromise = submitSubtaskSubmission({
+      authAtlasSpace: actor,
+      taskId: BigInt(taskId),
+      subtaskId: BigInt(subtaskId),
+      submission: submission,
+    });
+
+     await unwrapCall<null>({
+      call: submissionPromise,
+      errMsg: "Failed to send subtask submission",
+    });
+
+    toast.success("Submission successful!");
+    setSubmission(false);
+
+    if (actor) {
+        await getSpaceTasks({
+          spaceId: spacePrincipal.toString(),
+          unAuthAtlasSpace: actor,
+          dispatch,
+        });
+        console.log("DiscordTask - getSpaceTasks dispatched after submission.");
+      } else {
+        console.warn("DiscordTask - Actor not available to refresh tasks after submission.");
+      }
+
+    } catch (e) {
+      console.error("Error submitting task:", e);
+      toast.error(`An unexpected error occurred: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  
   };
-  window.addEventListener("message", handleMessage);
-  return () => window.removeEventListener("message", handleMessage);
-}, [dispatch]);
+  
 
-const handleDiscordCheck = async () => {
-  if (!authAtlasSpace) {
-    toast.error("Session expired");
-    return;
-  }
-  if (!accessToken) {
-    toast.error("Discord access token not found. Please connect your Discord account.");
-    return;
-  }
-
-  const toastId = toast.loading("Checking Discord membership...");
-
-  try {
-    const isMember = await authAtlasSpace.verify_discord_token(
-        BigInt(taskId),
-        BigInt(subtaskId),
-        accessToken,
-        GUILD_ID
-      );
-      toast.dismiss(toastId);
-      console.log("isMember raw:", isMember, typeof isMember);
-    
-    if (isMember && "Ok" in isMember && isMember.Ok === true) {
-      toast.success("Discord membership verified!");
-    } else {
-      toast.error("You are NOT a member of the Discord server.");
-    }
-  } catch (err) {
-    console.error(err);
-    toast.error("Failed to verify Discord membership (exception)");
-  }
-};
 
   return (
-    <div className="flex mt-2">
-      <div className="flex flex-col mr-4">
-        <div className="bg-[#1E0F33] p-1  w-[32px] h-[32px] rounded-lg relative">
-          {submissionState === "WaitingForReview" && (
-            <img src="/icons/check-in-box.svg" className="w-6 h-6 relative" />
-          )}
-          {submissionState === "Accepted" && (
-            <img src="/icons/check-in-box.svg" className="w-6 h-6 relative" />
+    <div className="border border-gray-200 rounded-xl p-4 flex mb-2">
+      <div className="flex flex-col items-center mr-4">
+        <div className="bg-[#1E0F33] p-1 w-[32px] h-[32px] rounded-lg relative">
+          {userSubmissionEntry && submissionState && (
+            <>
+              {'WaitingForReview' in submissionState && (
+                <img src="/icons/hourglass.svg" className="w-6 h-6 relative" alt="Waiting for review" />
+              )}
+              {'Rejected' in submissionState && (
+                <img src="/icons/x-in-box.svg" className="w-6 h-6 relative" alt="Rejected" />
+              )}
+              {'Accepted' in submissionState && (
+                <img src="/icons/check-in-box.svg" className="w-6 h-6 relative" alt="Accepted" />
+              )}
+            </>
           )}
         </div>
         <div className="bg-[#1E0F33] flex-1 w-1 rounded-full mx-auto mt-2"></div>
@@ -164,25 +180,37 @@ const handleDiscordCheck = async () => {
           </p>
         </div>
 
-        {user && !userSubmission && openSubmission && (
+        {user && !userSubmissionEntry && openSubmission && (
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="flex justify-end flex gap-2">
-              { !accessToken && (
-              <DiscordButton/>)}
-              { accessToken && (
-              <DiscordCheckButton onCheck={handleDiscordCheck}/>)}
-               
+              {!accessToken && (
+                <DiscordButton />
+              )}
+              {accessToken && (
+                <Button>Submit Discord Task</Button>
+              )}
             </div>
           </form>
         )}
-        {user && !userSubmission && !openSubmission && (
+        {user && !userSubmissionEntry && !openSubmission && (
           <div className="flex">
-            <Button onClick={() => setSubmission(true)}>Submit message</Button>
+            <Button onClick={() => setSubmission(true)}>Submit Discord Task</Button>
           </div>
         )}
         {!user && (
           <div className="flex">
             <Button onClick={() => connect()}>Connect</Button>
+          </div>
+        )}
+        {userSubmissionEntry && submissionState && (
+          <div className="flex">
+            <Button>
+              Task Submitted ({
+                'WaitingForReview' in submissionState ? "Waiting for Review" :
+                'Accepted' in submissionState ? "Accepted" :
+                'Rejected' in submissionState ? "Rejected" : "Unknown"
+              })
+            </Button>
           </div>
         )}
       </div>

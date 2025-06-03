@@ -4,7 +4,7 @@ import { useSpaceId } from "../../hooks/space";
 import { useDispatch, useSelector } from "react-redux";
 import { customSerify, type RootState } from "../../store/store";
 import { deserify } from "@karmaniverous/serify-deserify";
-import type { Task as TaskBackend } from "../../../../declarations/atlas_space/atlas_space.did";
+import type { Task as TaskBackend, TaskType } from "../../../../declarations/atlas_space/atlas_space.did";
 import { useEffect } from "react";
 import { useUnAuthAtlasSpaceActor } from "../../hooks/identityKit";
 import { getAtlasSpace, getSpaceTasks } from "../../canisters/atlasSpace/api";
@@ -21,42 +21,63 @@ const Task = () => {
     spacePrincipal,
     navigate,
   });
-  if (!principal) return <></>;
+  if (!principal) {
+    console.log("Task Component - Principal is missing, returning early.");
+    return <></>;
+  }
   const spaceId = principal.toString();
 
   const space = useSelector(
-    (state: RootState) => state.spaces?.spaces?.[principal.toString()] ?? null
+    (state: RootState) => {
+      const s = state.spaces?.spaces?.[principal.toString()];
+      console.log("Task Component - Space from Redux (raw):", s);
+      return s ?? null;
+    }
   );
+
   const tasks = space?.tasks
     ? (deserify(space?.tasks, customSerify) as {
         [key: string]: TaskBackend;
       })
     : null;
+  
+  console.log("Task Component - Deserified tasks (dictionary):", tasks);
+
   const spaceData = space?.state;
+  console.log("Task Component - Space Data:", spaceData);
+
   const unAuthAtlasSpace = useUnAuthAtlasSpaceActor(principal);
 
   useEffect(() => {
     if (!unAuthAtlasSpace || spaceData) return;
+    console.log("Task Component - Fetching Atlas Space data...");
     getAtlasSpace({
       spaceId,
       unAuthAtlasSpace,
       dispatch,
     });
-  }, [dispatch, unAuthAtlasSpace, spaceData, principal]);
+  }, [dispatch, unAuthAtlasSpace, spaceData, principal, spaceId]);
 
   useEffect(() => {
     if (!unAuthAtlasSpace || tasks) return;
+    console.log("Task Component - Fetching Space Tasks...");
     getSpaceTasks({
       spaceId,
       unAuthAtlasSpace,
       dispatch,
     });
-  }, [dispatch, unAuthAtlasSpace, tasks, principal]);
+  }, [dispatch, unAuthAtlasSpace, tasks, principal, spaceId]);
 
-  if (!tasks || !taskId) return <></>;
+  if (!tasks || !taskId) {
+    console.log("Task Component - Early exit: tasks or taskId is missing.", { tasks, taskId });
+    return <></>;
+  }
+
   const currentTask = tasks[taskId];
+  console.log("Task Component - Current Task:", currentTask); 
 
   if (!spaceData || !currentTask) {
+    console.log("Task Component - Early exit: spaceData or currentTask is missing.", { spaceData, currentTask });
     return <></>;
   }
 
@@ -87,32 +108,34 @@ const Task = () => {
               <div className="h-1 w-full bg-white/20 mt-6 mb-8 rounded-full"></div>
               <div>
                 <h2 className="text-4xl font-semibold font-montserrat flex text-white">
-                  {currentTask.task_title}
+                  {currentTask.title} 
                 </h2>
                 <div className="mt-6">
-                  {currentTask.tasks.map((taskItem, key) => {
-                    if ('GenericTask' in taskItem) {
+                  {currentTask.tasks.map(([subtaskId, subtaskType], key) => {
+                    console.log("Task Component - Mapping subtask:", { subtaskId: subtaskId.toString(), subtaskType });
+                    
+                    if ('GenericTask' in subtaskType) {
                       return (
                         <GenericTask
-                          key={key}
-                          genericTask={taskItem['GenericTask']}
+                          key={subtaskId.toString()}
+                          genericTask={subtaskType['GenericTask']}
                           spacePrincipal={principal}
                           taskId={taskId}
-                          subtaskId={key}
+                          subtaskId={Number(subtaskId)}
                         />
                       );
                     }
-                    else if ('DiscordTask' in taskItem) {
+                    else if ('DiscordTask' in subtaskType) {
                       return (
                         <DiscordTask
-                           key={key}
-                           discordTask={taskItem['DiscordTask']}
-                           spacePrincipal={principal}
-                           taskId={taskId}
-                           subtaskId={key}
-                         />
-                       );
-                     }
+                          key={subtaskId.toString()}
+                          discordTask={subtaskType['DiscordTask']}
+                          spacePrincipal={principal}
+                          taskId={taskId}
+                          subtaskId={Number(subtaskId)}
+                        />
+                      );
+                    }
                     return null;
                   })}
                 </div>
@@ -120,10 +143,6 @@ const Task = () => {
                   <div className="mr-4">
                     <div className="bg-[#1E0F33] p-1 w-[32px] h-[32px] rounded-lg relative">
                       {/* TODO: add reward receive */}
-                      {/* <img
-                        src="/icons/check-in-box.svg"
-                        className="w-6 h-6 relative"
-                      /> */}
                     </div>
                   </div>
                   <div className="bg-[#9173FF] rounded-xl p-6 text-lg font-medium font-poppins w-full flex items-center justify-between">

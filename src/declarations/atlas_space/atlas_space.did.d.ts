@@ -39,8 +39,6 @@ export type Result_1 = { 'Ok' : GetTasksRes } |
   { 'Err' : Error };
 export type Result_2 = { 'Ok' : null } |
   { 'Err' : Error };
-export type Result_3 = { 'Ok' : boolean } |
-  { 'Err' : Error };
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
   { 'InitArg' : SpaceInitArg };
 export interface SpaceInitArg {
@@ -61,7 +59,8 @@ export interface State {
   'tasks_count' : bigint,
   'space_description' : string,
 }
-export type Submission = { 'Text' : { 'content' : string } };
+export type Submission = { 'Text' : { 'content' : string } } |
+  { 'Discord' : { 'guild_id' : string, 'access_token' : string } };
 export interface SubmissionData {
   'state' : SubmissionState,
   'submission' : Submission,
@@ -70,10 +69,12 @@ export type SubmissionState = { 'Rejected' : null } |
   { 'WaitingForReview' : null } |
   { 'Accepted' : null };
 export interface Task {
-  'tasks' : Array<TaskType>,
-  'creator' : Principal,
-  'task_title' : string,
+  'tasks' : Array<[bigint, TaskType]>,
+  'title' : string,
+  'subaccount' : Uint8Array | number[],
   'token_reward' : TokenReward,
+  'created_at' : bigint,
+  'created_by' : Principal,
   'number_of_uses' : bigint,
 }
 export type TaskContent = {
@@ -109,10 +110,6 @@ export interface _SERVICE {
   'submit_subtask_submission' : ActorMethod<
     [bigint, bigint, Submission],
     Result_2
-  >,
-  'verify_discord_token' : ActorMethod<
-    [bigint, bigint, string, string],
-    Result_3
   >,
   'wallet_balance' : ActorMethod<[], bigint>,
   'wallet_receive' : ActorMethod<[], WalletReceiveResult>,

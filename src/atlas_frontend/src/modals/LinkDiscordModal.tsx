@@ -1,31 +1,35 @@
 import React, { useEffect } from "react";
 import { useAuth } from "@nfid/identitykit/react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setScreenBlur } from "../store/slices/appSlice.ts";
 import Button from "../components/Shared/Button.tsx";
 import {
   getOAuth2URL,
-  getUserData,
+  getGuildsData,
   type UserData,
 } from "../integrations/discord.ts";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import {
-  setUserDiscordAccessToken,
-  setUserDiscordData,
-} from "../store/slices/userSlice.ts";
+import { setDiscordIntegrationData, clearDiscordIntegrationData, selectUserDiscordData } from "../store/slices/userSlice";
 import { useAuthAtlasMainActor } from "../hooks/identityKit.ts";
+
+const GUILD_ID = "1359198898752852110";
 
 const LastStep = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { disconnect, user } = useAuth();
+  const userDiscordData = useSelector(selectUserDiscordData);
 
-  const authenticatedAtlasMain = useAuthAtlasMainActor()
+  const authenticatedAtlasMain = useAuthAtlasMainActor();
 
   const disconnectWallet = () => {
     dispatch(setScreenBlur(false));
+    dispatch(clearDiscordIntegrationData());
+    localStorage.removeItem("discordUserAccessToken");
+    localStorage.removeItem("discordUserData");
     disconnect();
+    navigate("/");
   };
 
   const openOAuthTab = () => {
@@ -35,54 +39,57 @@ const LastStep = () => {
   const postDiscordLogin = async (accessToken: string) => {
     let userData: null | UserData = null;
     try {
-      userData = await getUserData(accessToken);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      userData = await getGuildsData(accessToken);
     } catch (_err) {
-      toast.error("Failed to get Discord data");
+      toast.error("Failed to get Discord data from Discord API.");
       return;
     }
 
     if (!authenticatedAtlasMain) {
-      toast.error("Session expired");
+      toast.error("Session expired. Please log in again.");
       navigate("/");
-      return <></>;
+      return;
     }
+    const { tokenType, state, expiresIn } = userDiscordData || {};
 
-    try {
-      //await authenticatedAtlasMain.register_user(accessToken);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (_err) {
-      toast.error("Failed to register user");
-      navigate("/");
-      return <></>;
-    }
-    dispatch(setUserDiscordAccessToken(accessToken));
-    dispatch(setUserDiscordData(userData));
+    dispatch(setDiscordIntegrationData({
+      tokenType: tokenType || "",
+      accessToken: accessToken,
+      state: state || "",
+      expiresIn: expiresIn || 0,
+      guildId: GUILD_ID,
+      userData: userData
+    }));
+
     navigate("/space");
     dispatch(setScreenBlur(false));
     toast.success("Successfully linked Discord");
   };
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleMessage = (event: any) => {
+    const handleMessage = (event: MessageEvent<{
+      tokenType?: string;
+      accessToken?: string;
+      state?: string;
+      expiresIn?: string;
+    }>) => {
       if (event.origin !== window.location.origin) return;
       const { tokenType, accessToken, state, expiresIn } = event.data;
 
       if (!tokenType || !accessToken || !expiresIn || !state) {
+        toast.error("Missing Discord authentication data.");
         return;
       }
       if (state !== user?.principal.toString()) {
-        toast.error("Failed to authenticate with Discord");
+        toast.error("Failed to authenticate with Discord: State mismatch.");
         return;
       }
-
-      postDiscordLogin(accessToken);
+      postDiscordLogin(accessToken); 
     };
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [authenticatedAtlasMain]);
+  }, [authenticatedAtlasMain, user?.principal, dispatch]);
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center">

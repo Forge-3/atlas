@@ -79,20 +79,21 @@ export const getSpaceTasks = async ({
   let tasksCount = 0n;
   let start = 0n;
   const count = 200n;
-  const call = unAuthAtlasSpace.get_open_tasks({
+
+  const initialCall = unAuthAtlasSpace.get_open_tasks({
     start,
     count,
   });
-  const res = await unwrapCall<GetTasksRes>({
-    call,
+  const initialRes = await unwrapCall<GetTasksRes>({
+    call: initialCall,
     errMsg: "Failed to get data from blockchain",
   });
 
-  tasksCount = res.tasks_count;
-  tasks.push(...res.tasks);
+  tasksCount = initialRes.tasks_count;
+  tasks.push(...initialRes.tasks);
   start += count;
 
-  while (tasksCount < tasks.length) {
+  while (tasks.length < tasksCount) {
     const call = unAuthAtlasSpace.get_open_tasks({
       start,
       count,
@@ -105,19 +106,22 @@ export const getSpaceTasks = async ({
     start += count;
   }
 
-  const storableTasks = tasks.reduce(
-    (acc, [id, val]) => ({
-      ...acc,
-      [id.toString()]: val,
-    }),
-    {}
-  );
+  const processedTasksForRedux: { [key: string]: Task } = {};
+
+  tasks.forEach(([id, task]) => {
+    const serializableTask = { ...task };
+
+    if (serializableTask.subaccount instanceof Uint8Array) {
+      serializableTask.subaccount = Array.from(serializableTask.subaccount);
+    }
+    processedTasksForRedux[id.toString()] = serializableTask;
+  });
 
   dispatch(
     setTasks(
       serify(
         {
-          tasks: storableTasks,
+          tasks: processedTasksForRedux,
           spaceId,
         },
         customSerify
@@ -139,14 +143,9 @@ export const submitSubtaskSubmission = async ({
   subtaskId,
   submission
 }: SubmitSubtaskSubmissionArgs) => {
-  const call = authAtlasSpace.submit_subtask_submission(
+  return await authAtlasSpace.submit_subtask_submission(
     taskId,
     subtaskId,
     submission
-  )
-
-  await unwrapCall<null>({
-    call,
-    errMsg: "Failed to send subtask submission",
-  });
+  );
 }

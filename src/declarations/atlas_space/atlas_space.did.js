@@ -65,6 +65,10 @@ export const idlFactory = ({ IDL }) => {
   });
   const Submission = IDL.Variant({
     'Text' : IDL.Record({ 'content' : IDL.Text }),
+    'Discord' : IDL.Record({
+      'guild_id' : IDL.Text,
+      'access_token' : IDL.Text,
+    }),
   });
   const SubmissionData = IDL.Record({
     'state' : SubmissionState,
@@ -81,10 +85,12 @@ export const idlFactory = ({ IDL }) => {
     }),
   });
   const Task = IDL.Record({
-    'tasks' : IDL.Vec(TaskType),
-    'creator' : IDL.Principal,
-    'task_title' : IDL.Text,
+    'tasks' : IDL.Vec(IDL.Tuple(IDL.Nat64, TaskType)),
+    'title' : IDL.Text,
+    'subaccount' : IDL.Vec(IDL.Nat8),
     'token_reward' : TokenReward,
+    'created_at' : IDL.Nat64,
+    'created_by' : IDL.Principal,
     'number_of_uses' : IDL.Nat64,
   });
   const GetTasksRes = IDL.Record({
@@ -101,7 +107,6 @@ export const idlFactory = ({ IDL }) => {
     'space_description' : IDL.Text,
   });
   const Result_2 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });
-  const Result_3 = IDL.Variant({ 'Ok' : IDL.Bool, 'Err' : Error });
   const WalletReceiveResult = IDL.Record({ 'accepted' : IDL.Nat64 });
   return IDL.Service({
     'create_task' : IDL.Func([CreateTaskArgs], [Result], []),
@@ -116,11 +121,6 @@ export const idlFactory = ({ IDL }) => {
     'submit_subtask_submission' : IDL.Func(
         [IDL.Nat64, IDL.Nat64, Submission],
         [Result_2],
-        [],
-      ),
-    'verify_discord_token' : IDL.Func(
-        [IDL.Nat64, IDL.Nat64, IDL.Text, IDL.Text],
-        [Result_3],
         [],
       ),
     'wallet_balance' : IDL.Func([], [IDL.Nat], ['query']),
