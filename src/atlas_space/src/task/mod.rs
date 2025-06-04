@@ -8,8 +8,6 @@ use serde::Deserialize;
 use sha2::Digest;
 use submission::{Submission, SubmissionData, SubmissionState};
 use token_reward::TokenReward;
-use ic_cdk::api::management_canister::http_request::{ CanisterHttpRequestArgument, HttpHeader, HttpMethod, HttpResponse};
-use serde_json;
 
 use crate::errors::Error;
 
@@ -111,13 +109,6 @@ pub enum TaskType {
 }
 
 impl TaskType {
-    pub fn validate(&self) -> Result<(), Error> {
-        match self {
-            TaskType::GenericTask { task_content, .. } => task_content.validate(),
-            TaskType::DiscordTask { task_content, .. } => task_content.validate(),
-        }
-    }
-
     pub fn submit(&mut self, user: Principal, submission_data: Submission) -> Result<(), Error> {
         if self.get_submission_by_user(&user).is_some() {
             return Err(Error::UserAlreadySubmitted);
