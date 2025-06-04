@@ -4,7 +4,7 @@ import { useSpaceId } from "../../hooks/space";
 import { useDispatch, useSelector } from "react-redux";
 import { customSerify, type RootState } from "../../store/store";
 import { deserify } from "@karmaniverous/serify-deserify";
-import type { Task as TaskBackend, TaskType } from "../../../../declarations/atlas_space/atlas_space.did";
+import type { Task as TaskBackend } from "../../../../declarations/atlas_space/atlas_space.did";
 import { useEffect } from "react";
 import { useUnAuthAtlasSpaceActor } from "../../hooks/identityKit";
 import { getAtlasSpace, getSpaceTasks } from "../../canisters/atlasSpace/api";
@@ -111,7 +111,7 @@ const Task = () => {
                   {currentTask.title} 
                 </h2>
                 <div className="mt-6">
-                  {currentTask.tasks.map(([subtaskId, subtaskType], key) => {
+                  {currentTask.tasks.map(([subtaskId, subtaskType]) => {
                     console.log("Task Component - Mapping subtask:", { subtaskId: subtaskId.toString(), subtaskType });
                     
                     if ('GenericTask' in subtaskType) {

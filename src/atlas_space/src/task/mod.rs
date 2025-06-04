@@ -1,14 +1,11 @@
 use std::{borrow::Cow, collections::BTreeMap, fmt};
 
 use candid::{CandidType, Principal};
-use ic_cdk::update;
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
 use submission::{Submission, SubmissionData, SubmissionState};
 use token_reward::TokenReward;
-use ic_cdk::api::management_canister::http_request::{ CanisterHttpRequestArgument, HttpHeader, HttpMethod, HttpResponse};
-use serde_json;
 
 use crate::errors::Error;
 
@@ -111,13 +108,6 @@ pub enum TaskType {
 }
 
 impl TaskType {
-    pub fn validate(&self) -> Result<(), Error> {
-        match self {
-            TaskType::GenericTask { task_content, .. } => task_content.validate(),
-            TaskType::DiscordTask { task_content, .. } => task_content.validate(),
-        }
-    }
-
     pub fn submit(&mut self, user: Principal, submission_data: Submission) -> Result<(), Error> {
         if self.get_submission_by_user(&user).is_some() {
             return Err(Error::UserAlreadySubmitted);
@@ -198,16 +188,6 @@ impl Task {
             number_of_uses: args.number_of_uses,
             subaccount,
         })
-    }
-
-    pub fn submit_subtask_submission(&mut self, user: Principal, subtask_id: usize, submission: Submission) -> Result<(), Error> {
-        let subtask = self
-            .tasks
-            .get_mut(&subtask_id)
-            .ok_or(Error::SubtaskDoNotExists(subtask_id))?;
-        subtask.submit(user, submission)?;
-
-        Ok(())
     }
 }
 

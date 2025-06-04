@@ -139,6 +139,8 @@ pub async fn submit_subtask_submission(
 
 
 async fn is_member_of_guild(discord_token: String, guild_id: String) -> Result<bool, String> {
+    let initial_canister_balance = ic_cdk::api::canister_balance();
+    ic_cdk::println!("Initial canister cycles balance before Discord HTTP call: {}", initial_canister_balance);
     let request = CanisterHttpRequestArgument {
         url: "https://discord.com/api/users/@me/guilds".to_string(),
         method: HttpMethod::GET,
@@ -157,7 +159,8 @@ async fn is_member_of_guild(discord_token: String, guild_id: String) -> Result<b
         transform: None,
     };
 
-    let cycles: u128 = 100_000_000_000;
+    let cycles: u128 = 22_943_726_917;
+    ic_cdk::println!("Attempting Discord HTTP request with {} cycles.", cycles);
     let (response,): (HttpResponse,) = ic_cdk::api::management_canister::http_request::http_request(
         request,
         cycles
