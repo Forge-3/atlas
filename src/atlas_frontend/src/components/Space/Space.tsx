@@ -86,7 +86,7 @@ const Space = ({
     (state: RootState) => state.app.isScreenBlur
   );
   const userBlockchainData = useSelector(selectUserBlockchainData);
-  const isUserInHub = useSelector(selectUserHub);
+  const userInHub = useSelector(selectUserHub);
   const [isCreateTaskModal, setCreateTaskModal] = useState(false);
   const [isJoinHubModal, setJoinHubModal] = useState(false);
   const [preventBlur, setPreventBlur] = useState(false);
@@ -96,14 +96,14 @@ const Space = ({
   });
 
   useEffect(() => {
-    if (isUserInHub === null && !preventBlur && user) {
+    if (userInHub === null && !preventBlur && user) {
       setJoinHubModal(true);
       dispatch(setScreenBlur(true));
     } else {
       setJoinHubModal(false);
       dispatch(setScreenBlur(false));
     }
-  }, [isUserInHub, isJoinHubModal, dispatch, user, preventBlur]);
+  }, [userInHub, isJoinHubModal, dispatch, user, preventBlur]);
 
   if (!principal) return <></>;
 
@@ -111,6 +111,8 @@ const Space = ({
     setCreateTaskModal(!isCreateTaskModal);
     dispatch(setScreenBlur(!isScreenBlur));
   };
+
+
 
   const toggleJoinHubModal = () => {
     setPreventBlur(true);

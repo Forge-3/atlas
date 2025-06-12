@@ -82,7 +82,7 @@ export const getAtlasUserIsInHub = async ({
   const principal = isInHub.pop()?.id;
   if (principal) {
 
-    dispatch(setIsUserInHub(serify(principal, customSerify) as Principal));
+    dispatch(setIsUserInHub(principal.toString()));
   } else {
     dispatch(setIsUserInHub(null));
   }

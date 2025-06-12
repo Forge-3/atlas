@@ -10,7 +10,6 @@ export const atlasMainActor = (
   agent: Agent
 ): ActorSubclass<_SERVICE> => {
 
-  console.log({agent, canisterId})
   return Actor.createActor(idlFactory, {
     agent,
     canisterId,

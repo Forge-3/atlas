@@ -1,7 +1,6 @@
 import type { ActorSubclass } from "@dfinity/agent";
 import type {
   _SERVICE,
-  Icrc1BlockIndex,
 } from "../../../../declarations/ckusdc_canister/ckusdc_canister.did";
 import type { Principal } from "@dfinity/principal";
 import { unwrapCall } from "../delegatedCall";
@@ -88,4 +87,20 @@ export const setUserSpaceAllowanceIfNeeded = async ({
     spacePrincipal,
     amount,
   });
+};
+
+interface UserBalanceArgs {
+  authCkUSDC: ActorSubclass<_SERVICE>;
+  user: Principal;
+}
+
+export const getUserBalance = async ({
+  authCkUSDC,
+  user,
+}: UserBalanceArgs) => {
+  return authCkUSDC.icrc1_balance_of({
+    owner: user,
+    subaccount: []
+  });
+
 };

@@ -51,7 +51,7 @@ interface UserState {
       userData: UserData | null;
     };
   };
-  userHub: Principal | null;
+  userHub: string | null;
 }
 
 const initialState = (): UserState => {
@@ -86,10 +86,10 @@ export const userSlice = createSlice({
     setUserBlockchainData: (state, action: PayloadAction<StorableUser>) => {
       state.blockchain = { ...state.blockchain, ...action.payload };
     },
-    setIsUserInHub: (state, action: PayloadAction<Principal | null>) => {
+    setIsUserInHub: (state, action: PayloadAction<string | null>) => {
       if (!action.payload) return;
-      const principal = (deserify(action.payload, customSerify) as Principal).toText()
-      localStorage.setItem("userHub", principal);
+      console.log(12314, action.payload)
+      localStorage.setItem("userHub", action.payload);
       state.userHub = action.payload;
     },
   },
@@ -116,9 +116,7 @@ export const userSlice = createSlice({
     },
     selectUserHub: (userState: UserState) => {
       if (userState.userHub) return userState.userHub;
-      const userHub = localStorage.getItem("userHub");
-      if (userHub) return serify(userHub, customSerify)
-      return null;
+      return localStorage.getItem("userHub");
     },
   },
 });

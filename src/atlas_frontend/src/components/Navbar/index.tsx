@@ -13,7 +13,7 @@ import { copy } from "../../utils/shared.ts";
 import { motion } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../store/store.ts";
-import { useUnAuthAtlasMainActor } from "../../hooks/identityKit.ts";
+import { useUnAuthAtlasMainActor, useUnAuthCkUSDCActor } from "../../hooks/identityKit.ts";
 import { selectUserBlockchainData, selectUserHub } from "../../store/slices/userSlice.ts";
 import {
   getAtlasConfig,
@@ -21,6 +21,10 @@ import {
   getAtlasUserIsInHub,
 } from "../../canisters/atlasMain/api.ts";
 import { SPACE_BUILDER_PATH, SPACES_PATH } from "../../router/paths.ts";
+import { useQuery } from "@tanstack/react-query";
+import { getUserBalance } from "../../canisters/ckUSDC/api.ts";
+import { formatUnits } from "ethers";
+import { DECIMALS } from "../../canisters/ckUSDC/constans.ts";
 
 const ConnectButton = (props: ConnectWalletButtonProps) => (
   <Button
@@ -50,6 +54,7 @@ const DropdownMenuComponent = ({
     (state: RootState) => state.app.blockchainConfig
   );
   const isUserInHub = useSelector(selectUserHub);
+  const unAuthCkUSDCActor = useUnAuthCkUSDCActor();
 
   const copyAccount = () => {
     copy(connectedAccount);
@@ -92,6 +97,22 @@ const DropdownMenuComponent = ({
     }
   }, [unAuthAtlasMain, user, dispatch]);
 
+
+  const { data: userCkUsdc } = useQuery(
+    ["user", unAuthCkUSDCActor, user],
+    async () => {
+      if (!unAuthCkUSDCActor || !user?.principal) return null;
+      return await getUserBalance({
+        authCkUSDC: unAuthCkUSDCActor,
+        user: user?.principal
+      }
+      )
+    },{
+      enabled: !!user?.principal && !!unAuthCkUSDCActor
+    }
+  );
+  const parsedUserCkUsdc =  userCkUsdc !== null && userCkUsdc !== undefined ? formatUnits(userCkUsdc, DECIMALS) : null
+
   const ownedSpacesCount = userBlockchainData?.owned_spaces.length;
   const navigateToSpaceBuilder = () => {
     if (
@@ -133,6 +154,14 @@ const DropdownMenuComponent = ({
                 </div>
               </button>
             </li>
+            {parsedUserCkUsdc && <li>
+              <button className="flex items-center justify-center justify-between w-full gap-6">
+                <div>User XP:</div>{" "}
+                <div className="flex items-center justify-center">
+                  {parsedUserCkUsdc} XP
+                </div>
+              </button>
+            </li>}
             {userBlockchainData?.isSpaceLead() && (
               <li onClick={navigateToSpaceBuilder}>
                 <button className="flex items-center justify-center justify-between w-full gap-6">

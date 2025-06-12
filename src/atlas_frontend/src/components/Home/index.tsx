@@ -23,11 +23,11 @@ const Home = () => {
   ];
 
   return (
-    <div className="flex flex-col pb-10">
+    <div className="flex flex-col pb-10 overflow-x-hidden">
       <Header />
       <GradientBox>
         <div className="font-medium md:text-2xl md2:text-3xl dlg:text-4xl flex justify-center items-center mt-10">
-          <h2 className="text-white mt-10">
+          <h2 className="text-white mt-10 text-4xl">
             ICP HUB is{" "}
             <span className="text-[#9173FF]">Everywhere for Everyone</span>
           </h2>

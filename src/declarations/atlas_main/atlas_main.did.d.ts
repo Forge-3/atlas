@@ -26,7 +26,7 @@ export type Error = { 'UserRankNoMatch' : Array<Rank> } |
   { 'UserRichSpaceLimit' : { 'found' : bigint, 'expected' : bigint } } |
   { 'UserRankToHigh' : { 'found' : Rank, 'expected' : Rank } } |
   { 'UserAlreadyHaveExpectedRank' : Rank } |
-  { 'UserNotAnOwner' : Space } |
+  { 'UserNotAnOwner' : Principal } |
   { 'CountToHigh' : { 'max' : bigint, 'found' : bigint } } |
   { 'SpaceNotExist' : null } |
   { 'FailedToGetCanisterInfo' : string } |
@@ -98,7 +98,7 @@ export interface _SERVICE {
   'join_space' : ActorMethod<[Principal], Result_2>,
   'set_user_admin' : ActorMethod<[Principal], Result_2>,
   'set_user_space_lead' : ActorMethod<[Principal], Result_2>,
-  'upgrade_space' : ActorMethod<[Space], Result_2>,
+  'upgrade_space' : ActorMethod<[Principal], Result_2>,
   'user_is_admin' : ActorMethod<[Principal], boolean>,
   'user_is_in_hub' : ActorMethod<[Principal], boolean>,
   'user_is_in_space' : ActorMethod<[Principal, Principal], boolean>,
