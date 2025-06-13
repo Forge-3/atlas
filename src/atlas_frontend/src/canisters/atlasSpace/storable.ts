@@ -1,7 +1,5 @@
 import type {
   State,
-  Task,
-  TokenReward,
 } from "../../../../declarations/atlas_space/atlas_space.did";
 
 export interface StorableState {

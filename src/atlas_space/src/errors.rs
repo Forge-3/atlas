@@ -58,4 +58,7 @@ pub enum Error {
     FailedToCallMain(String),
     #[error("Invalid Discord token:")]
     InvalidDiscordToken,
+
+    #[error("A custom error occurred: {0}")]
+    CustomError(String),
 }

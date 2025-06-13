@@ -29,6 +29,10 @@ export const idlFactory = ({ IDL }) => {
   const CreateSubTaskArgs = IDL.Record({
     'content' : TaskContent,
     'kind' : IDL.Text,
+    'guild_id' : IDL.Opt(IDL.Text),
+    'discord_invite_link' : IDL.Opt(IDL.Text),
+    'guild_icon' : IDL.Opt(IDL.Text),
+    'expires_at' : IDL.Opt(IDL.Text),
   });
   const CreateTaskArgs = IDL.Record({
     'task_title' : IDL.Text,
@@ -53,6 +57,7 @@ export const idlFactory = ({ IDL }) => {
     'NotOwner' : IDL.Null,
     'FailedToTransfer' : IDL.Text,
     'InvalidTaskContent' : IDL.Text,
+    'CustomError' : IDL.Text,
     'TaskDoNotExists' : IDL.Nat64,
     'AnonymousCaller' : IDL.Null,
   });
@@ -76,7 +81,11 @@ export const idlFactory = ({ IDL }) => {
   });
   const TaskType = IDL.Variant({
     'DiscordTask' : IDL.Record({
+      'guild_id' : IDL.Text,
       'task_content' : TaskContent,
+      'discord_invite_link' : IDL.Text,
+      'guild_icon' : IDL.Opt(IDL.Text),
+      'expires_at' : IDL.Opt(IDL.Text),
       'submission' : IDL.Vec(IDL.Tuple(IDL.Principal, SubmissionData)),
     }),
     'GenericTask' : IDL.Record({
@@ -98,6 +107,15 @@ export const idlFactory = ({ IDL }) => {
     'tasks_count' : IDL.Nat64,
   });
   const Result_1 = IDL.Variant({ 'Ok' : GetTasksRes, 'Err' : Error });
+  const DiscordGuild = IDL.Record({
+    'id' : IDL.Text,
+    'icon' : IDL.Opt(IDL.Text),
+    'name' : IDL.Text,
+  });
+  const Result_2 = IDL.Variant({
+    'Ok' : IDL.Vec(DiscordGuild),
+    'Err' : IDL.Text,
+  });
   const State = IDL.Record({
     'space_symbol' : IDL.Opt(IDL.Text),
     'space_background' : IDL.Opt(IDL.Text),
@@ -106,21 +124,51 @@ export const idlFactory = ({ IDL }) => {
     'tasks_count' : IDL.Nat64,
     'space_description' : IDL.Text,
   });
-  const Result_2 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });
+  const Result_3 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });
+  const HttpHeader = IDL.Record({ 'value' : IDL.Text, 'name' : IDL.Text });
+  const HttpResponse = IDL.Record({
+    'status' : IDL.Nat,
+    'body' : IDL.Vec(IDL.Nat8),
+    'headers' : IDL.Vec(HttpHeader),
+  });
+  const TransformArgs = IDL.Record({
+    'context' : IDL.Vec(IDL.Nat8),
+    'response' : HttpResponse,
+  });
+  const DiscordInviteApiResponse = IDL.Record({
+    'code' : IDL.Text,
+    'guild' : IDL.Opt(DiscordGuild),
+    'expires_at' : IDL.Opt(IDL.Text),
+  });
+  const Result_4 = IDL.Variant({
+    'Ok' : DiscordInviteApiResponse,
+    'Err' : IDL.Text,
+  });
   const WalletReceiveResult = IDL.Record({ 'accepted' : IDL.Nat64 });
   return IDL.Service({
     'create_task' : IDL.Func([CreateTaskArgs], [Result], []),
     'get_closed_tasks' : IDL.Func([GetTasksArgs], [Result_1], ['query']),
     'get_current_bytecode_version' : IDL.Func([], [IDL.Nat64], ['query']),
+    'get_discord_guilds' : IDL.Func([IDL.Text], [Result_2], []),
     'get_open_tasks' : IDL.Func([GetTasksArgs], [Result_1], ['query']),
     'get_state' : IDL.Func([], [State], ['query']),
-    'set_space_background' : IDL.Func([IDL.Text], [Result_2], []),
-    'set_space_description' : IDL.Func([IDL.Text], [Result_2], []),
-    'set_space_logo' : IDL.Func([IDL.Text], [Result_2], []),
-    'set_space_name' : IDL.Func([IDL.Text], [Result_2], []),
+    'set_space_background' : IDL.Func([IDL.Text], [Result_3], []),
+    'set_space_description' : IDL.Func([IDL.Text], [Result_3], []),
+    'set_space_logo' : IDL.Func([IDL.Text], [Result_3], []),
+    'set_space_name' : IDL.Func([IDL.Text], [Result_3], []),
     'submit_subtask_submission' : IDL.Func(
         [IDL.Nat64, IDL.Nat64, Submission],
-        [Result_2],
+        [Result_3],
+        [],
+      ),
+    'transform_http_response' : IDL.Func(
+        [TransformArgs],
+        [HttpResponse],
+        ['query'],
+      ),
+    'validate_discord_invite_link' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [Result_4],
         [],
       ),
     'wallet_balance' : IDL.Func([], [IDL.Nat], ['query']),

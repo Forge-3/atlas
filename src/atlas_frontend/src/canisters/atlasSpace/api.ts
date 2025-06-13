@@ -4,8 +4,8 @@ import type {
   GetTasksRes,
   Submission,
   Task,
-  TaskContent,
-  CreateTaskArgs
+  CreateTaskArgs,
+  DiscordInviteApiResponse,
 } from "../../../../declarations/atlas_space/atlas_space.did.js";
 import { unwrapCall } from "../delegatedCall.js";
 import { setSpace, setTasks } from "../../store/slices/spacesSlice.js";
@@ -19,6 +19,12 @@ interface GetAtlasSpaceArgs {
   unAuthAtlasSpace: ActorSubclass<_SERVICE>;
   spaceId: string;
   dispatch: Dispatch<UnknownAction>;
+}
+
+export interface DiscordGuildResponse {
+    id: string;
+    name: string;
+    icon?: string | null;
 }
 
 export const getAtlasSpace = async ({
@@ -149,3 +155,33 @@ export const submitSubtaskSubmission = async ({
     submission
   );
 }
+
+export const getDiscordGuildsFromCanister = async (
+    actor: ActorSubclass<_SERVICE>,
+    accessToken: string
+): Promise<{ Ok: DiscordGuildResponse[] } | { Err: string }> => {
+    const result = await actor.get_discord_guilds(accessToken);
+    if ('Ok' in result) {
+        const mappedGuilds = result.Ok.map(guild => ({
+            id: guild.id,
+            name: guild.name,
+            icon: guild.icon.length > 0 ? guild.icon[0] : null
+        }));
+        return { Ok: mappedGuilds };
+    } else {
+        return { Err: result.Err };
+    }
+};
+
+export const validateDiscordInviteLinkQuery = async (
+  actor: ActorSubclass<_SERVICE>,
+  inviteLink: string,
+  guildId: string
+): Promise<DiscordInviteApiResponse> => {
+  const result = await actor.validate_discord_invite_link(inviteLink, guildId);
+  
+  if ("Err" in result) {
+    throw new Error(result.Err);
+  }
+  return result.Ok
+};

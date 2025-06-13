@@ -7,7 +7,7 @@ use serde::Deserialize;
 use submission::{Submission, SubmissionData, SubmissionState};
 use token_reward::TokenReward;
 
-use crate::errors::Error;
+use crate::{errors::Error, methods::update::validate_discord_invite_link};
 
 pub mod submission;
 pub mod token_reward;
@@ -24,6 +24,10 @@ pub struct CreateTaskArgs {
 pub struct CreateSubTaskArgs {
     pub kind: String,
     pub content: TaskContent,
+    pub guild_id: Option<String>,
+    pub discord_invite_link: Option<String>,
+    pub guild_icon: Option<String>,
+    pub expires_at: Option<String>, // Optional field for Discord tasks
 }
 
 impl CreateTaskArgs {
@@ -104,6 +108,14 @@ pub enum TaskType {
         task_content: TaskContent,
         #[cbor(n(1), with = "shared::cbor::principal_map")]
         submission: BTreeMap<Principal, SubmissionData>,
+        #[n(2)]
+        guild_id: String,
+        #[n(3)]
+        discord_invite_link: String,
+        #[n(4)]
+        guild_icon: Option<String>,
+        #[n(5)]
+        expires_at: Option<String>, 
     }
 }
 
@@ -121,11 +133,11 @@ impl TaskType {
                 submission.insert(user, SubmissionData::new(submission_data, SubmissionState::WaitingForReview));
                 Ok(())
             }
-            TaskType::DiscordTask { submission, .. } => {
+            TaskType::DiscordTask { submission: current_submission, .. } => {
                 let Submission::Discord { access_token, guild_id } = submission_data else {
                     return Err(Error::IncorrectSubmission("Expected Discord submission".to_string()));
                 };
-                submission.insert(user, SubmissionData::new(Submission::Discord { access_token, guild_id }, SubmissionState::WaitingForReview));
+                current_submission.insert(user, SubmissionData::new(Submission::Discord { access_token, guild_id }, SubmissionState::WaitingForReview)); 
                 Ok(())
             }
         }
@@ -170,9 +182,40 @@ impl Task {
                     task_content: subtask_arg.content,
                     submission: BTreeMap::new(),
                 },
-                "discord" => TaskType::DiscordTask {
-                    task_content: subtask_arg.content,
-                    submission: BTreeMap::new(),
+                "discord" => {
+                    let guild_id = subtask_arg.guild_id.ok_or(Error::InvalidTaskContent(
+                        "Discord subtask requires a guild_id.".to_string(),
+                    ))?;
+                    let discord_invite_link = subtask_arg.discord_invite_link.ok_or(Error::InvalidTaskContent(
+                        "Discord subtask requires a discord_invite_link.".to_string(),
+                    ))?;
+                    ic_cdk::println!(
+                        "Validating Discord invite link for subtask {}: {} for Guild ID: {}",
+                        index,
+                        discord_invite_link,
+                        guild_id
+                    );
+                    let invite_response = match validate_discord_invite_link(discord_invite_link.clone(), guild_id.clone()).await {
+                        Ok(data) => {
+                            ic_cdk::println!("Discord invite link for subtask {} successfully validated.", index);
+                            data
+                        },
+                        Err(e) => {
+                            ic_cdk::eprintln!("Validation failed for Discord subtask {}: {}", index, e);
+                            return Err(Error::CustomError(format!(
+                                "Failed to create Discord subtask {}: {}",
+                                index, e
+                            )));
+                        }
+                    };
+                    TaskType::DiscordTask {
+                        task_content: subtask_arg.content,
+                        submission: BTreeMap::new(),
+                        guild_id: guild_id,
+                        discord_invite_link: discord_invite_link,
+                        guild_icon: subtask_arg.guild_icon,
+                        expires_at: invite_response.expires_at,
+                    }
                 },
                 _ => return Err(Error::InvalidTaskContent("Unknown subtask kind".to_string())),
             };

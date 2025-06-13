@@ -20,7 +20,14 @@ export interface UserData {
   public_flags: number;
   username: string;
   verified: boolean;
-  tokenType: string;
+}
+export interface DiscordGuild {
+  id: string;
+  name: string;
+  icon: string | null;
+  owner: boolean;
+  permissions: string;
+  features: string[];
 }
 
 export interface DiscordAuthData {
@@ -28,7 +35,6 @@ export interface DiscordAuthData {
   accessToken: string;
   state: string;
   expiresIn: number;
-  guildId: string;
 }
 
 export const getOAuth2URL = (stateData?: string) => {
@@ -48,8 +54,8 @@ export const getOAuth2URL = (stateData?: string) => {
   return url.toString();
 };
 
-export const getGuildsData = async (token: string) => {
-  const { data } = await axios.get<UserData>(
+export const getGuildsData = async (token: string): Promise<DiscordGuild[]> => {
+  const { data } = await axios.get<DiscordGuild[]>(
     "https://discord.com/api/users/@me/guilds",
     {
       headers: {
@@ -58,7 +64,7 @@ export const getGuildsData = async (token: string) => {
     }
   );
 
-  return data
+  return data;
 };
 
 

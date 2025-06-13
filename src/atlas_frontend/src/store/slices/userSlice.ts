@@ -14,6 +14,17 @@ export interface DiscordIntegrationState {
   state: string | null;
   expiresIn: number | null;
   guildId: string | null;
+  guilds?: DiscordGuild[] | null;
+  loadingGuilds?: boolean;
+  error: string | null;
+}
+
+export interface DiscordGuild {
+  id: string;
+  name: string;
+  icon: string | null;
+  owner: boolean;
+  permissions: string;
 }
 
 interface StorableUser extends User {
@@ -66,6 +77,9 @@ const initialState = (): UserState => {
         state: null,
         expiresIn: null,
         guildId: null,
+        guilds: null,
+        loadingGuilds: false,
+        error: null
       },
     },
   };
@@ -80,7 +94,6 @@ export const userSlice = createSlice({
       accessToken: string;
       state: string;
       expiresIn: number;
-      guildId: string;
       userData?: UserData;
     }>) => {
       localStorage.setItem("discordUserAccessToken", action.payload.accessToken);
@@ -92,10 +105,17 @@ export const userSlice = createSlice({
       state.integrations.discord.tokenType = action.payload.tokenType;
       state.integrations.discord.state = action.payload.state;
       state.integrations.discord.expiresIn = action.payload.expiresIn;
-      state.integrations.discord.guildId = action.payload.guildId;
       if (action.payload.userData) {
         state.integrations.discord.userData = action.payload.userData;
       }
+      state.integrations.discord.guilds = null;
+      state.integrations.discord.loadingGuilds = false;
+      state.integrations.discord.error = null;
+    },
+    setDiscordGuilds: (state, action: PayloadAction<{ guilds: DiscordGuild[] | null; loading: boolean; error: string | null }>) => {
+      state.integrations.discord.guilds = action.payload.guilds;
+      state.integrations.discord.loadingGuilds = action.payload.loading;
+      state.integrations.discord.error = action.payload.error;
     },
     clearDiscordIntegrationData: (state) => {
       state.integrations.discord.accessToken = null;
@@ -104,6 +124,11 @@ export const userSlice = createSlice({
       state.integrations.discord.state = null;
       state.integrations.discord.expiresIn = null;
       state.integrations.discord.guildId = null;
+      state.integrations.discord.guilds = null;
+      state.integrations.discord.loadingGuilds = false;
+      state.integrations.discord.error = null;
+      localStorage.removeItem("discordUserAccessToken");
+      localStorage.removeItem("discordUserData");
     },
     setUserBlockchainData: (state, action: PayloadAction<StorableUser>) => {
       state.blockchain = action.payload
@@ -124,6 +149,7 @@ export const {
   setDiscordIntegrationData,
   setUserBlockchainData,
   clearDiscordIntegrationData,
+  setDiscordGuilds,
 } = userSlice.actions;
 export const { selectUserDiscordData, selectUserBlockchainData } = userSlice.selectors;
 export default userSlice.reducer;

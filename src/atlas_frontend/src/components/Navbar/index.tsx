@@ -14,7 +14,7 @@ import { motion } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../store/store.ts";
 import { useUnAuthAtlasMainActor } from "../../hooks/identityKit.ts";
-import { selectUserBlockchainData } from "../../store/slices/userSlice.ts";
+import { clearDiscordIntegrationData, selectUserBlockchainData } from "../../store/slices/userSlice.ts";
 import { SPACE_BUILDER_PATH } from "../../router/index.tsx";
 import { getAtlasConfig, getAtlasUser } from "../../canisters/atlasMain/api.ts";
 
@@ -51,9 +51,7 @@ const DropdownMenuComponent = ({
     copy(connectedAccount);
   };
   const disconnectWallet = () => {
-    dispatch(setUserDiscordAccessToken(""));
-    localStorage.removeItem("discordUserAccessToken");
-    localStorage.removeItem("discordUserData");
+    dispatch(clearDiscordIntegrationData());
     disconnect();
     window.location.href = "/";
   };
@@ -196,7 +194,5 @@ const Navbar = () => {
 };
 
 export default Navbar;
-function setUserDiscordAccessToken(arg0: string): any {
-  throw new Error("Function not implemented.");
-}
+
 

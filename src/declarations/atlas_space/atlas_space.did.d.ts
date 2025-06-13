@@ -3,12 +3,29 @@ import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
 export interface CkUsdcLedger { 'fee' : [] | [bigint], 'principal' : Principal }
-export interface CreateSubTaskArgs { 'content' : TaskContent, 'kind' : string }
+export interface CreateSubTaskArgs {
+  'content' : TaskContent,
+  'kind' : string,
+  'guild_id' : [] | [string],
+  'discord_invite_link' : [] | [string],
+  'guild_icon' : [] | [string],
+  'expires_at' : [] | [string],
+}
 export interface CreateTaskArgs {
   'task_title' : string,
   'token_reward' : TokenReward,
   'number_of_uses' : bigint,
   'subtasks' : Array<CreateSubTaskArgs>,
+}
+export interface DiscordGuild {
+  'id' : string,
+  'icon' : [] | [string],
+  'name' : string,
+}
+export interface DiscordInviteApiResponse {
+  'code' : string,
+  'guild' : [] | [DiscordGuild],
+  'expires_at' : [] | [string],
 }
 export type Error = { 'BytecodeUpToDate' : null } |
   { 'NotParent' : null } |
@@ -26,6 +43,7 @@ export type Error = { 'BytecodeUpToDate' : null } |
   { 'NotOwner' : null } |
   { 'FailedToTransfer' : string } |
   { 'InvalidTaskContent' : string } |
+  { 'CustomError' : string } |
   { 'TaskDoNotExists' : bigint } |
   { 'AnonymousCaller' : null };
 export interface GetTasksArgs { 'count' : bigint, 'start' : bigint }
@@ -33,12 +51,22 @@ export interface GetTasksRes {
   'tasks' : Array<[bigint, Task]>,
   'tasks_count' : bigint,
 }
+export interface HttpHeader { 'value' : string, 'name' : string }
+export interface HttpResponse {
+  'status' : bigint,
+  'body' : Uint8Array | number[],
+  'headers' : Array<HttpHeader>,
+}
 export type Result = { 'Ok' : bigint } |
   { 'Err' : Error };
 export type Result_1 = { 'Ok' : GetTasksRes } |
   { 'Err' : Error };
-export type Result_2 = { 'Ok' : null } |
+export type Result_2 = { 'Ok' : Array<DiscordGuild> } |
+  { 'Err' : string };
+export type Result_3 = { 'Ok' : null } |
   { 'Err' : Error };
+export type Result_4 = { 'Ok' : DiscordInviteApiResponse } |
+  { 'Err' : string };
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
   { 'InitArg' : SpaceInitArg };
 export interface SpaceInitArg {
@@ -85,7 +113,11 @@ export type TaskContent = {
   };
 export type TaskType = {
     'DiscordTask' : {
+      'guild_id' : string,
       'task_content' : TaskContent,
+      'discord_invite_link' : string,
+      'guild_icon' : [] | [string],
+      'expires_at' : [] | [string],
       'submission' : Array<[Principal, SubmissionData]>,
     }
   } |
@@ -96,21 +128,28 @@ export type TaskType = {
     }
   };
 export type TokenReward = { 'CkUsdc' : { 'amount' : bigint } };
+export interface TransformArgs {
+  'context' : Uint8Array | number[],
+  'response' : HttpResponse,
+}
 export interface WalletReceiveResult { 'accepted' : bigint }
 export interface _SERVICE {
   'create_task' : ActorMethod<[CreateTaskArgs], Result>,
   'get_closed_tasks' : ActorMethod<[GetTasksArgs], Result_1>,
   'get_current_bytecode_version' : ActorMethod<[], bigint>,
+  'get_discord_guilds' : ActorMethod<[string], Result_2>,
   'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_1>,
   'get_state' : ActorMethod<[], State>,
-  'set_space_background' : ActorMethod<[string], Result_2>,
-  'set_space_description' : ActorMethod<[string], Result_2>,
-  'set_space_logo' : ActorMethod<[string], Result_2>,
-  'set_space_name' : ActorMethod<[string], Result_2>,
+  'set_space_background' : ActorMethod<[string], Result_3>,
+  'set_space_description' : ActorMethod<[string], Result_3>,
+  'set_space_logo' : ActorMethod<[string], Result_3>,
+  'set_space_name' : ActorMethod<[string], Result_3>,
   'submit_subtask_submission' : ActorMethod<
     [bigint, bigint, Submission],
-    Result_2
+    Result_3
   >,
+  'transform_http_response' : ActorMethod<[TransformArgs], HttpResponse>,
+  'validate_discord_invite_link' : ActorMethod<[string, string], Result_4>,
   'wallet_balance' : ActorMethod<[], bigint>,
   'wallet_receive' : ActorMethod<[], WalletReceiveResult>,
 }
