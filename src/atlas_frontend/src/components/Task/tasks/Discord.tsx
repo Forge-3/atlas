@@ -1,10 +1,9 @@
 import type {
   TaskType,
-  Submission as CandidSubmission
+  Submission as CandidSubmission,
 } from "../../../../../declarations/atlas_space/atlas_space.did";
 import type { Principal } from "@dfinity/principal";
-import React from "react";
-import { useEffect } from "react";
+import React, { useEffect, useCallback, useState } from "react";
 import Button from "../../Shared/Button";
 import { submitSubtaskSubmission } from "../../../canisters/atlasSpace/api";
 import toast from "react-hot-toast";
@@ -12,18 +11,19 @@ import { useAuthAtlasSpaceActor } from "../../../hooks/identityKit";
 import { useAuth } from "@nfid/identitykit/react";
 import DiscordButton from "../../DiscordButton";
 import { useDispatch, useSelector } from "react-redux";
-import { selectUserDiscordData, setDiscordIntegrationData } from "../../../store/slices/userSlice";
+import { 
+  selectUserDiscordData,
+  setDiscordIntegrationData, 
+} from "../../../store/slices/userSlice"; 
 import { unwrapCall } from "../../../canisters/delegatedCall";
 import { getSpaceTasks } from "../../../canisters/atlasSpace/api";
 
-const GUILD_ID = "1359198898752852110";
-
 type Submission = CandidSubmission;
 
-type DiscordTaskType = Extract<TaskType, { DiscordTask: unknown }>['DiscordTask'];
+type DiscordTaskData = Extract<TaskType, { DiscordTask: unknown }>['DiscordTask'];
 
 interface DiscordTaskProps {
-  discordTask: DiscordTaskType;
+  discordTask: DiscordTaskData;
   spacePrincipal: Principal;
   taskId: string;
   subtaskId: number;
@@ -35,15 +35,19 @@ const DiscordTask = ({
   taskId,
   subtaskId,
 }: DiscordTaskProps) => {
-  console.log("DiscordTask component rendered with props:")
+  console.log("DiscordTask component rendered with props:", { discordTask, spacePrincipal, taskId, subtaskId })
   const { user, connect } = useAuth();
   const actor = useAuthAtlasSpaceActor(spacePrincipal);
   const dispatch = useDispatch();
+  const [isVisible, setIsVisible] = useState<boolean>(false);
 
   const userDiscordData = useSelector(selectUserDiscordData);
   const accessToken = userDiscordData?.accessToken;
 
-  const userSubmissionEntry = discordTask.submission.find(
+  const guildId = discordTask.guild_id;
+  const discordInviteLink = discordTask.discord_invite_link;
+
+  const userSubmissionEntry = discordTask.submission.find( 
     ([principal]) => principal.toText() === user?.principal.toText()
   );
 
@@ -66,11 +70,9 @@ const DiscordTask = ({
             accessToken: receivedAccessToken,
             state: state || user?.principal?.toString() || "",
             expiresIn: parseInt(expiresIn || "0", 10),
-            guildId: GUILD_ID,
           }));
 
           toast.success("Successfully connected to Discord!", { id: discordConnectToastId });
-          window.open("https://discord.gg/NMErQhPCGw", "_blank");
 
         } catch (e) {
           console.error("Failed to process Discord OAuth callback:", e);
@@ -86,8 +88,9 @@ const DiscordTask = ({
     };
   }, [dispatch, user?.principal, userDiscordData]);
 
+  console.log("callback things: ", accessToken, guildId, accessToken, spacePrincipal, user)
 
-  const onSubmit = async () => {
+  const onSubmit = useCallback(async () => {
     if (!actor) {
       toast.error("Actor not initialized.");
       return;
@@ -103,31 +106,36 @@ const DiscordTask = ({
       return;
     }
 
+    if (!guildId) { 
+      toast.error("Guild ID is missing for this Discord task. Please report this issue to space creator.");
+      return;
+    }
+
     const submission: Submission = {
       Discord: {
         access_token: accessToken,
-        guild_id: GUILD_ID,
+        guild_id: guildId, 
       },
     };
 
-    const submissionToastId = toast.loading("Submitting Discord task and verifying membership..."); // Nowy toast dla submisji i weryfikacji
+    const submissionToastId = toast.loading("Submitting Discord task and verifying membership...");
 
     try {
       const submissionPromise = submitSubtaskSubmission({
-      authAtlasSpace: actor,
-      taskId: BigInt(taskId),
-      subtaskId: BigInt(subtaskId),
-      submission: submission,
-    });
+        authAtlasSpace: actor,
+        taskId: BigInt(taskId),
+        subtaskId: BigInt(subtaskId),
+        submission: submission,
+      });
 
-     await unwrapCall<null>({
-      call: submissionPromise,
-      errMsg: "Failed to send subtask submission",
-    });
+      await unwrapCall<null>({
+        call: submissionPromise,
+        errMsg: "Failed to send subtask submission",
+      });
 
-    toast.success("Submission successful! Discord membership verified.", { id: submissionToastId });
+      toast.success("Submission successful! Discord membership verified.", { id: submissionToastId });
 
-    if (actor) {
+      if (actor) {
         await getSpaceTasks({
           spaceId: spacePrincipal.toString(),
           unAuthAtlasSpace: actor,
@@ -140,15 +148,28 @@ const DiscordTask = ({
 
     } catch (e) {
       console.error("Error submitting task:", e);
-      let errorMessage = `An unexpected error occurred: ${e instanceof Error ? e.message : String(e)}`;
-      if (typeof e === 'string' && e.includes("User is not a member of the guild")) { 
-        errorMessage = "You are NOT a member of the required Discord server. Please join and try again.";
+
+      let errorMessage = "An unexpected error occurred. Please try again.";
+      if (typeof e === 'object' && e !== null && 'IncorrectSubmission' in e) {
+        const errorDetails = (e as { IncorrectSubmission: string }).IncorrectSubmission;
+        if (typeof errorDetails === 'string' && errorDetails.includes("User is not a member of the guild")) {
+          errorMessage = "You are NOT a member of the required Discord server. Please join and try again.";
+          if (discordInviteLink) {
+            errorMessage += ` Join here: ${discordInviteLink}`;
+          }
+        } else if (typeof errorDetails === 'string') {
+          errorMessage = `Submission failed: ${errorDetails}`;
+        }
+      } else if (e instanceof Error) {
+        errorMessage = `Submission failed: ${e.message}`;
+      } else {
+        errorMessage = `An unexpected error occurred: ${String(e)}`;
       }
       toast.error(errorMessage, { id: submissionToastId });
     }
-  };
+  }, [actor, user, accessToken, guildId, taskId, subtaskId, dispatch, spacePrincipal, discordInviteLink]);
   
-const renderButtons = () => {
+  const renderButtons = () => {
     if (!user) {
       return (
         <div className="flex">
@@ -174,37 +195,32 @@ const renderButtons = () => {
     if (!accessToken) {
       return (
         <div className="flex">
-          <DiscordButton />
+          <DiscordButton /> 
         </div>
       );
     }
 
-    return (
-        <div className="flex justify-end">
-          <Button onClick={onSubmit}>Submit Discord Task</Button>
+    if (!guildId) { 
+      return (
+        <div className="flex">
+          <Button disabled>Missing Guild ID for this task</Button>
         </div>
-    );
+      );
+    }
   };
-
+  console.log("setVisible state:", isVisible);
+  toast.dismiss(`discord-expired-${taskId}-${subtaskId}`)
+  const handleJoinDiscord = () => {
+    window.open(discordInviteLink, "_blank");
+    setIsVisible(true);
+    console.log("setVisible state:", isVisible);
+  };
+  
   return (
-    <div className="border border-gray-200 rounded-xl p-4 flex mb-2">
+    <div className="rounded-xl p-4 flex mb-2">
       <div className="flex flex-col items-center mr-4">
         <div className="bg-[#1E0F33] p-1 w-[32px] h-[32px] rounded-lg relative">
-          {userSubmissionEntry && submissionState ? (
-            <>
-              {'WaitingForReview' in submissionState && (
-                <img src="/icons/hourglass.svg" className="w-6 h-6 relative" alt="Waiting for review" />
-              )}
-              {'Rejected' in submissionState && (
-                <img src="/icons/x-in-box.svg" className="w-6 h-6 relative" alt="Rejected" />
-              )}
-              {'Accepted' in submissionState && (
-                <img src="/icons/check-in-box.svg" className="w-6 h-6 relative" alt="Accepted" />
-              )}
-            </>
-          ) : ( // Default icon, when there is no submission
-            <img src="/icons/discord-icon.svg" alt="Discord Icon" className="w-6 h-6" />
-          )}
+          
         </div>
         <div className="bg-[#1E0F33] flex-1 w-1 rounded-full mx-auto mt-2"></div>
       </div>
@@ -218,8 +234,26 @@ const renderButtons = () => {
           </p>
         </div>
 
-        {renderButtons()}
+        {!userSubmissionEntry && discordInviteLink && user && accessToken &&(
+          <div className="flex justify-end" style={{paddingBottom: "5px"}}>
+            <Button
+              onClick={handleJoinDiscord}
+              className={!isVisible ? "block" : "hidden"}
+            >
+              Join Discord Server
+            </Button>
+          </div>
+        )}
 
+        <div className="flex justify-end" style={{paddingRight: "5x"}}>
+          <Button
+            className={isVisible ? "block" : "hidden"}
+            onClick={onSubmit}
+          >
+            Submit Discord Task
+          </Button>
+          {renderButtons()}
+        </div>
       </div>
     </div>
   );

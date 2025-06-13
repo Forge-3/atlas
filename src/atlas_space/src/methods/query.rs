@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use candid::CandidType;
-use ic_cdk::query;
+use ic_cdk::{api::management_canister::http_request::{HttpResponse, TransformArgs}, query};
 use serde::Deserialize;
 
 use crate::{
@@ -77,4 +77,14 @@ pub fn get_closed_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
 #[query]
 pub fn get_current_bytecode_version() -> u64 {
     memory::read_config(|config| config.current_wasm_version)
+}
+
+#[query] 
+pub fn transform_http_response(raw_args: TransformArgs) -> HttpResponse {
+    let mut resp = HttpResponse {
+        status: raw_args.response.status,
+        body: raw_args.response.body,
+        headers: raw_args.response.headers,
+    };
+    resp
 }

@@ -21,7 +21,8 @@ import {
   getAtlasUserIsInHub,
 } from "../../canisters/atlasMain/api.ts";
 import { SPACE_BUILDER_PATH, SPACES_PATH } from "../../router/paths.ts";
-import { setUserDiscordAccessToken } from "../../store/slices/userSlice.ts";
+
+import { clearDiscordIntegrationData } from "../../store/slices/userSlice.ts";
 
 
 
@@ -58,9 +59,7 @@ const DropdownMenuComponent = ({
     copy(connectedAccount);
   };
   const disconnectWallet = () => {
-    dispatch(setUserDiscordAccessToken(""));
-    localStorage.removeItem("discordUserAccessToken");
-    localStorage.removeItem("discordUserData");
+    dispatch(clearDiscordIntegrationData());
     disconnect();
     window.location.href = "/";
   };
@@ -212,7 +211,5 @@ const Navbar = () => {
 };
 
 export default Navbar;
-function setUserDiscordAccessToken(arg0: string): any {
-  throw new Error("Function not implemented.");
-}
+
 

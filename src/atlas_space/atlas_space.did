@@ -1,10 +1,23 @@
 type CkUsdcLedger = record { fee : opt nat; "principal" : principal };
-type CreateSubTaskArgs = record { content : TaskContent; kind : text };
+type CreateSubTaskArgs = record {
+  content : TaskContent;
+  kind : text;
+  guild_id : opt text;
+  discord_invite_link : opt text;
+  guild_icon : opt text;
+  expires_at : opt text;
+};
 type CreateTaskArgs = record {
   task_title : text;
   token_reward : TokenReward;
   number_of_uses : nat64;
   subtasks : vec CreateSubTaskArgs;
+};
+type DiscordGuild = record { id : text; icon : opt text; name : text };
+type DiscordInviteApiResponse = record {
+  code : text;
+  guild : opt DiscordGuild;
+  expires_at : opt text;
 };
 type Error = variant {
   BytecodeUpToDate;
@@ -27,6 +40,7 @@ type Error = variant {
   NotOwner;
   FailedToTransfer : text;
   InvalidTaskContent : text;
+  CustomError : text;
   TaskDoNotExists : nat64;
   AnonymousCaller;
   SubmissionNotAccepted;
@@ -37,6 +51,7 @@ type GetTasksRes = record {
   tasks_count : nat64;
 };
 <<<<<<< HEAD
+<<<<<<< HEAD
 type Result = variant { Ok; Err : Error };
 type Result_1 = variant { Ok : nat64; Err : Error };
 type Result_2 = variant { Ok : GetTasksRes; Err : Error };
@@ -46,6 +61,19 @@ type Result = variant { Ok : nat64; Err : Error };
 type Result_1 = variant { Ok : GetTasksRes; Err : Error };
 type Result_2 = variant { Ok; Err : Error };
 >>>>>>> 63e0bd6 (Unify Subtask Submission & Refactor getUserData to getGuildData)
+=======
+type HttpHeader = record { value : text; name : text };
+type HttpResponse = record {
+  status : nat;
+  body : blob;
+  headers : vec HttpHeader;
+};
+type Result = variant { Ok : nat64; Err : Error };
+type Result_1 = variant { Ok : GetTasksRes; Err : Error };
+type Result_2 = variant { Ok : vec DiscordGuild; Err : text };
+type Result_3 = variant { Ok; Err : Error };
+type Result_4 = variant { Ok : DiscordInviteApiResponse; Err : text };
+>>>>>>> b64eb15 (Improve discord task form overhaul – validation, error states, guild UI)
 type SpaceArgs = variant {
   UpgradeArg : record { version : nat64 };
   InitArg : SpaceInitArg;
@@ -95,7 +123,11 @@ type TaskContent = variant {
 };
 type TaskType = variant {
   DiscordTask : record {
+    guild_id : text;
     task_content : TaskContent;
+    discord_invite_link : text;
+    guild_icon : opt text;
+    expires_at : opt text;
     submission : vec record { principal; SubmissionData };
   };
   GenericTask : record {
@@ -104,12 +136,14 @@ type TaskType = variant {
   };
 };
 type TokenReward = variant { CkUsdc : record { amount : nat } };
+type TransformArgs = record { context : blob; response : HttpResponse };
 type WalletReceiveResult = record { accepted : nat64 };
 service : (SpaceArgs) -> {
   accept_subtask_submission : (principal, nat64, nat64) -> (Result);
   create_task : (CreateTaskArgs) -> (Result_1);
   get_closed_tasks : (GetTasksArgs) -> (Result_2) query;
   get_current_bytecode_version : () -> (nat64) query;
+<<<<<<< HEAD
   get_open_tasks : (GetTasksArgs) -> (Result_2) query;
   get_state : () -> (State) query;
 <<<<<<< HEAD
@@ -127,6 +161,18 @@ service : (SpaceArgs) -> {
   set_space_name : (text) -> (Result_2);
   submit_subtask_submission : (nat64, nat64, Submission) -> (Result_2);
 >>>>>>> 63e0bd6 (Unify Subtask Submission & Refactor getUserData to getGuildData)
+=======
+  get_discord_guilds : (text) -> (Result_2);
+  get_open_tasks : (GetTasksArgs) -> (Result_1) query;
+  get_state : () -> (State) query;
+  set_space_background : (text) -> (Result_3);
+  set_space_description : (text) -> (Result_3);
+  set_space_logo : (text) -> (Result_3);
+  set_space_name : (text) -> (Result_3);
+  submit_subtask_submission : (nat64, nat64, Submission) -> (Result_3);
+  transform_http_response : (TransformArgs) -> (HttpResponse) query;
+  validate_discord_invite_link : (text, text) -> (Result_4);
+>>>>>>> b64eb15 (Improve discord task form overhaul – validation, error states, guild UI)
   wallet_balance : () -> (nat) query;
   wallet_receive : () -> (WalletReceiveResult);
   withdraw_reward : (nat64) -> (Result);

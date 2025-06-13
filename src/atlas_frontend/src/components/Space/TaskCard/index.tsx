@@ -22,9 +22,15 @@ const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
   const lastTaskItem = task.tasks.at(-1);
   let lastSubmissionCount = 0;
   if (lastTaskItem && 'GenericTask' in lastTaskItem) {
-    lastSubmissionCount = lastTaskItem.GenericTask.submission.filter(([, submission]) => 'Accepted' in submission.state).length;
+    const genericTask = lastTaskItem.GenericTask as {
+    submission: [unknown, { state: Record<string, unknown> }][];
+    }
+    lastSubmissionCount = genericTask.submission.filter(([, submission]) => 'Accepted' in submission.state).length;
   } else if (lastTaskItem && 'DiscordTask' in lastTaskItem) {
-    lastSubmissionCount = lastTaskItem.DiscordTask.submission.filter(([, submission]) => 'Accepted' in submission.state).length;
+    const discordTask = lastTaskItem.DiscordTask as {
+    submission: [unknown, { state: Record<string, unknown> }][];
+  };
+    lastSubmissionCount = discordTask.submission.filter(([, submission]) => 'Accepted' in submission.state).length;
   }
   
   return (
@@ -39,7 +45,7 @@ const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
         <InfoBox type={type} startingIn={startingIn} />
       </div>
       <div className="text-white font-montserrat font-medium p-6 flex flex-col gap-2">
-        <h3 className="text-2xl">{task.task_title}</h3>
+        <h3 className="text-2xl">{task.title}</h3>
         <div className="flex justify-end gap-2">
           <InfoBox
             type="points"

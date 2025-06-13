@@ -4,8 +4,9 @@ import type {
   GetTasksRes,
   Submission,
   Task,
-  TaskContent,
-  CreateTaskArgs
+  CreateTaskArgs,
+  DiscordInviteApiResponse,
+  DiscordGuild,
 } from "../../../../declarations/atlas_space/atlas_space.did.js";
 import { unwrapCall } from "../delegatedCall.js";
 import { setSpace, setTasks } from "../../store/slices/spacesSlice.js";
@@ -20,6 +21,12 @@ interface GetAtlasSpaceArgs {
   unAuthAtlasSpace: ActorSubclass<_SERVICE>;
   spaceId: string;
   dispatch: Dispatch<UnknownAction>;
+}
+
+export interface DiscordGuildResponse {
+    id: string;
+    name: string;
+    icon?: string | null;
 }
 
 export const getAtlasSpace = async ({
@@ -215,3 +222,27 @@ export const withdrawReward = async ({
     errMsg: "Failed to withdraw rewards",
   });
 };
+
+export const getDiscordGuildsFromCanister = async (
+    actor: ActorSubclass<_SERVICE>,
+    accessToken: string
+    )=> {
+    const call = actor.get_discord_guilds(accessToken);
+    return await unwrapCall<Array<DiscordGuild>>({
+    call,
+    errMsg: "Failed to get Discord guilds",
+  });
+};
+
+export const validateDiscordInviteLinkQuery = async (
+  actor: ActorSubclass<_SERVICE>,
+  inviteLink: string,
+  guildId: string
+  )=> {
+  const call = actor.validate_discord_invite_link(inviteLink, guildId);
+  return await unwrapCall<DiscordInviteApiResponse>({
+    call,
+    errMsg: "Failed to validate Discord invite link",
+  });
+}
+

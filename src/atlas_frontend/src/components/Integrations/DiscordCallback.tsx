@@ -23,7 +23,15 @@ const DiscordCallback = () => {
       state === user?.principal.toString() ||
       !window.opener
     ) {
-      return
+      console.error(
+        "DISCORD CALLBACK ERROR: Missing OAuth parameters OR state mismatch OR opener window closed.",
+        { receivedState: state, expectedState: user?.principal.toString(), hasOpener: !!window.opener }
+      );
+      if (window.opener) {
+          window.opener.postMessage({ error: "OAuth processing failed." }, window.location.origin);
+      }
+      window.close();
+      return;
     }
 
     try {
@@ -31,11 +39,12 @@ const DiscordCallback = () => {
         { tokenType, accessToken, state, expiresIn },
         window.location.origin
       );
+      console.log("DISCORD CALLBACK: Data successfully sent to opener.");
     } catch (err) {
-      console.error("Failed to send msg:", err);
+      console.error("DISCORD CALLBACK ERROR: Failed to send message to opener:", err);
     }
     window.close();
-  }, []);
+  }, [user?.principal]);
 
   return <></>;
 };

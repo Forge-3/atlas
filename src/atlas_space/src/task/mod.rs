@@ -9,7 +9,7 @@ use sha2::Digest;
 use submission::{Submission, SubmissionData, SubmissionState};
 use token_reward::TokenReward;
 
-use crate::errors::Error;
+use crate::{errors::Error, methods::update::validate_discord_invite_link};
 
 pub mod submission;
 pub mod token_reward;
@@ -25,29 +25,9 @@ pub struct CreateTaskArgs {
 
 impl CreateTaskArgs {
     pub fn validate(&self) -> Result<(), Error> {
-        if self.task_title.trim().len() > 50 {
-            return Err(Error::InvalidTaskContent(
-                "Task title is too long (max length: 50)".into(),
-            ));
-        }
-        if self.subtasks.len() > 10 {
-            return Err(Error::InvalidTaskContent("Too many subtasks".into()));
-        }
-        self.subtasks
-            .iter()
-            .try_for_each(|subtask_arg| subtask_arg.content.validate())
-    }
-}
-impl CreateSubTaskArgs {
-    pub fn validate(&self) -> Result<(), Error> {
-        match self.kind.as_str() {
-            "generic" => self.content.validate(),
-            "discord" => self.content.validate(),
-            _ => Err(Error::InvalidTaskContent(format!(
-                "Unknown subtask kind: {}",
-                self.kind
-            ))),
-        }
+        self.task_content.iter().try_for_each(|(_, task_content)| 
+            task_content.validate()
+        )
     }
 }
 
@@ -85,6 +65,8 @@ impl TaskContent {
         }
     }
 }
+
+#[derive(CandidType, Deserialize)]
 pub enum CreateTaskType {
     GenericTask,
     DiscordTask
@@ -105,6 +87,14 @@ pub enum TaskType {
         task_content: TaskContent,
         #[cbor(n(1), with = "shared::cbor::principal::b_tree_map")]
         submission: BTreeMap<Principal, SubmissionData>,
+        #[n(2)]
+        guild_id: String,
+        #[n(3)]
+        discord_invite_link: String,
+        #[n(4)]
+        guild_icon: Option<String>,
+        #[n(5)]
+        expires_at: Option<String>, 
     }
 }
 
@@ -122,11 +112,11 @@ impl TaskType {
                 submission.insert(user, SubmissionData::new(submission_data, SubmissionState::WaitingForReview));
                 Ok(())
             }
-            TaskType::DiscordTask { submission, .. } => {
+            TaskType::DiscordTask { submission: current_submission, .. } => {
                 let Submission::Discord { access_token, guild_id } = submission_data else {
                     return Err(Error::IncorrectSubmission("Expected Discord submission".to_string()));
                 };
-                submission.insert(user, SubmissionData::new(Submission::Discord { access_token, guild_id }, SubmissionState::WaitingForReview));
+                current_submission.insert(user, SubmissionData::new(Submission::Discord { access_token, guild_id }, SubmissionState::WaitingForReview)); 
                 Ok(())
             }
         }
@@ -142,7 +132,7 @@ impl TaskType {
                             .ok_or(Error::UserSubmissionNotFound)?;
                         submission.set_state(SubmissionState::Accepted);
                     }
-            TaskType::DiscordTask { task_content, submission } => todo!(),
+            TaskType::DiscordTask { task_content, submission, guild_id, discord_invite_link, guild_icon, expires_at } => todo!(),
         }
 
         Ok(())
@@ -158,7 +148,7 @@ impl TaskType {
                             .ok_or(Error::UserSubmissionNotFound)?;
                         submission.set_state(SubmissionState::Rejected);
                     }
-            TaskType::DiscordTask { task_content, submission } => todo!(),
+            TaskType::DiscordTask { task_content, submission, guild_id, discord_invite_link, guild_icon, expires_at } => todo!(),
         }
 
         Ok(())
@@ -172,8 +162,9 @@ impl TaskType {
                     } => Ok(submissions_map
                         .get(&user)
                         .ok_or(Error::UserSubmissionNotFound)?),
-            TaskType::DiscordTask { task_content, submission } => todo!(),
+            TaskType::DiscordTask { task_content, submission, guild_id, discord_invite_link, guild_icon, expires_at } => todo!(),
                     }
+            }
 
     pub fn get_submission_by_user(&self, user: &Principal) -> Option<&SubmissionData> {
         match self {
@@ -182,7 +173,7 @@ impl TaskType {
         }
     }
 }
-}
+
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType)]
 pub struct Task {
@@ -191,7 +182,7 @@ pub struct Task {
     #[n(1)]
     token_reward: TokenReward,
     #[n(2)]
-    tasks: Vec<TaskType>,
+    pub tasks: Vec<TaskType>,
     #[n(3)]
     number_of_uses: u64,
      #[n(4)]
@@ -204,38 +195,42 @@ pub struct Task {
 
 impl Task {
     pub async fn new(
-        caller: Principal,
+        creator: Principal,
         args: CreateTaskArgs,
         subaccount: [u8; 32],
     ) -> Result<Self, Error> {
-        create_task_args
+        args
             .token_reward
-            .deposit_reward(creator, subaccount, create_task_args.number_of_uses)
+            .deposit_reward(creator, subaccount, args.number_of_uses)
             .await?;
 
         Ok(Self {
             creator,
-            token_reward: create_task_args.token_reward,
-            tasks: create_task_args
+            token_reward: args.token_reward,
+            tasks: args
                 .task_content
                 .iter()
                 .map(|(task_type, task_content)| match task_type {
-                    TaskType::GenericTask { task_content, submission } => {
+                    CreateTaskType::GenericTask => {
                             TaskType::GenericTask {
                                 task_content: task_content.clone(),
                                 submission: BTreeMap::new(),
                             }
                     }
-                    TaskType::DiscordTask { task_content, submission } => {
+                    CreateTaskType::DiscordTask => {
                             TaskType::DiscordTask {
                                 task_content: task_content.clone(),
                                 submission: BTreeMap::new(),
+                                guild_id:todo!(), 
+                                discord_invite_link:todo!(),
+                                guild_icon:todo!(),
+                                expires_at:todo!(),
                             }
                     }
                 })
                 .collect(),
-            number_of_uses: create_task_args.number_of_uses,
-            task_title: create_task_args.task_title,
+            number_of_uses: args.number_of_uses,
+            task_title: args.task_title,
             rewarded: Vec::new(),
             created_at: ic_cdk::api::time(),
         })
@@ -249,10 +244,10 @@ impl Task {
     ) -> Result<(), Error> {
         let subtask = self
             .tasks
-            .get_mut(&subtask_id)
+            .get_mut(subtask_id)
             .ok_or(Error::SubtaskDoNotExists(subtask_id))?;
         subtask.submit(user, submission)?;
-
+        
         Ok(())
     }
 

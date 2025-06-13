@@ -35,9 +35,6 @@ impl Submission {
     pub fn is_text(&self) -> bool {
         matches!(self, Submission::Text { .. })
     }
-    pub fn is_discord(&self) -> bool {
-        matches!(self, Submission::Discord { .. })
-    }
 }
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType)]

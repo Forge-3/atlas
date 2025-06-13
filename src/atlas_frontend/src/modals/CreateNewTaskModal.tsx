@@ -1,8 +1,9 @@
 import React from "react";
-import { yupResolver } from "@hookform/resolvers/yup";
+import { useEffect } from "react";
 import { useForm, useFieldArray, type SubmitHandler } from "react-hook-form";
-import Button from "../components/Shared/Button";
+import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import Button from "../components/Shared/Button";
 import { FiPlus } from "react-icons/fi";
 import DecimalInputForm from "../components/Shared/DecimalInputForm";
 import { formatUnits, parseUnits } from "ethers";
@@ -23,21 +24,27 @@ import { useSpaceId } from "../hooks/space";
 import toast from "react-hot-toast";
 import { setUserSpaceAllowanceIfNeeded } from "../canisters/ckUSDC/api";
 import { useAuth } from "@nfid/identitykit/react";
+import { clearDiscordIntegrationData, setDiscordIntegrationData } from "../store/slices/userSlice"; 
 import DiscordTask from "./tasks/Discord";
 
 type TaskType = "generic" | "discord";
 const allowedTaskTypes = ["generic", "discord"] as const;
 
-interface CreateNewTaskFormInput {
+export interface CreateNewTaskFormInput {
   numberOfUses: number;
   rewardPerUsage: number;
   taskTitle: string;
-  tasks?: {
+  tasks: {
     taskType: TaskType;
     title: string;
     description: string;
+    guildId?: string; 
+    discordInviteLink?: string; 
+    guildIcon?: string | null;
+    expiresAt?: string | null;
   }[];
 }
+
 const maxSubtitleLength = 50;
 const maxTitleLength = 50;
 const maxDescriptionLength = 500;
@@ -57,6 +64,26 @@ const taskSchema = yup.object({
     .min(2)
     .required()
     .label("Task description"),
+  guildId: yup.string().when("taskType", {
+    is: "discord",
+    then: (schema) =>
+      schema
+        .trim()
+        .min(1, "Guild ID must not be empty after successful link validation")
+        .required("Guild ID is required for Discord tasks after link validation"),
+    otherwise: (schema) => schema.notRequired().nullable(),
+  }),
+  guildIcon: yup.string().nullable().notRequired(),
+  discordInviteLink: yup.string().when('taskType', {
+    is: 'discord',
+    then: (schema) => schema
+    .url("Must be a valid URL")
+    .required("Discord invite link is required for Discord tasks.")
+    .matches(/^https:\/\/(discord\.gg|discord\.com\/invite)\/[a-zA-Z0-9-]{6,10}$/, "Invalid Discord invite link format. Must be https://discord.gg/XXXXXX or https://discord.com/invite/XXXXXX (6-10 alphanumeric chars or a custom vanity URL).")
+    .min(1, "Discord invite link cannot be empty."),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  expiresAt: yup.string().nullable().notRequired(),
 });
 
 const schema = yup.object({
@@ -79,7 +106,7 @@ const schema = yup.object({
     .min(0.1)
     .required()
     .label("Reward per user"),
-  tasks: yup.array().of(taskSchema).min(1),
+  tasks: yup.array().of(taskSchema).min(1).required(),
 });
 
 interface CreateNewTaskModalArgs {
@@ -92,18 +119,23 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   const location = useLocation();
   const dispatch = useDispatch();
   
+  const { user } = useAuth();
+
   const {
     register,
     handleSubmit,
     control,
     watch,
+    setValue,
     formState: { errors },
-  } = useForm({
+    reset,
+  } = useForm<CreateNewTaskFormInput>({
     resolver: yupResolver(schema),
     defaultValues: {
+      taskTitle: "",
       numberOfUses: 1,
       rewardPerUsage: 0.1,
-      tasks: [{ taskType: "generic", title: "", description: "" }],
+      tasks: [{ taskType: "generic", title: "", description: "", guildId: "", discordInviteLink: "", expiresAt: null }],
     },
   });
   const { fields, append, remove } = useFieldArray({
@@ -114,7 +146,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     spacePrincipal,
     navigate,
   });
-  const { user } = useAuth();
+  
   if (!principal) return <></>;
   const spaceId = principal.toString();
 
@@ -130,12 +162,11 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     : 0n;
 
   const numberOfUses = watch("numberOfUses");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rewardPerUsage = watch("rewardPerUsage" as any);
+  const rewardPerUsage = watch("rewardPerUsage");
 
   const numberOfUsesNormalized = isNaN(numberOfUses) ? 0 : numberOfUses;
   const rewardPerUsageNormalized =
-    isNaN(rewardPerUsage) || rewardPerUsage === "" ? 0 : rewardPerUsage;
+    isNaN(rewardPerUsage) ? 0 : rewardPerUsage;
 
   const rewardPerUsageBn = parseUnits(
     rewardPerUsageNormalized.toString(),
@@ -145,41 +176,124 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   const estimatedCost =
     numberOfUsesBn * rewardPerUsageBn + numberOfUsesBn * ckUsdcFee + ckUsdcFee;
 
-  const onSubmit: SubmitHandler<CreateNewTaskFormInput> = async ({
-  numberOfUses,
-  rewardPerUsage,
-  tasks,
-  taskTitle
-}) => {
-  console.log("1. onSubmit started");
-  const numberOfUsesBn = BigInt(numberOfUses.toString());
-  const rewardPerUsageBn = parseUnits(rewardPerUsage.toString(), DECIMALS);
-
-  if (
-    !authAtlasSpaceActor ||
-    !unAuthCkUSDCActor ||
-    !authCkUSDCActor ||
-    !user
-  ) {
-    toast.error("Session expired");
-    navigate("/");
-    return;
-  }
-
-  const subtasks = tasks?.map((task) => ({
-    kind: task.taskType,
-    content: {
-      TitleAndDescription: {
-        task_title: task.title,
-        task_description: task.description,
+  useEffect(() => {
+    const handleMessage = async (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) {
+        return;
       }
-    }
-  })) ?? [];
 
-  if (subtasks.length === 0) {
-    toast.error("Invalid subtasks: the minimum number of subtasks is one.");
-    return;
-  }
+      const { accessToken, tokenType, state, expiresIn } = event.data as { accessToken?: string; tokenType?: string; state?: string; expiresIn?: string; };
+
+      if (accessToken && state && user?.principal.toString() === state) {
+        toast.loading("Connecting to Discord...", { id: "discordConnectToast" });
+        try {
+          dispatch(setDiscordIntegrationData({
+            tokenType: tokenType || "",
+            accessToken: accessToken,
+            state: state,
+            expiresIn: parseInt(expiresIn || "0", 10),
+
+          }));
+          toast.success("Successfully connected to Discord!", { id: "discordConnectToast" });
+
+        } catch (e) {
+          console.error("Error processing Discord OAuth callback:", e);
+          toast.error("Failed to connect to Discord. Please try again.", { id: "discordConnectToast" });
+          dispatch(clearDiscordIntegrationData());
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, [user?.principal, dispatch]);
+
+
+  const onSubmit: SubmitHandler<CreateNewTaskFormInput> = async ({
+    numberOfUses,
+    rewardPerUsage,
+    tasks,
+    taskTitle
+  }) => {
+    const numberOfUsesBn = BigInt(numberOfUses.toString());
+    const rewardPerUsageBn = parseUnits(rewardPerUsage.toString(), DECIMALS);
+
+    if (
+      !authAtlasSpaceActor ||
+      !unAuthCkUSDCActor ||
+      !authCkUSDCActor ||
+      !user
+    ) {
+      toast.error("Session expired");
+      navigate("/");
+      return;
+    }
+
+    const subtasks = tasks?.map((task) => {
+        let guildIdForCandid: [] | [string];
+        if (task.taskType === "discord" && typeof task.guildId === 'string' && task.guildId.length > 0) {
+          guildIdForCandid = [task.guildId];
+        } else {
+          guildIdForCandid = [];
+        }
+
+        let discordInviteLinkForCandid: [] | [string];
+        if (task.taskType === "discord" && typeof task.discordInviteLink === 'string' && task.discordInviteLink.length > 0) {
+          discordInviteLinkForCandid = [task.discordInviteLink];
+        } else {
+          discordInviteLinkForCandid = [];
+        }
+
+        console.log("Form guildIcon for task:", task.guildIcon);
+        let guildIconForCandid: [] | [string];
+        if (task.taskType === "discord" && typeof task.guildIcon === 'string' && task.guildIcon.length > 0) {
+          guildIconForCandid = [task.guildIcon];
+        } else {
+          guildIconForCandid = [];
+        }
+        console.log("guildIconForCandid (to be sent to Candid):", guildIconForCandid);
+
+        let expiresAtForCandid: [] | [string];
+        if (task.taskType === "discord" && typeof task.expiresAt === 'string' && task.expiresAt.length > 0) {
+          expiresAtForCandid = [task.expiresAt];
+        } else {
+          expiresAtForCandid = [];
+        }
+
+
+        const baseSubtask = {
+          kind: task.taskType,
+          content: {
+            TitleAndDescription: {
+              task_title: task.title,
+              task_description: task.description,
+            },
+          },
+          guild_id: guildIdForCandid, 
+          discord_invite_link: discordInviteLinkForCandid,
+          guild_icon: guildIconForCandid, 
+          expires_at: expiresAtForCandid,
+        };
+
+        if (task.taskType === "discord" && (!task.guildId || task.guildId.length === 0)) {
+            toast.error("Discord link validation failed: Guild ID is missing. Please re-check the link.");
+            throw new Error("Discord link validation failed: Guild ID is missing.");
+        }
+        if (task.taskType === "discord" && (!task.discordInviteLink || task.discordInviteLink.length === 0)) {
+            toast.error("Discord link validation failed: Invite link is missing. Please re-check the link.");
+            throw new Error("Discord link validation failed: Invite link is missing.");
+        }
+
+        return baseSubtask;
+      }) ?? [];
+
+    if (subtasks.length === 0) {
+      toast.error("Invalid subtasks: the minimum number of subtasks is one.");
+      return;
+    }
 
   const estimatedCost =
     numberOfUsesBn * rewardPerUsageBn +
@@ -211,25 +325,16 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     success: "Task created successfully",
     error: "Failed to create task",
   });
-  console.log("2. createNewTaskCall promise resolved. TaskId:", taskId);
 
   callback();
-  console.log("3. Callback executed, modal should close.");
   getSpaceTasks({
     spaceId,
     unAuthAtlasSpace: authAtlasSpaceActor,
     dispatch,
   });
-  console.log("4. getSpaceTasks finished.");
-
   const targetUrl = `${location.pathname}/${taskId}`;
-  console.log("Redirecting to:", targetUrl);
-  console.log("Created task ID:", taskId);
-  navigate(targetUrl);
-  console.log("7. navigate called.");
-
-  
-}
+  navigate(targetUrl); 
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -251,6 +356,9 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                   taskType: "generic",
                   title: "",
                   description: "",
+                  guildId: "", 
+                  discordInviteLink: "",
+                  expiresAt: null,
                 })
               }
               className="flex gap-2"
@@ -329,12 +437,15 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                       />
                     )}
                     {taskType === "discord" && (
-                      <DiscordTask
+                      <DiscordTask 
                         register={register}
                         index={index}
                         errors={errors}
                         maxTitleLength={maxSubtitleLength}
                         maxDescriptionLength={maxDescriptionLength}
+                        spacePrincipal={principal}
+                        setValue={setValue}
+                        control={control}
                       />
                     )}
                   </div>
@@ -354,6 +465,5 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     </form>
   );
 };
-
 
 export default CreateNewTaskModal;

@@ -4,21 +4,35 @@ use crate::{
     memory,
     task::{submission::Submission, CreateTaskArgs, Task, TaskId, TaskType},
 };
-<<<<<<< HEAD
-
 use candid::Principal;
-use ic_cdk::update;
-=======
 use candid::Encode;
 use ic_cdk::{
-    api::management_canister::main::{CanisterInstallMode, InstallCodeArgument},
+    api::management_canister::{main::{CanisterInstallMode, InstallCodeArgument}, http_request::{ TransformContext, CanisterHttpRequestArgument, HttpHeader, HttpMethod, HttpResponse}},
     update,
 };
-use ic_cdk::api::management_canister::http_request::{ CanisterHttpRequestArgument, HttpHeader, HttpMethod, HttpResponse};
 use serde_json;
->>>>>>> 63e0bd6 (Unify Subtask Submission & Refactor getUserData to getGuildData)
 use ic_stable_structures::Storable;
 use sha2::Digest;
+
+#[derive(Debug, serde::Deserialize, candid::CandidType, serde::Serialize, Clone)]
+    pub struct DiscordGuild {
+    pub id: String,
+    pub name: String,
+    pub icon: Option<String>,
+    }
+
+#[derive(candid::CandidType, serde::Deserialize, Debug, serde::Serialize, Clone)]
+pub struct DiscordInviteApiResponse {
+    pub code: String,
+    pub guild: Option<DiscordGuild>,
+    pub expires_at: Option<String>, 
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct InviteResponse {
+    code: String,
+}
+
 #[update]
 pub async fn set_space_name(name: String) -> Result<(), Error> {
     parent_or_owner_or_admin_guard().await?;
@@ -73,18 +87,16 @@ pub async fn submit_subtask_submission(
     subtask_id: usize,
     submission: Submission,
 ) -> Result<(), Error> {
-<<<<<<< HEAD
     let caller = user_is_in_space().await?;
     memory::mut_open_task(task_id.clone(), |maybe_task| {
         let task = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
         task.submit_subtask_submission(caller, subtask_id, submission)?;
-=======
-    let caller = authenticated_guard()?;
->>>>>>> 63e0bd6 (Unify Subtask Submission & Refactor getUserData to getGuildData)
+    })?;
+    
 
     #[derive(Debug)]
     enum DiscordVerificationData {
-        Required { access_token: String, guild_id: String },
+        Required { access_token: String, task_guild_id: String },
         NotRequired,
         Error(Error),
     }
@@ -95,16 +107,16 @@ pub async fn submit_subtask_submission(
             None => return DiscordVerificationData::Error(Error::TaskDoNotExists(task_id.clone())),
         };
 
-        let subtask = match task.tasks.get_mut(&subtask_id) {
+        let subtask = match task.tasks.get_mut(&subtask_id) {  // todo!()
             Some(s) => s,
             None => return DiscordVerificationData::Error(Error::SubtaskDoNotExists(subtask_id)),
         };
 
-        if let TaskType::DiscordTask { .. } = subtask {
+        if let TaskType::DiscordTask { guild_id: task_guild_id, .. } = subtask {
             if let Submission::Discord { access_token, guild_id } = &submission {
                 DiscordVerificationData::Required { 
                     access_token: access_token.clone(), 
-                    guild_id: guild_id.clone() 
+                    task_guild_id: task_guild_id.clone()
                 }
             } else {
                 DiscordVerificationData::Error(Error::IncorrectSubmission("Expected Discord submission for DiscordTask".to_string()))
@@ -116,14 +128,13 @@ pub async fn submit_subtask_submission(
     .map_err(|e| e)?;
 
     match discord_check_result {
-        DiscordVerificationData::Required { access_token, guild_id } => {
-            let guild_id_clone = guild_id.clone();
-            if !is_member_of_guild(access_token, guild_id)
+        DiscordVerificationData::Required { access_token, task_guild_id } => {
+            if !is_member_of_guild(access_token, task_guild_id.clone())
                 .await
                 .map_err(|e| Error::IncorrectSubmission(e))? {
                 return Err(Error::IncorrectSubmission("User is not a member of the guild".to_string()));
             }
-            ic_cdk::println!("User {} is a member of guild {}!", caller, guild_id_clone);
+            ic_cdk::println!("User {} is a member of guild {}!", caller, task_guild_id);
         },
         DiscordVerificationData::NotRequired => {
         },
@@ -150,7 +161,6 @@ pub async fn submit_subtask_submission(
     Ok(())
 }
 
-<<<<<<< HEAD
 #[update]
 pub async fn accept_subtask_submission(
     user: Principal,
@@ -196,7 +206,7 @@ pub async fn withdraw_reward(task_id: TaskId) -> Result<(), Error> {
         Ok(())
     })??;
     Ok(())
-=======
+}
 
 async fn is_member_of_guild(discord_token: String, guild_id: String) -> Result<bool, String> {
     let initial_canister_balance = ic_cdk::api::canister_balance();
@@ -236,15 +246,138 @@ async fn is_member_of_guild(discord_token: String, guild_id: String) -> Result<b
         return Err(format!("Discord API returned status code {}", response.status));
     }
 
-    #[derive(Debug, serde::Deserialize)]
-    struct DiscordGuild {
-        id: String,
-        name: String,
+    let guilds: Vec<DiscordGuild> = serde_json::from_slice(&response.body)
+        .map_err(|e| format!("Failed to deserialize Discord guilds: {:?}", e))?;
+
+    let is_member = guilds.iter().any(|guild| {
+        ic_cdk::println!("Checking guild: {} (ID: {}) against target guild_id: {}", guild.name, guild.id, guild_id);
+        guild.id == guild_id
+    });
+
+    Ok(is_member)
+}
+
+#[update]
+pub async fn get_discord_guilds(discord_token: String) -> Result<Vec<DiscordGuild>, String> {
+    let request = CanisterHttpRequestArgument {
+        url: "https://discord.com/api/users/@me/guilds".to_string(),
+        method: HttpMethod::GET,
+        headers: vec![
+            HttpHeader {
+                name: "Authorization".to_string(),
+                value: format!("Bearer {}", discord_token),
+            },
+            HttpHeader {
+                name: "Content-Type".to_string(),
+                value: "application/json".to_string(),
+            },
+        ],
+        body: None,
+        max_response_bytes: Some(2_000_000),
+        transform: None,
+    };
+
+    let cycles: u128 = 22_943_726_917;
+    let (response,): (HttpResponse,) = match ic_cdk::api::management_canister::http_request::http_request(
+        request,
+        cycles
+    ).await {
+        Ok(res) => res,
+        Err((r, m)) => {
+            ic_cdk::println!("HTTP Request Error: {:?} {}", r, m);
+            return Err(format!("HTTP request failed: {:?}", m));
+        }
+    };
+
+    if response.status != 200u64 {
+        return Err(format!("Discord API returned status code {}", response.status));
     }
 
     let guilds: Vec<DiscordGuild> = serde_json::from_slice(&response.body)
         .map_err(|e| format!("Failed to deserialize Discord guilds: {:?}", e))?;
 
-    Ok(guilds.iter().any(|guild| guild.id == guild_id))
->>>>>>> 63e0bd6 (Unify Subtask Submission & Refactor getUserData to getGuildData)
+    Ok(guilds)
+}
+
+#[update]
+pub async fn validate_discord_invite_link(
+    invite_link: String,
+    expected_guild_id: String,
+) -> Result<DiscordInviteApiResponse, String> {
+    let invite_code = invite_link
+        .trim_start_matches("https://discord.gg/")
+        .trim_start_matches("https://discord.com/invite/");
+
+    if invite_code.is_empty() || invite_code.contains('/') {
+        return Err("Invalid Discord invite link format: no invite code found or contains invalid characters.".to_string());
+    }
+
+    let url = format!("https://discord.com/api/v10/invites/{}?with_counts=false", invite_code);
+
+    let request_headers = vec![
+        HttpHeader {
+            name: "User-Agent".to_string(),
+            value: "application/json".to_string(),
+        },
+    ];
+
+    let request = CanisterHttpRequestArgument {
+        url: url.to_string(),
+        method: HttpMethod::GET,
+        headers: request_headers,
+        body: None,
+        max_response_bytes: Some(2_000_000),
+        transform: Some(TransformContext {
+            function: ic_cdk::api::management_canister::http_request::TransformFunc::new(
+                ic_cdk::api::id(),
+                "transform_http_response".to_string(),
+            ),
+            context: vec![],
+        }),
+    };
+
+    ic_cdk::println!("Sending HTTP GET request to Discord API for invite: {}", url);
+
+    let cycles_cost: u128 = 20_949_826_400;
+
+    match ic_cdk::api::management_canister::http_request::http_request(request, cycles_cost).await {
+        Ok((response,)) => {
+            let body_str = String::from_utf8_lossy(&response.body);
+            ic_cdk::println!("Discord API response status: {}", response.status);
+            ic_cdk::println!("Discord API response body: {}", body_str);
+
+            if response.status != 200u64 {
+                let error_detail = if response.status == 404u64 {
+                    "Invite not found or expired.".to_string()
+                } else {
+                    format!("Discord API returned status {}: {}", response.status, body_str)
+                };
+                return Err(format!("Discord invite link is invalid or expired. {}", error_detail));
+            }
+
+            let invite_data: DiscordInviteApiResponse = serde_json::from_str(&body_str)
+                .map_err(|e| format!("Failed to parse Discord API invite response: {}", e))?;
+
+            match &invite_data.guild {
+                Some(guild) => {
+                    if guild.id == expected_guild_id {
+                        Ok(invite_data)
+                    } else {
+                        Err(format!(
+                            "Discord invite link leads to a different server (ID: {}). Expected: {}",
+                            guild.name, expected_guild_id
+                        ))
+                    }
+                },
+                None => {
+                    Err("Discord invite link does not lead to a valid server (guild information missing in API response).".to_string())
+                }
+            }
+        },
+        Err((r_code, err_msg)) => {
+            let error_message = format!("HTTP request to Discord failed with code {:?} and message: {}", r_code, err_msg);
+            ic_cdk::eprintln!("{}", error_message);
+            Err(error_message)
+        },
+    }
 }

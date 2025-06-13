@@ -1,7 +1,6 @@
 import type { ActorSubclass } from "@dfinity/agent";
 import type {
   _SERVICE,
-  Icrc1BlockIndex,
 } from "../../../../declarations/ckusdc_canister/ckusdc_canister.did";
 import type { Principal } from "@dfinity/principal";
 import { unwrapCall } from "../delegatedCall";
