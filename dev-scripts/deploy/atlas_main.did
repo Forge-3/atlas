@@ -1,0 +1,10 @@
+(variant {
+  InitArg = record { 
+    spaces_per_space_lead = 2;
+    ckusdc_ledger = record {
+        "principal" = principal "xevnm-gaaaa-aaaar-qafnq-cai";
+        fee = opt 10_000;
+    };
+    current_space_version = 0;
+  }
+})

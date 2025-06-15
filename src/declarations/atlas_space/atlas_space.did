@@ -1,0 +1,135 @@
+type CkUsdcLedger = record { fee : opt nat; "principal" : principal };
+type CreateSubTaskArgs = record {
+  content : TaskContent;
+  kind : text;
+  guild_id : opt text;
+  discord_invite_link : opt text;
+  guild_icon : opt text;
+  expires_at : opt text;
+};
+type CreateTaskArgs = record {
+  task_title : text;
+  token_reward : TokenReward;
+  number_of_uses : nat64;
+  subtasks : vec CreateSubTaskArgs;
+};
+type DiscordGuild = record { id : text; icon : opt text; name : text };
+type DiscordInviteApiResponse = record {
+  code : text;
+  guild : opt DiscordGuild;
+  expires_at : opt text;
+};
+type Error = variant {
+  BytecodeUpToDate;
+  NotParent;
+  NotAdminNorOwner;
+  FailedToUpdateConfig : text;
+  TaskAlreadyExists : nat64;
+  FailedToCallMain : text;
+  ConfigNotSet;
+  InvalidDiscordToken;
+  UserAlreadySubmitted;
+  NotAdmin;
+  IncorrectSubmission : text;
+  CountToHigh : record { max : nat64; found : nat64 };
+  SubtaskDoNotExists : nat64;
+  NotOwner;
+  FailedToTransfer : text;
+  InvalidTaskContent : text;
+  CustomError : text;
+  TaskDoNotExists : nat64;
+  AnonymousCaller;
+};
+type GetTasksArgs = record { count : nat64; start : nat64 };
+type GetTasksRes = record {
+  tasks : vec record { nat64; Task };
+  tasks_count : nat64;
+};
+type HttpHeader = record { value : text; name : text };
+type HttpResponse = record {
+  status : nat;
+  body : blob;
+  headers : vec HttpHeader;
+};
+type Result = variant { Ok : nat64; Err : Error };
+type Result_1 = variant { Ok : GetTasksRes; Err : Error };
+type Result_2 = variant { Ok : vec DiscordGuild; Err : text };
+type Result_3 = variant { Ok; Err : Error };
+type Result_4 = variant { Ok : DiscordInviteApiResponse; Err : text };
+type SpaceArgs = variant {
+  UpgradeArg : record { version : nat64 };
+  InitArg : SpaceInitArg;
+};
+type SpaceInitArg = record {
+  owner : principal;
+  ckusdc_ledger : CkUsdcLedger;
+  space_symbol : opt text;
+  space_background : opt text;
+  current_wasm_version : nat64;
+  space_logo : opt text;
+  space_name : text;
+  space_description : text;
+};
+type State = record {
+  space_symbol : opt text;
+  space_background : opt text;
+  space_logo : opt text;
+  space_name : text;
+  tasks_count : nat64;
+  space_description : text;
+};
+type Submission = variant {
+  Text : record { content : text };
+  Discord : record { guild_id : text; access_token : text };
+};
+type SubmissionData = record {
+  state : SubmissionState;
+  submission : Submission;
+};
+type SubmissionState = variant { Rejected; WaitingForReview; Accepted };
+type Task = record {
+  tasks : vec record { nat64; TaskType };
+  title : text;
+  subaccount : blob;
+  token_reward : TokenReward;
+  created_at : nat64;
+  created_by : principal;
+  number_of_uses : nat64;
+};
+type TaskContent = variant {
+  TitleAndDescription : record { task_description : text; task_title : text };
+};
+type TaskType = variant {
+  DiscordTask : record {
+    guild_id : text;
+    task_content : TaskContent;
+    discord_invite_link : text;
+    guild_icon : opt text;
+    expires_at : opt text;
+    submission : vec record { principal; SubmissionData };
+  };
+  GenericTask : record {
+    task_content : TaskContent;
+    submission : vec record { principal; SubmissionData };
+  };
+};
+type TokenReward = variant { CkUsdc : record { amount : nat } };
+type TransformArgs = record { context : blob; response : HttpResponse };
+type WalletReceiveResult = record { accepted : nat64 };
+service : (SpaceArgs) -> {
+  create_task : (CreateTaskArgs) -> (Result);
+  get_closed_tasks : (GetTasksArgs) -> (Result_1) query;
+  get_current_bytecode_version : () -> (nat64) query;
+  get_discord_guilds : (text) -> (Result_2);
+  get_open_tasks : (GetTasksArgs) -> (Result_1) query;
+  get_state : () -> (State) query;
+  set_space_background : (text) -> (Result_3);
+  set_space_description : (text) -> (Result_3);
+  set_space_logo : (text) -> (Result_3);
+  set_space_name : (text) -> (Result_3);
+  submit_subtask_submission : (nat64, nat64, Submission) -> (Result_3);
+  transform_http_response : (TransformArgs) -> (HttpResponse) query;
+  validate_discord_invite_link : (text, text) -> (Result_4);
+  wallet_balance : () -> (nat) query;
+  wallet_receive : () -> (WalletReceiveResult);
+}
