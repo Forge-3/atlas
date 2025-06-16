@@ -1,6 +1,10 @@
 import React from "react"
 
-const DarkBox = ({ children }: { children: React.ReactNode }) => {
+interface DarkBoxProps {
+  children: React.ReactNode 
+}
+
+const DarkBox = ({ children }: DarkBoxProps) => {
   return (
     <div className="w-full px-3">
       <div className="relative mb-6 pb-10 w-full rounded-xl bg-[#1E0F33]">

@@ -1,0 +1,91 @@
+type AtlasArgs = variant {
+  UpgradeArg : record {
+    upgrade_space_arg : opt SpaceArgs;
+    config : opt UpdateConfig;
+  };
+  InitArg : Config;
+};
+type CkUsdcLedger = record { fee : opt nat; "principal" : principal };
+type CkUsdcLedger_1 = record { fee : opt nat; "principal" : principal };
+type Config = record {
+  spaces_per_space_lead : nat8;
+  ckusdc_ledger : CkUsdcLedger_1;
+  current_space_version : nat64;
+};
+type Error = variant {
+  UserRankNoMatch : vec Rank;
+  FailedToCallSpace : record { err : text; "principal" : principal };
+  FailedToSaveSpace : text;
+  FailedToUpdateConfig : text;
+  UserRichSpaceLimit : record { found : nat64; expected : nat64 };
+  UserRankToHigh : record { found : Rank; expected : Rank };
+  UserAlreadyHaveExpectedRank : Rank;
+  UserNotAnOwner : Space;
+  CountToHigh : record { max : nat64; found : nat64 };
+  SpaceNotExist;
+  FailedToGetCanisterInfo : text;
+  FailedToInstallWASM : text;
+  UserRankToLow : record { found : Rank; expected : Rank };
+  FailedToInitializeCanister : text;
+  CreationInProgress;
+  UserDoNotExist;
+  FailedToUpdateCanisterSettings : text;
+  UserAlreadyIsHubMember;
+  AnonymousCaller;
+};
+type GetSpacesArgs = record { count : nat64; start : nat64 };
+type GetSpacesRes = record { spaces : vec Space; spaces_count : nat64 };
+type GetUserBy = variant { Principal : principal };
+type Integrations = record { discord_id : opt text };
+type Rank = variant { SpaceLead; User; SuperAdmin; Admin };
+type Result = variant { Ok : Space; Err : Error };
+type Result_1 = variant { Ok : GetSpacesRes; Err : Error };
+type Result_2 = variant { Ok; Err : Error };
+type Space = record { id : principal; space_type : SpaceType };
+type SpaceArgs = variant {
+  UpgradeArg : record { version : nat64 };
+  InitArg : SpaceInitArg;
+};
+type SpaceInitArg = record {
+  owner : principal;
+  ckusdc_ledger : CkUsdcLedger_1;
+  space_symbol : opt text;
+  space_background : opt text;
+  current_wasm_version : nat64;
+  space_logo : opt text;
+  space_name : text;
+  space_description : text;
+};
+type SpaceType = variant { HUB };
+type UpdateConfig = record {
+  spaces_per_space_lead : opt nat8;
+  ckusdc_ledger : opt CkUsdcLedger_1;
+};
+type User = record {
+  integrations : Integrations;
+  rank : Rank;
+  space_creation_in_progress : bool;
+  belonging_to_spaces : vec nat64;
+  owned_spaces : vec nat64;
+};
+type WalletReceiveResult = record { accepted : nat64 };
+service : (AtlasArgs) -> {
+  app_config : () -> (Config) query;
+  create_new_space : (text, text, opt text, opt text, opt text, SpaceType) -> (
+      Result,
+    );
+  get_current_space_bytecode_version : () -> (nat64) query;
+  get_space_bytecode_by_version : (nat64) -> (opt blob) query;
+  get_spaces : (GetSpacesArgs) -> (Result_1) query;
+  get_user : (GetUserBy) -> (User) query;
+  get_user_hub : (principal) -> (opt Space) query;
+  join_space : (principal) -> (Result_2);
+  set_user_admin : (principal) -> (Result_2);
+  set_user_space_lead : (principal) -> (Result_2);
+  upgrade_space : (Space) -> (Result_2);
+  user_is_admin : (principal) -> (bool) query;
+  user_is_in_hub : (principal) -> (bool) query;
+  user_is_in_space : (principal, principal) -> (bool) query;
+  wallet_balance : () -> (nat) query;
+  wallet_receive : () -> (WalletReceiveResult);
+}

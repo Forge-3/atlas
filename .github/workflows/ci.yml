@@ -1,13 +1,20 @@
 name: CI Pipeline
 
 on:
-  push:
-    branches: [main]
   pull_request:
-    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - develop
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  build:
+  build-frontend:
     runs-on: ubuntu-latest
 
     steps:
@@ -30,3 +37,39 @@ jobs:
 
       - name: Build project
         run: npm run build
+        
+  format-rust:
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: "-C debug-assertions=y"
+      RUST_BACKTRACE: 1
+    steps:
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential git clang curl libssl-dev llvm libudev-dev make protobuf-compiler pkg-config git-restore-mtime
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # this is needed to make sure that cargo uses the cached target files,
+      # which will have an older date than the checked out source code.
+      - name: Restore files timestamps
+        run: |
+          # set all dirs and files mtime to the fixed timestamp, this one was chosen
+          # symbolically as polkadot genesis block date
+          find . -exec touch -t 202005260100 {} +
+          # restore mtime based on git commit log
+          git restore-mtime
+
+      - name: Setup caching for rust/cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-rust-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Format code with rustfmtcarg
+        run: cargo fmt --check

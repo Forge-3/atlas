@@ -7,8 +7,11 @@ const HubCards = () => {
     ambassadorsCount: number;
     country: string;
   }[] = [
-    { ambassadorsCount: 74, country: "India" },
-    { ambassadorsCount: 34, country: "Indonesia" },
+    { ambassadorsCount: 74, country: "Argentina" },
+    { ambassadorsCount: 14, country: "Egypt" },
+    { ambassadorsCount: 43, country: "Mexico" },
+    { ambassadorsCount: 122, country: "Poland" },
+    { ambassadorsCount: 42, country: "Turkey" },
   ];
 
   return (
