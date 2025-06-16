@@ -1,0 +1,90 @@
+{
+  "canisters": {
+    "atlas_main": {
+      "candid": "src/atlas_main/atlas_main.did",
+      "package": "atlas_main",
+      "type": "custom",
+      "wasm": "target/wasm32-unknown-unknown/release/atlas_main-opt.wasm.gz",
+      "build": [
+        "./build.sh atlas_space",
+        "./build.sh atlas_main"
+      ],
+      "declarations": {
+        "bindings": [
+          "js",
+          "ts"
+        ]
+      }
+    },
+    "atlas_frontend": {
+      "dependencies": [
+        "atlas_main",
+        "ckusdc_canister",
+        "atlas_space"
+      ],
+      "source": [
+        "src/atlas_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "atlas_frontend",
+      "declarations": {
+        "bindings": []
+      }
+    },
+    "internet_identity": {
+      "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
+      "frontend": {},
+      "remote": {
+        "id": {
+          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+        }
+      },
+      "declarations": {
+        "bindings": [
+          "js",
+          "ts"
+        ]
+      },
+      "type": "custom",
+      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
+    },
+    "atlas_space": {
+      "type": "custom",
+      "candid": "src/atlas_space/atlas_space.did",
+      "wasm": "target/wasm32-unknown-unknown/release/atlas_space-opt.wasm.gz",
+      "bindings": [
+        "js",
+        "ts"
+      ]
+    },
+    "ckusdc_canister": {
+      "type": "custom",
+      "candid": "https://raw.githubusercontent.com/dfinity/ic/2f52f298de53944209f550774505aa72a1a3ed17/rs/ledger_suite/icp/ledger.did",
+      "wasm": "https://download.dfinity.systems/ic/2f52f298de53944209f550774505aa72a1a3ed17/canisters/ledger-canister.wasm.gz",
+      "remote": {
+        "id": {
+          "ic": "xevnm-gaaaa-aaaar-qafnq-cai"
+        }
+      },
+      "bindings": [
+        "js",
+        "ts"
+      ],
+      "specified_id": "xevnm-gaaaa-aaaar-qafnq-cai"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "localhost:4943",
+      "type": "ephemeral"
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
