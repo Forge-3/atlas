@@ -4,14 +4,12 @@ import React from "react";
 interface SpaceItemProps {
   name: string;
   description: string;
-  symbol: string | null;
   avatarImg: string | null;
   backgroundImg: string | null;
 }
 
 const SpaceItem = ({
   name,
-  symbol,
   description,
   backgroundImg,
   avatarImg,
@@ -36,16 +34,6 @@ const SpaceItem = ({
             ) : (
               <div className="bg-[#4A0295] rounded-3xl m-[5px] w-28 h-28"></div>
             )}
-            <div className="flex items-center">
-              <div className="flex h-fit gap-1 relative top-7">
-                <img
-                  className="w-16"
-                  src="/logos/icp-bold-uppercase.svg"
-                  draggable="false"
-                />
-                <div className="text-2xl text-white font-roboto">{symbol}</div>
-              </div>
-            </div>
           </div>
         </div>
         <div className="mt-2">

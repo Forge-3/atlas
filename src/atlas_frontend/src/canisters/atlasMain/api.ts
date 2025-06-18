@@ -63,6 +63,7 @@ export const getAtlasUser = async ({
   const userData = await unAuthAtlasMain.get_user({
     Principal: userId,
   });
+
   dispatch(
     setUserBlockchainData({
       ...userData,
@@ -80,8 +81,8 @@ export const getAtlasUserIsInHub = async ({
   const isInHub = await unAuthAtlasMain.get_user_hub(userId);
   const principal = isInHub.pop()?.id;
   if (principal) {
-    
-    dispatch(setIsUserInHub(serify(principal, customSerify) as Principal));
+
+    dispatch(setIsUserInHub(principal.toString()));
   } else {
     dispatch(setIsUserInHub(null));
   }

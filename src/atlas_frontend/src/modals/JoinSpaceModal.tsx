@@ -13,6 +13,7 @@ import {
 } from "../hooks/identityKit";
 import { useDispatch } from "react-redux";
 import { useAuth } from "@nfid/identitykit/react";
+import toast from "react-hot-toast";
 
 interface JoinSpaceModalArgs {
   callback: () => void;
@@ -37,14 +38,21 @@ const JoinSpaceModal = ({
   const unAuthAtlasMain = useUnAuthAtlasMainActor();
 
   const joinSpace = async () => {
+    console.log({authAtlasMain, unAuthAtlasMain, user})
     if (!authAtlasMain || !unAuthAtlasMain || !user) {
+      callback();
       navigate("/");
       return;
     }
-    await joinAtlasSpace({
+    await toast.promise(joinAtlasSpace({
       authAtlasMain,
       space: spacePrincipal,
-    });
+    }),
+  {
+    loading: "Trying to join space...",
+    success: "Succesfully joined to space",
+    error: "Failed to join to space",
+  });
     getAtlasUserIsInHub({
       unAuthAtlasMain,
       dispatch,
@@ -55,7 +63,7 @@ const JoinSpaceModal = ({
 
   return (
     <div
-      className="absolute inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center"
       onClick={callback}
     >
       <div

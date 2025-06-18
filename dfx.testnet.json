@@ -1,0 +1,78 @@
+{
+  "canisters": {
+    "atlas_main": {
+      "candid": "src/atlas_main/atlas_main.did",
+      "package": "atlas_main",
+      "type": "custom",
+      "wasm": "target/wasm32-unknown-unknown/release/atlas_main-opt.wasm.gz",
+      "build": [
+        "./build.sh atlas_space",
+        "./build.sh atlas_main"
+      ],
+      "dependencies": [
+        "ckusdc_canister"
+      ],
+      "declarations": {
+        "bindings": [
+          "js",
+          "ts"
+        ]
+      }
+    },
+    "atlas_frontend": {
+      "dependencies": [
+        "atlas_main",
+        "ckusdc_canister"
+      ],
+      "source": [
+        "src/atlas_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "atlas_frontend",
+      "declarations": {
+        "bindings": []
+      }
+    },
+    "ckusdc_canister": {
+      "type": "custom",
+      "candid": "https://github.com/Forge-3/ic/releases/download/ledger-suite-icrc-2025-01-21/ledger.did",
+      "wasm": "https://github.com/Forge-3/ic/releases/download/ledger-suite-icrc-2025-01-21/ic-icrc1-ledger.wasm.gz",
+      "bindings": [
+        "js",
+        "ts"
+      ],
+      "specified_id": "xevnm-gaaaa-aaaar-qafnq-cai"
+    },
+    "internet_identity": {
+      "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
+      "frontend": {},
+      "remote": {
+        "id": {
+          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+        }
+      },
+      "declarations": {
+        "bindings": [
+          "js",
+          "ts"
+        ]
+      },
+      "type": "custom",
+      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "localhost:4943",
+      "type": "ephemeral"
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}

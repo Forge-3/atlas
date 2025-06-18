@@ -39,6 +39,9 @@ const App = () => {
             onConnectSuccess={() => {
               window.location.href = SPACES_PATH;
             }}
+            onDisconnect={() => {
+              localStorage.removeItem("userHub")
+            }}
           >
             <Main />
           </IdentityKitProvider>

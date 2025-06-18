@@ -9,11 +9,20 @@ dotenv.config({ path: '../../.env' });
 export default defineConfig({
   integrations: [react(), tailwind()],
   vite: {
+    sourcemap: true,
     appType: 'spa',
     plugins: [
       environment("all", { prefix: "CANISTER_" }),
       environment("all", { prefix: "DFX_" }),
     ],
+    build:{
+      minify: {
+        terserOptions: {
+          keep_classnames: true,
+          keep_fnames: true
+        }
+      }
+    },
     server: {
       proxy: {
         "/api": {

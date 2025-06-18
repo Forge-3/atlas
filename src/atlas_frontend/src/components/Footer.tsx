@@ -8,8 +8,14 @@ const Footer = () => {
         <a href="/privacy-policy" className="grow shrink w-[134px]">
           Privacy Policy
         </a>
+        <a href="/cookie-policy" className="grow shrink w-[134px]">
+          Cookies Policy
+        </a>
         <a href="/help" className="grow shrink w-[117px]">
           Help Center
+        </a>
+        <a href="/contact" className="grow shrink w-[117px]">
+          Contact Us
         </a>
         <a href="https://x.com" target="_blank" rel="noreferrer">
           <BsTwitterX className="w-6 h-6" />
@@ -19,7 +25,7 @@ const Footer = () => {
         loading="lazy"
         src="/logos/footer-logo.png"
         alt="Huge logo of Atlas"
-        className="object-contain mt-9 w-full aspect-[5.75]  max-w-[1314px] max-md:max-w-full"
+        className="object-contain mt-12 w-full aspect-[5.75]  max-w-[1314px] max-md:max-w-full"
         draggable="false"
       />
     </div>

@@ -70,7 +70,6 @@ const SpacesList = () => {
                 <SpaceItem
                   name={value.state.space_name}
                   description={value.state.space_description}
-                  symbol={value.state.space_symbol}
                   backgroundImg={value.state.space_background}
                   avatarImg={value.state.space_logo}
                 />

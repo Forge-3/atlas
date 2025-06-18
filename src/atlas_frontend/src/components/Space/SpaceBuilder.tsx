@@ -21,13 +21,11 @@ import { selectUserBlockchainData } from "../../store/slices/userSlice.ts";
 import { getSpacePath } from "../../router/paths.ts";
 
 interface SpaceBuilderFormInput {
-  space_symbol?: string;
   space_name: string;
   space_description: string;
 }
 
 const schema = yup.object({
-  space_symbol: yup.string().trim().max(16).optional(),
   space_description: yup.string().trim().max(128).min(3).required(),
   space_name: yup.string().max(32).trim().min(2).required(),
 });
@@ -56,8 +54,6 @@ const SpaceBuilder = () => {
       toast.error(formatFormError(errors.space_name?.message));
     if (errors.space_description?.message)
       toast.error(formatFormError(errors.space_description?.message));
-    if (errors.space_symbol?.message)
-      toast.error(formatFormError(errors.space_symbol?.message));
   }, [errors]);
 
   const onSubmit: SubmitHandler<SpaceBuilderFormInput> = async (data) => {
@@ -66,13 +62,12 @@ const SpaceBuilder = () => {
     }
     const name = data.space_name.trim();
     const description = data.space_description.trim();
-    const symbol =
-      data.space_symbol !== "" && data.space_symbol ? data.space_symbol : null;
+
     const createSpaceCall = createNewSpace({
       authAtlasMain,
       name,
       description,
-      symbol,
+      symbol: null,
       logo: builderAvatarImg,
       background: builderBackgroundImg,
     });
@@ -148,14 +143,6 @@ const SpaceBuilder = () => {
                     }
                   ></div>
                 )}
-                <div className="flex items-center justify-center gap-2 m-4 text-4xl text-white font-roboto absolute bottom-0 right-0">
-                  <img src="/logos/icp-bold-uppercase.svg" draggable="false" />
-                  <input
-                    {...register("space_symbol")}
-                    className="bg-[#4A0295] rounded-3xl px-4 py-2 border-2 border-dashed outline-none placeholder:text-white w-64"
-                    placeholder="Symbol"
-                  />
-                </div>
               </div>
 
               <div className="flex mt-4">

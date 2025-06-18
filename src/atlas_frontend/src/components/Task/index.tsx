@@ -11,7 +11,7 @@ import { getAtlasSpace, getSpaceTasks, withdrawReward } from "../../canisters/at
 import GenericTask from "./tasks/GenericTask";
 import { FaWallet } from "react-icons/fa";
 import { useAuth } from "@nfid/identitykit/react";
-import { selectUserBlockchainData } from "../../store/slices/userSlice";
+import { selectUserBlockchainData, selectUserHub } from "../../store/slices/userSlice";
 import Button from "../Shared/Button";
 import { getSubmissionsPath } from "../../router/paths";
 import {
@@ -44,6 +44,8 @@ const Task = () => {
     : null;
   const spaceData = space?.state;
   const unAuthAtlasSpace = useUnAuthAtlasSpaceActor(principal);
+  const userInHub = useSelector(selectUserHub);
+  const isUserInHub = userInHub === spacePrincipal
 
   useEffect(() => {
     if (!unAuthAtlasSpace || spaceData) return;
@@ -75,8 +77,8 @@ const Task = () => {
     : new UserSubmissions({});
 
   if (!user?.principal) return <></>;
-
   const isAccepted = usersSubmissions.isAccepted(user.principal.toText());
+  const userAlreadyRewarded = currentTask.rewarded.includes(user.principal)
 
   const withdraw = async () => {
     if (!authAtlasSpace) {
@@ -140,6 +142,7 @@ const Task = () => {
                       taskId={taskId}
                       subtaskId={key}
                       unAuthAtlasSpace={unAuthAtlasSpace}
+                      isUserInHub={isUserInHub}
                     />
                   ))}
                 </div>
@@ -159,7 +162,7 @@ const Task = () => {
                     <FaWallet color="1E0F33" />
                   </div>
                 </div>
-                {isAccepted && (
+                {isAccepted && !userAlreadyRewarded && (
                   <div className="flex justify-end mt-4">
                     <Button onClick={withdraw}>Withdraw reward</Button>
                   </div>

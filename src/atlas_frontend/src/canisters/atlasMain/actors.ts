@@ -9,6 +9,7 @@ import type { _SERVICE } from "../../../../declarations/atlas_main/atlas_main.di
 export const atlasMainActor = (
   agent: Agent
 ): ActorSubclass<_SERVICE> => {
+
   return Actor.createActor(idlFactory, {
     agent,
     canisterId,

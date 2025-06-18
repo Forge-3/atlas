@@ -223,7 +223,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div
-        className="absolute inset-0 z-50 flex items-center justify-center"
+        className="fixed inset-0 z-50 flex items-center justify-center h-full"
         onClick={callback}
       >
         <div
