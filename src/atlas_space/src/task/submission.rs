@@ -28,7 +28,7 @@ pub enum Submission {
         access_token: String,
         #[n(1)]
         guild_id: String,
-    }
+    },
 }
 
 impl Submission {

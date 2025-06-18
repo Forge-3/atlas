@@ -98,6 +98,20 @@ const GenericTask = ({
     ? Object.keys(userSubmission?.[1].state)[0]
     : null;
 
+  let taskTitle = "";
+  let taskDescription = "";
+
+  if ('TitleAndDescription' in genericTask.task_content) {
+  taskTitle = genericTask.task_content.TitleAndDescription.task_title;
+  taskDescription = genericTask.task_content.TitleAndDescription.task_description;
+  } else if ('Discord' in genericTask.task_content) {
+  taskTitle = genericTask.task_content.Discord.task_title;
+  taskDescription = genericTask.task_content.Discord.task_description;
+  } else {
+  taskTitle = "Title is not accessible";
+  taskDescription = "Description is not accessible";
+  }
+
   return (
     <div className="flex mt-2">
       <div className="flex flex-col mr-4">
@@ -114,10 +128,10 @@ const GenericTask = ({
       <div className="bg-[#1E0F33] rounded-xl p-6 w-full">
         <div className="mb-4">
           <h4 className="text-xl font-medium font-poppins text-white mb-1 text-wrap break-all">
-            {genericTask.task_content.TitleAndDescription.task_title}
+            {taskTitle}
           </h4>
           <p className="text-zinc-400 text-wrap break-all">
-            {genericTask.task_content.TitleAndDescription.task_description}
+            {taskDescription}
           </p>
         </div>
 

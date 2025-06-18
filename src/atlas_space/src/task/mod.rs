@@ -1,15 +1,13 @@
 use std::{borrow::Cow, collections::BTreeMap, fmt};
 
 use candid::{CandidType, Nat, Principal};
-use ic_cdk::update;
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
-use sha2::Digest;
 use submission::{Submission, SubmissionData, SubmissionState};
 use token_reward::TokenReward;
 
-use crate::{errors::Error, methods::update::validate_discord_invite_link};
+use crate::{errors::Error};
 
 pub mod submission;
 pub mod token_reward;
@@ -41,6 +39,21 @@ pub enum TaskContent {
         task_description: String,
 
     },
+    #[n(1)]
+    Discord {
+       #[n(0)]
+        task_title: String,
+        #[n(1)]
+        task_description: String,
+        #[n(2)]
+        guild_id: String,
+        #[n(3)]
+        discord_invite_link: String,
+        #[n(4)]
+        guild_icon: Option<String>, 
+        #[n(5)]
+        expires_at: Option<String>,
+    }, 
 }
 
 impl TaskContent {
@@ -58,6 +71,36 @@ impl TaskContent {
                 if task_description.trim().len() > 500 {
                     return Err(Error::InvalidTaskContent(
                         "Subtask description is too long (max length: 500)".into(),
+                    ));
+                }
+                Ok(())
+            },
+            TaskContent::Discord {
+                task_title,
+                task_description,
+                guild_id,
+                discord_invite_link,
+                guild_icon: _,
+                expires_at: _,
+            } => {
+                if task_title.trim().len() > 50 {
+                    return Err(Error::InvalidTaskContent(
+                        "Subtask title is too long (max length: 50)".into(),
+                    ));
+                }
+                if task_description.trim().len() > 500 {
+                    return Err(Error::InvalidTaskContent(
+                        "Discord task description is too long (max length: 500)".into(),
+                    ));
+                }
+                if guild_id.is_empty() {
+                    return Err(Error::InvalidTaskContent(
+                        "Discord guild ID cannot be empty".into(),
+                    ));
+                }
+                if discord_invite_link.is_empty() {
+                    return Err(Error::InvalidTaskContent(
+                        "Discord invite link cannot be empty".into(),
                     ));
                 }
                 Ok(())
@@ -113,58 +156,91 @@ impl TaskType {
                 Ok(())
             }
             TaskType::DiscordTask { submission: current_submission, .. } => {
-                let Submission::Discord { access_token, guild_id } = submission_data else {
+                let Submission::Discord {access_token,  guild_id } = submission_data else {
                     return Err(Error::IncorrectSubmission("Expected Discord submission".to_string()));
                 };
-                current_submission.insert(user, SubmissionData::new(Submission::Discord { access_token, guild_id }, SubmissionState::WaitingForReview)); 
+                current_submission.insert(user, SubmissionData::new(Submission::Discord {access_token, guild_id }, SubmissionState::WaitingForReview)); 
                 Ok(())
             }
         }
     }
+
     pub fn accept(&mut self, user: Principal) -> Result<(), Error> {
         match self {
             TaskType::GenericTask {
-                        task_content: _,
-                        submission: submissions_map,
-                    } => {
-                        let submission = submissions_map
-                            .get_mut(&user)
-                            .ok_or(Error::UserSubmissionNotFound)?;
-                        submission.set_state(SubmissionState::Accepted);
-                    }
-            TaskType::DiscordTask { task_content, submission, guild_id, discord_invite_link, guild_icon, expires_at } => todo!(),
+                task_content: _,
+                submission: submissions_map,
+            } => {
+                let submission = submissions_map
+                    .get_mut(&user)
+                    .ok_or(Error::UserSubmissionNotFound)?;
+                submission.set_state(SubmissionState::Accepted);
+            }
+            TaskType::DiscordTask {
+                task_content: _,
+                submission: submissions_map,
+                guild_id: _,
+                discord_invite_link: _,
+                guild_icon: _,
+                expires_at: _,
+            } => {
+                let submission = submissions_map
+                    .get_mut(&user)
+                    .ok_or(Error::UserSubmissionNotFound)?;
+                submission.set_state(SubmissionState::Accepted);
+            }
         }
-
         Ok(())
     }
+
     pub fn reject(&mut self, user: Principal) -> Result<(), Error> {
         match self {
             TaskType::GenericTask {
-                        task_content: _,
-                        submission: submissions_map,
-                    } => {
-                        let submission = submissions_map
-                            .get_mut(&user)
-                            .ok_or(Error::UserSubmissionNotFound)?;
-                        submission.set_state(SubmissionState::Rejected);
-                    }
-            TaskType::DiscordTask { task_content, submission, guild_id, discord_invite_link, guild_icon, expires_at } => todo!(),
+                task_content: _,
+                submission: submissions_map,
+            } => {
+                let submission = submissions_map
+                    .get_mut(&user)
+                    .ok_or(Error::UserSubmissionNotFound)?;
+                submission.set_state(SubmissionState::Rejected);
+            }
+            TaskType::DiscordTask {
+                task_content: _,
+                submission: submissions_map,
+                guild_id: _,
+                discord_invite_link: _,
+                guild_icon: _,
+                expires_at: _,
+            } => {
+                let submission = submissions_map
+                    .get_mut(&user)
+                    .ok_or(Error::UserSubmissionNotFound)?;
+                submission.set_state(SubmissionState::Rejected);
+            }
         }
-
         Ok(())
     }
 
     pub fn get_submission(&self, user: Principal) -> Result<&SubmissionData, Error> {
         match self {
             TaskType::GenericTask {
-                        task_content: _,
-                        submission: submissions_map,
-                    } => Ok(submissions_map
-                        .get(&user)
-                        .ok_or(Error::UserSubmissionNotFound)?),
-            TaskType::DiscordTask { task_content, submission, guild_id, discord_invite_link, guild_icon, expires_at } => todo!(),
-                    }
-            }
+                task_content: _,
+                submission: submissions_map,
+            } => Ok(submissions_map
+                .get(&user)
+                .ok_or(Error::UserSubmissionNotFound)?),
+            TaskType::DiscordTask {
+                task_content: _,
+                submission: submissions_map,
+                guild_id: _,
+                discord_invite_link: _,
+                guild_icon: _,
+                expires_at: _,
+            } => Ok(submissions_map
+                .get(&user)
+                .ok_or(Error::UserSubmissionNotFound)?),
+        }
+    }
 
     pub fn get_submission_by_user(&self, user: &Principal) -> Option<&SubmissionData> {
         match self {
@@ -210,23 +286,34 @@ impl Task {
             tasks: args
                 .task_content
                 .iter()
-                .map(|(task_type, task_content)| match task_type {
-                    CreateTaskType::GenericTask => {
-                            TaskType::GenericTask {
-                                task_content: task_content.clone(),
-                                submission: BTreeMap::new(),
-                            }
+                .map(|(task_type, task_content)| match (task_type, task_content) {
+                    (CreateTaskType::GenericTask, _) => {
+                        TaskType::GenericTask {
+                            task_content: task_content.clone(),
+                            submission: BTreeMap::new(),
+                        }
                     }
-                    CreateTaskType::DiscordTask => {
+                    (CreateTaskType::DiscordTask, TaskContent::Discord {
+                            task_title,
+                            task_description,
+                            guild_id,
+                            discord_invite_link,
+                            guild_icon,
+                            expires_at,
+                        }) => {
                             TaskType::DiscordTask {
-                                task_content: task_content.clone(),
+                                task_content: TaskContent::TitleAndDescription {
+                                    task_title: task_title.clone(),
+                                    task_description: task_description.clone(),
+                                },
                                 submission: BTreeMap::new(),
-                                guild_id:todo!(), 
-                                discord_invite_link:todo!(),
-                                guild_icon:todo!(),
-                                expires_at:todo!(),
+                                guild_id: guild_id.clone(),
+                                discord_invite_link: discord_invite_link.clone(),
+                                guild_icon: guild_icon.clone(),
+                                expires_at: expires_at.clone(),
                             }
-                    }
+                        }
+                    _ => panic!("Invalid task_content variant for given CreateTaskType"),
                 })
                 .collect(),
             number_of_uses: args.number_of_uses,

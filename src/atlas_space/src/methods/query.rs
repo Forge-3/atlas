@@ -81,7 +81,7 @@ pub fn get_current_bytecode_version() -> u64 {
 
 #[query] 
 pub fn transform_http_response(raw_args: TransformArgs) -> HttpResponse {
-    let mut resp = HttpResponse {
+    let resp = HttpResponse {
         status: raw_args.response.status,
         body: raw_args.response.body,
         headers: raw_args.response.headers,

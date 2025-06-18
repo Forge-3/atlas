@@ -5,9 +5,8 @@ use crate::{
     task::{submission::Submission, CreateTaskArgs, Task, TaskId, TaskType},
 };
 use candid::Principal;
-use candid::Encode;
 use ic_cdk::{
-    api::management_canister::{main::{CanisterInstallMode, InstallCodeArgument}, http_request::{ TransformContext, CanisterHttpRequestArgument, HttpHeader, HttpMethod, HttpResponse}},
+    api::management_canister::http_request::{ TransformContext, CanisterHttpRequestArgument, HttpHeader, HttpMethod, HttpResponse},
     update,
 };
 use serde_json;
@@ -88,11 +87,6 @@ pub async fn submit_subtask_submission(
     submission: Submission,
 ) -> Result<(), Error> {
     let caller = user_is_in_space().await?;
-    memory::mut_open_task(task_id.clone(), |maybe_task| {
-        let task = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
-        task.submit_subtask_submission(caller, subtask_id, submission)?;
-    })?;
-    
 
     #[derive(Debug)]
     enum DiscordVerificationData {
@@ -102,18 +96,18 @@ pub async fn submit_subtask_submission(
     }
 
     let discord_check_result: DiscordVerificationData = memory::mut_open_task(task_id.clone(), |task_opt| {
-        let task = match task_opt.as_mut() {
-            Some(t) => t,
-            None => return DiscordVerificationData::Error(Error::TaskDoNotExists(task_id.clone())),
+        let task = match task_opt.as_mut().ok_or(DiscordVerificationData::Error(Error::TaskDoNotExists(task_id.clone()))) {
+            Ok(task) => task,
+            Err(e) => return e,
         };
 
-        let subtask = match task.tasks.get_mut(&subtask_id) {  // todo!()
-            Some(s) => s,
-            None => return DiscordVerificationData::Error(Error::SubtaskDoNotExists(subtask_id)),
+        let subtask = match task.tasks.get_mut(subtask_id).ok_or(DiscordVerificationData::Error(Error::SubtaskDoNotExists(subtask_id))) {
+            Ok(task) => task,
+            Err(e) => return e,
         };
 
         if let TaskType::DiscordTask { guild_id: task_guild_id, .. } = subtask {
-            if let Submission::Discord { access_token, guild_id } = &submission {
+            if let Submission::Discord { access_token, guild_id: _ } = &submission {
                 DiscordVerificationData::Required { 
                     access_token: access_token.clone(), 
                     task_guild_id: task_guild_id.clone()
@@ -143,20 +137,13 @@ pub async fn submit_subtask_submission(
         }
     }
 
-    let final_submit_result: Result<(), Error> = memory::mut_open_task(task_id.clone(), |task_opt| {
-        let task = task_opt
-            .as_mut()
-            .ok_or(Error::TaskDoNotExists(task_id.clone()))?;
+    memory::mut_open_task(task_id.clone(), |task_opt| {
+    let task = task_opt
+        .as_mut()
+        .ok_or(Error::TaskDoNotExists(task_id.clone()))?;
 
-        let subtask = task
-            .tasks
-            .get_mut(&subtask_id)
-            .ok_or(Error::SubtaskDoNotExists(subtask_id))?;
-
-        subtask.submit(caller, submission.clone())
-    })?;
-
-    final_submit_result?;
+    task.submit_subtask_submission(caller, subtask_id, submission.clone())
+})??;
 
     Ok(())
 }

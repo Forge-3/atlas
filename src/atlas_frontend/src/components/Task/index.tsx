@@ -4,12 +4,11 @@ import { useSpaceId } from "../../hooks/space";
 import { useDispatch, useSelector } from "react-redux";
 import { customSerify, type RootState } from "../../store/store";
 import { deserify } from "@karmaniverous/serify-deserify";
-import type { Task as TaskBackend } from "../../../../declarations/atlas_space/atlas_space.did";
+import type { Task as TaskType } from "../../../../declarations/atlas_space/atlas_space.did";
 import { useEffect } from "react";
 import { useAuthAtlasSpaceActor, useUnAuthAtlasSpaceActor } from "../../hooks/identityKit";
 import { getAtlasSpace, getSpaceTasks, withdrawReward } from "../../canisters/atlasSpace/api";
 import GenericTask from "./tasks/GenericTask";
-import DiscordTask from "./tasks/Discord";
 import { FaWallet } from "react-icons/fa";
 import { useAuth } from "@nfid/identitykit/react";
 import { selectUserBlockchainData } from "../../store/slices/userSlice";
@@ -20,6 +19,7 @@ import {
   UserSubmissions,
 } from "../../canisters/atlasSpace/tasks";
 import toast from "react-hot-toast";
+import DiscordTask from "./tasks/Discord";
 
 const Task = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -32,73 +32,50 @@ const Task = () => {
     spacePrincipal,
     navigate,
   });
-  if (!principal) {
-    console.log("Task Component - Principal is missing, returning early.");
-    return <></>;
-  }
+  if (!principal) return <></>;
   const spaceId = principal.toString();
   const authAtlasSpace = useAuthAtlasSpaceActor(principal);
   const space = useSelector(
-    (state: RootState) => {
-      const s = state.spaces?.spaces?.[principal.toString()];
-      console.log("Task Component - Space from Redux (raw):", s);
-      return s ?? null;
-    }
+    (state: RootState) => state.spaces?.spaces?.[principal.toString()] ?? null
   );
-
   const tasks = space?.tasks
     ? (deserify(space?.tasks, customSerify) as {
-        [key: string]: TaskBackend;
+        [key: string]: TaskType;
       })
     : null;
-  
-  console.log("Task Component - Deserified tasks (dictionary):", tasks);
-
   const spaceData = space?.state;
-  console.log("Task Component - Space Data:", spaceData);
-
   const unAuthAtlasSpace = useUnAuthAtlasSpaceActor(principal);
 
   useEffect(() => {
     if (!unAuthAtlasSpace || spaceData) return;
-    console.log("Task Component - Fetching Atlas Space data...");
     getAtlasSpace({
       spaceId,
       unAuthAtlasSpace,
       dispatch,
     });
-  }, [dispatch, unAuthAtlasSpace, spaceData, principal, spaceId]);
+  }, [dispatch, unAuthAtlasSpace, spaceData, principal]);
 
   useEffect(() => {
     if (!unAuthAtlasSpace || tasks) return;
-    console.log("Task Component - Fetching Space Tasks...");
     getSpaceTasks({
       spaceId,
       unAuthAtlasSpace,
       dispatch,
     });
-  }, [dispatch, unAuthAtlasSpace, tasks, principal, spaceId]);
+  }, [dispatch, unAuthAtlasSpace, tasks, principal]);
 
-  if (!tasks || !taskId) {
-    console.log("Task Component - Early exit: tasks or taskId is missing.", { tasks, taskId });
-    return <></>;
-  }
-
+  if (!tasks || !taskId) return <></>;
   const currentTask = tasks[taskId];
-  console.log("Task Component - Current Task:", currentTask); 
-
   if (!spaceData || !currentTask) {
-    console.log("Task Component - Early exit: spaceData or currentTask is missing.", { spaceData, currentTask });
     return <></>;
   }
 
   const usersSubmissions = currentTask?.tasks
     ? getUsersSubmissions(currentTask.tasks)
     : new UserSubmissions({});
-
   if (!user?.principal) return <></>;
-
   const isAccepted = usersSubmissions.isAccepted(user.principal.toText());
+  const userAlreadyRewarded = currentTask.rewarded.includes(user.principal)
 
   const withdraw = async () => {
     if (!authAtlasSpace) {
@@ -115,6 +92,7 @@ const Task = () => {
     });
   }
 
+  console.log(currentTask);
   return (
     <div className="container mx-auto my-4">
       <div className="w-full px-3">
@@ -151,12 +129,10 @@ const Task = () => {
               <div className="h-1 w-full bg-white/20 mt-6 mb-8 rounded-full"></div>
               <div>
                 <h2 className="text-4xl font-semibold font-montserrat flex text-white">
-                  {currentTask.title} 
+                  {currentTask.task_title}
                 </h2>
                 <div className="mt-6">
-                  {currentTask.tasks.map(([subtaskId, subtaskType]) => {
-                    console.log("Task Component - Mapping subtask:", { subtaskId: subtaskId.toString(), subtaskType });
-                    
+                  {Object.entries(currentTask.tasks).map(([subtaskId, subtaskType]) => {
                     if ('GenericTask' in subtaskType) {
                       return (
                         <GenericTask
@@ -199,7 +175,7 @@ const Task = () => {
                     <FaWallet color="1E0F33" />
                   </div>
                 </div>
-                {isAccepted && (
+                {isAccepted && !userAlreadyRewarded && (
                   <div className="flex justify-end mt-4">
                     <Button onClick={withdraw}>Withdraw reward</Button>
                   </div>

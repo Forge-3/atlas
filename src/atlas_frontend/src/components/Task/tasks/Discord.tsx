@@ -15,7 +15,6 @@ import {
   selectUserDiscordData,
   setDiscordIntegrationData, 
 } from "../../../store/slices/userSlice"; 
-import { unwrapCall } from "../../../canisters/delegatedCall";
 import { getSpaceTasks } from "../../../canisters/atlasSpace/api";
 
 type Submission = CandidSubmission;
@@ -118,56 +117,49 @@ const DiscordTask = ({
       },
     };
 
-    const submissionToastId = toast.loading("Submitting Discord task and verifying membership...");
+     const submissionToastId = toast.loading("Submitting Discord task and verifying membership...");
 
-    try {
-      const submissionPromise = submitSubtaskSubmission({
-        authAtlasSpace: actor,
-        taskId: BigInt(taskId),
-        subtaskId: BigInt(subtaskId),
-        submission: submission,
-      });
+  try {
+   await submitSubtaskSubmission({
+      authAtlasSpace: actor,
+      taskId: BigInt(taskId),
+      subtaskId: BigInt(subtaskId),
+      submission,
+    });
 
-      await unwrapCall<null>({
-        call: submissionPromise,
-        errMsg: "Failed to send subtask submission",
-      });
+    toast.success("Submission successful! Discord membership verified.", { id: submissionToastId });
 
-      toast.success("Submission successful! Discord membership verified.", { id: submissionToastId });
+    await getSpaceTasks({
+      spaceId: spacePrincipal.toString(),
+      unAuthAtlasSpace: actor,
+      dispatch,
+    });
 
-      if (actor) {
-        await getSpaceTasks({
-          spaceId: spacePrincipal.toString(),
-          unAuthAtlasSpace: actor,
-          dispatch,
-        });
-        console.log("DiscordTask - getSpaceTasks dispatched after submission.");
-      } else {
-        console.warn("DiscordTask - Actor not available to refresh tasks after submission.");
-      }
+    console.log("DiscordTask - getSpaceTasks dispatched after submission.");
 
-    } catch (e) {
-      console.error("Error submitting task:", e);
+  } catch (e) {
+    console.error("Error submitting task:", e);
 
-      let errorMessage = "An unexpected error occurred. Please try again.";
-      if (typeof e === 'object' && e !== null && 'IncorrectSubmission' in e) {
-        const errorDetails = (e as { IncorrectSubmission: string }).IncorrectSubmission;
-        if (typeof errorDetails === 'string' && errorDetails.includes("User is not a member of the guild")) {
-          errorMessage = "You are NOT a member of the required Discord server. Please join and try again.";
-          if (discordInviteLink) {
-            errorMessage += ` Join here: ${discordInviteLink}`;
-          }
-        } else if (typeof errorDetails === 'string') {
-          errorMessage = `Submission failed: ${errorDetails}`;
+    let errorMessage = "An unexpected error occurred. Please try again.";
+    if (typeof e === 'object' && e !== null && 'IncorrectSubmission' in e) {
+      const errorDetails = (e as { IncorrectSubmission: string }).IncorrectSubmission;
+      if (typeof errorDetails === 'string' && errorDetails.includes("User is not a member of the guild")) {
+        errorMessage = "You are NOT a member of the required Discord server. Please join and try again.";
+        if (discordInviteLink) {
+          errorMessage += ` Join here: ${discordInviteLink}`;
         }
-      } else if (e instanceof Error) {
-        errorMessage = `Submission failed: ${e.message}`;
-      } else {
-        errorMessage = `An unexpected error occurred: ${String(e)}`;
+      } else if (typeof errorDetails === 'string') {
+        errorMessage = `Submission failed: ${errorDetails}`;
       }
-      toast.error(errorMessage, { id: submissionToastId });
+    } else if (e instanceof Error) {
+      errorMessage = `Submission failed: ${e.message}`;
+    } else {
+      errorMessage = `An unexpected error occurred: ${String(e)}`;
     }
-  }, [actor, user, accessToken, guildId, taskId, subtaskId, dispatch, spacePrincipal, discordInviteLink]);
+
+    toast.error(errorMessage, { id: submissionToastId });
+  }
+}, [actor, user, accessToken, guildId, taskId, subtaskId, dispatch, spacePrincipal, discordInviteLink]);
   
   const renderButtons = () => {
     if (!user) {
@@ -216,6 +208,20 @@ const DiscordTask = ({
     console.log("setVisible state:", isVisible);
   };
   
+let taskTitle = "";
+let taskDescription = "";
+
+if ('TitleAndDescription' in discordTask.task_content) {
+  taskTitle = discordTask.task_content.TitleAndDescription.task_title;
+  taskDescription = discordTask.task_content.TitleAndDescription.task_description;
+} else if ('Discord' in discordTask.task_content) {
+  taskTitle = discordTask.task_content.Discord.task_title;
+  taskDescription = discordTask.task_content.Discord.task_description;
+} else {
+  taskTitle = "Title is not accessible";
+  taskDescription = "Description is not accessible";
+}
+
   return (
     <div className="rounded-xl p-4 flex mb-2">
       <div className="flex flex-col items-center mr-4">
@@ -227,10 +233,10 @@ const DiscordTask = ({
       <div className="bg-[#1E0F33] rounded-xl p-6 w-full">
         <div className="mb-4">
           <h4 className="text-xl font-medium font-poppins text-white mb-1">
-            {discordTask.task_content.TitleAndDescription.task_title}
+            {taskTitle}
           </h4>
           <p className="text-zinc-400">
-            {discordTask.task_content.TitleAndDescription.task_description}
+            {taskDescription}
           </p>
         </div>
 

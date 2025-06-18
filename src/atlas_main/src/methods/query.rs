@@ -80,8 +80,14 @@ pub fn user_is_admin(user: Principal) -> bool {
 
 #[query]
 pub fn user_is_in_space(user: Principal, space_id: Principal) -> bool {
-    let user = memory::get_user(&user).unwrap_or_default();
-    let belonging_to_spaces = user.belonging_to_spaces();
+    ic_cdk::println!("Parent: user_is_in_space called. User: {}, Space ID: {}", user.to_text(), space_id.to_text());
+
+    let user_data = memory::get_user(&user).unwrap_or_default();
+    ic_cdk::println!("Parent: User data for {}: {:?}", user.to_text(), user_data); // Wyświetl całe dane użytkownika, jeśli to możliwe
+
+    let belonging_to_spaces = user_data.belonging_to_spaces();
+    ic_cdk::println!("Parent: User {} belongs to spaces (indices): {:?}", user.to_text(), belonging_to_spaces);
+    
     let (space_index, _) = memory::with_space_vec_iter(|spaces| {
         spaces
             .enumerate()

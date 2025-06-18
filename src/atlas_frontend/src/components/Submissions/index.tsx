@@ -8,6 +8,7 @@ import type {
   _SERVICE,
   Task,
   TaskType,
+  SubmissionData,
 } from "../../../../declarations/atlas_space/atlas_space.did";
 import { customSerify, type RootState } from "../../store/store";
 import { useDispatch, useSelector } from "react-redux";
@@ -15,22 +16,24 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useSpaceId } from "../../hooks/space";
 import { useEffect, useState } from "react";
 import {
-  acceptSubtaskSubmission,
   getAtlasSpace,
   getSpaceTasks,
-  rejectSubtaskSubmission,
 } from "../../canisters/atlasSpace/api";
 import {
   getUsersSubmissions,
   UserSubmissions,
-  type TaskData,
   type TasksData,
 } from "../../canisters/atlasSpace/tasks";
 import { shortPrincipal } from "../../utils/icp";
 import { TiArrowSortedDown } from "react-icons/ti";
-import Button from "../Shared/Button";
 import type { ActorSubclass } from "@dfinity/agent";
-import { Principal } from "@dfinity/principal";
+import GenericTaskSummation from './GenericTaskSummation';
+import DiscordTaskSummation from './DiscordTaskSummation';
+
+export type ActualSubmissionDataType = {
+    submissionData: SubmissionData;
+    taskType: TaskType;
+};
 
 const Submissions = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -211,108 +214,49 @@ const Summation = ({
       {isSummationOpen && (
         <tr>
           <td colSpan={4} className="bg-[#9173FF]/30 px-4 py-3">
-            {Object.entries(currentTaskData).map(([key]) => (
-              <GenericTaskSummation
-                key={key}
-                genericTask={currentTask.tasks[Number(key)].GenericTask}
-                usersSubmissions={usersSubmissions}
-                submission={usersSubmissions.getSubmission(userPrincipal, key)}
-                authAtlasSpace={authAtlasSpace}
-                taskId={taskId}
-                subtaskId={key}
-                unAuthAtlasSpace={unAuthAtlasSpace}
-                spaceId={spaceId}
-                submissionState={submissionState}
-                user={userPrincipal}
-              />
-            ))}
+            {Object.entries(currentTaskData).map(([key]) => {
+              const subtask = currentTask.tasks[Number(key)];
+              const submission = usersSubmissions.getSubmission(userPrincipal, key) as ActualSubmissionDataType;
+
+              if ('GenericTask' in subtask) {
+                return (
+                  <GenericTaskSummation
+                    key={key}
+                    genericTask={subtask.GenericTask}
+                    usersSubmissions={usersSubmissions}
+                    submission={submission}
+                    authAtlasSpace={authAtlasSpace}
+                    taskId={taskId}
+                    subtaskId={key}
+                    unAuthAtlasSpace={unAuthAtlasSpace}
+                    spaceId={spaceId}
+                    submissionState={submissionState}
+                    user={userPrincipal}
+                  />
+                );
+              } else if ('DiscordTask' in subtask) {
+                return (
+                  <DiscordTaskSummation
+                    key={key}
+                    discordTask={subtask.DiscordTask}
+                    usersSubmissions={usersSubmissions}
+                    submission={submission}
+                    authAtlasSpace={authAtlasSpace}
+                    taskId={taskId}
+                    subtaskId={key}
+                    unAuthAtlasSpace={unAuthAtlasSpace}
+                    spaceId={spaceId}
+                    submissionState={submissionState}
+                    user={userPrincipal}
+                  />
+                );
+              }
+              return null;
+            })}
           </td>
         </tr>
       )}
     </>
-  );
-};
-
-interface GenericTaskSummationProps {
-  genericTask: TaskType["GenericTask"];
-  usersSubmissions: UserSubmissions;
-  submission: TaskData;
-  authAtlasSpace: ActorSubclass<_SERVICE>;
-  taskId: string;
-  subtaskId: string;
-  unAuthAtlasSpace: ActorSubclass<_SERVICE>;
-  spaceId: string;
-  submissionState: "Rejected" | "WaitingForReview" | "Accepted"
-  user: string
-}
-
-const GenericTaskSummation = ({
-  genericTask,
-  submission,
-  authAtlasSpace,
-  taskId,
-  subtaskId,
-  unAuthAtlasSpace,
-  spaceId,
-  submissionState,
-  user
-}: GenericTaskSummationProps) => {
-  const dispatch = useDispatch();
-  const userPrincipal = Principal.from(user)
-
-  const acceptSubtask = async () => {
-    await acceptSubtaskSubmission({
-      authAtlasSpace,
-      userPrincipal,
-      taskId: BigInt(taskId),
-      subtaskId: BigInt(subtaskId),
-    });
-    await getSpaceTasks({
-      spaceId,
-      unAuthAtlasSpace,
-      dispatch,
-    });
-  };
-
-  const rejectSubtask = async () => {
-    await rejectSubtaskSubmission({
-      authAtlasSpace,
-      userPrincipal,
-      taskId: BigInt(taskId),
-      subtaskId: BigInt(subtaskId),
-    });
-    await getSpaceTasks({
-      spaceId,
-      unAuthAtlasSpace,
-      dispatch,
-    });
-  };
-  const singleSubmissionState = Object.keys(submission.submissionData.state)[0]
-
-  return (
-    <div className="text-left pb-2 mt-2">
-      {singleSubmissionState} {taskId} {subtaskId}
-      <h3 className="text-xl font-bold text-wrap break-all">
-        {genericTask.task_content.TitleAndDescription.task_title}
-      </h3>
-      <p className="text-wrap break-all">{genericTask.task_content.TitleAndDescription.task_description}</p>
-      <div className="mt-4">
-        <p className="text-white font-semibold mb-1">Submitted response:</p>
-        <div className="border-2 border-[#9173FF]/20 p-2 rounded-xl w-full mb-4 bg-[#9173FF]/20 text-white">
-          {submission.submissionData.submission.Text.content}
-        </div>
-      </div>
-      <div className="flex justify-end gap-2">
-        {submissionState == "WaitingForReview" && singleSubmissionState == "WaitingForReview" && (
-          <>
-            <Button onClick={acceptSubtask}>Accept</Button>
-            <Button onClick={rejectSubtask} className="bg-red-500">
-              Reject
-            </Button>
-          </>
-        )}
-      </div>
-    </div>
   );
 };
 

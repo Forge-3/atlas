@@ -26,6 +26,8 @@ import { setUserSpaceAllowanceIfNeeded } from "../canisters/ckUSDC/api";
 import { useAuth } from "@nfid/identitykit/react";
 import { clearDiscordIntegrationData, setDiscordIntegrationData } from "../store/slices/userSlice"; 
 import DiscordTask from "./tasks/Discord";
+import type { CreateTaskType as CandidCreateTaskType,
+              TaskContent as CandidTaskContent } from "../../../declarations/atlas_space/atlas_space.did";
 
 type TaskType = "generic" | "discord";
 const allowedTaskTypes = ["generic", "discord"] as const;
@@ -128,7 +130,6 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     watch,
     setValue,
     formState: { errors },
-    reset,
   } = useForm<CreateNewTaskFormInput>({
     resolver: yupResolver(schema),
     defaultValues: {
@@ -232,63 +233,43 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
       return;
     }
 
-    const subtasks = tasks?.map((task) => {
-        let guildIdForCandid: [] | [string];
-        if (task.taskType === "discord" && typeof task.guildId === 'string' && task.guildId.length > 0) {
-          guildIdForCandid = [task.guildId];
+    const subtasks: Array<[CandidCreateTaskType, CandidTaskContent]> = tasks?.map((task) => {
+        let candidCreateTaskType: CandidCreateTaskType;
+        let candidTaskContent: CandidTaskContent;
+
+        if (task.taskType === "generic") {
+            candidCreateTaskType = { 'GenericTask': null };
+            candidTaskContent = {
+                'TitleAndDescription': {
+                    task_title: task.title,
+                    task_description: task.description,
+                },
+            };
         } else {
-          guildIdForCandid = [];
+            candidCreateTaskType = { 'DiscordTask': null };
+
+            if (!task.guildId || task.guildId.length === 0) {
+                toast.error("Discord link validation failed: Guild ID is missing. Please re-check the link.");
+                throw new Error("Discord link validation failed: Guild ID is missing.");
+            }
+            if (!task.discordInviteLink || task.discordInviteLink.length === 0) {
+                toast.error("Discord link validation failed: Invite link is missing. Please re-check the link.");
+                throw new Error("Discord link validation failed: Invite link is missing.");
+            }
+
+            candidTaskContent = {
+                'Discord': {
+                    task_title: task.title,
+                    task_description: task.description,
+                    guild_id: task.guildId,
+                    discord_invite_link: task.discordInviteLink,
+                    guild_icon: task.guildIcon ? [task.guildIcon] : [],
+                    expires_at: task.expiresAt ? [task.expiresAt] : [],
+                },
+            };
         }
-
-        let discordInviteLinkForCandid: [] | [string];
-        if (task.taskType === "discord" && typeof task.discordInviteLink === 'string' && task.discordInviteLink.length > 0) {
-          discordInviteLinkForCandid = [task.discordInviteLink];
-        } else {
-          discordInviteLinkForCandid = [];
-        }
-
-        console.log("Form guildIcon for task:", task.guildIcon);
-        let guildIconForCandid: [] | [string];
-        if (task.taskType === "discord" && typeof task.guildIcon === 'string' && task.guildIcon.length > 0) {
-          guildIconForCandid = [task.guildIcon];
-        } else {
-          guildIconForCandid = [];
-        }
-        console.log("guildIconForCandid (to be sent to Candid):", guildIconForCandid);
-
-        let expiresAtForCandid: [] | [string];
-        if (task.taskType === "discord" && typeof task.expiresAt === 'string' && task.expiresAt.length > 0) {
-          expiresAtForCandid = [task.expiresAt];
-        } else {
-          expiresAtForCandid = [];
-        }
-
-
-        const baseSubtask = {
-          kind: task.taskType,
-          content: {
-            TitleAndDescription: {
-              task_title: task.title,
-              task_description: task.description,
-            },
-          },
-          guild_id: guildIdForCandid, 
-          discord_invite_link: discordInviteLinkForCandid,
-          guild_icon: guildIconForCandid, 
-          expires_at: expiresAtForCandid,
-        };
-
-        if (task.taskType === "discord" && (!task.guildId || task.guildId.length === 0)) {
-            toast.error("Discord link validation failed: Guild ID is missing. Please re-check the link.");
-            throw new Error("Discord link validation failed: Guild ID is missing.");
-        }
-        if (task.taskType === "discord" && (!task.discordInviteLink || task.discordInviteLink.length === 0)) {
-            toast.error("Discord link validation failed: Invite link is missing. Please re-check the link.");
-            throw new Error("Discord link validation failed: Invite link is missing.");
-        }
-
-        return baseSubtask;
-      }) ?? [];
+        return [candidCreateTaskType, candidTaskContent];
+    }) ?? [];
 
     if (subtasks.length === 0) {
       toast.error("Invalid subtasks: the minimum number of subtasks is one.");
@@ -316,7 +297,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     authAtlasSpaceActor,
     numberOfUses: numberOfUsesBn,
     rewardPerUsage: rewardPerUsageBn,
-    subtasks,
+    task_content: subtasks,
     taskTitle,
   });
 

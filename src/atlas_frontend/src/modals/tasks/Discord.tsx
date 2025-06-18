@@ -191,17 +191,21 @@ const DiscordTask = ({
         let errorMessage = "Failed to validate Discord invite link.";
         if (e && typeof e === "object" && "message" in e && typeof (e as { message?: unknown }).message === "string") {
         errorMessage = (e as { message: string }).message;
-    }
+        } else if (typeof e === "string") {
+        errorMessage = e;
+        }
 
         console.error("Original backend error message:", errorMessage, e);
 
-        const regex = /Discord invite link leads to a different server \(ID: (\d+)\)\. Expected: (\d+)\.?/;
+        const regex = /Discord invite link leads to a different server \(ID: ([^)]+)\)\. Expected: ([^)]+)\.?/;
         const match = errorMessage.match(regex);
 
         if (match && match.length >= 3) {
             const actualGuildIdFromBackend = match[1];
+            const expectedGuildIdFromBackend = match[2];
 
             const actualGuildName = guilds.find(g => g.id === actualGuildIdFromBackend)?.name || actualGuildIdFromBackend;
+            const expectedGuildName = guilds.find(g => g.id === expectedGuildIdFromBackend)?.name || expectedGuildIdFromBackend;
 
             errorMessage = `Invite link leads to a different server (${actualGuildName}). Expected: ${expectedGuildName}. Please select the correct guild or check the invite link.`;
         }
@@ -458,10 +462,10 @@ const DiscordTask = ({
       />
       {discordInviteLinkError && <span className="text-red-500">{discordInviteLinkError.toString()}</span>}
       {validationLoading && (
-        <p className="text-blue-500 text-sm mt-1">Validating invite link...</p>
+      <p className="text-blue-500 text-sm mt-1">Validating invite link...</p>
       )}
       {validationError && (
-        <p className="text-red-500 text-sm mt-1">{validationError}</p>
+      <p className="text-red-500 text-sm mt-1">{validationError}</p>
       )}
 
       {localExpiresAt !== null && (

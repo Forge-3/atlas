@@ -1,8 +1,6 @@
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory};
 use ic_stable_structures::{DefaultMemoryImpl, StableBTreeMap, StableCell};
 use std::cell::RefCell;
-use std::future::Future;
-
 use crate::config::Config;
 use crate::errors::Error;
 use crate::state::State;

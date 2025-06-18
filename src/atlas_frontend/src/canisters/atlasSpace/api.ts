@@ -4,9 +4,11 @@ import type {
   GetTasksRes,
   Submission,
   Task,
-  CreateTaskArgs,
+  CreateTaskArgs ,
   DiscordInviteApiResponse,
   DiscordGuild,
+  CreateTaskType,
+  TaskContent,
 } from "../../../../declarations/atlas_space/atlas_space.did.js";
 import { unwrapCall } from "../delegatedCall.js";
 import { setSpace, setTasks } from "../../store/slices/spacesSlice.js";
@@ -48,7 +50,7 @@ interface CreateNewSpaceTaskArgs {
   authAtlasSpaceActor: ActorSubclass<_SERVICE>;
   numberOfUses: bigint;
   rewardPerUsage: bigint;
-  subtasks: CreateTaskArgs['subtasks'];
+  task_content: Array<[CreateTaskType, TaskContent]>;
   taskTitle: string;
 }
 
@@ -56,7 +58,7 @@ export const createNewTask = async ({
   authAtlasSpaceActor,
   numberOfUses,
   rewardPerUsage,
-  subtasks,
+  task_content,
   taskTitle,
 }: CreateNewSpaceTaskArgs) => {
   const call = authAtlasSpaceActor.create_task({
@@ -66,7 +68,7 @@ export const createNewTask = async ({
         amount: rewardPerUsage,
       },
     },
-    subtasks,
+    task_content,
     number_of_uses: numberOfUses,
   });
 
@@ -114,22 +116,19 @@ export const getSpaceTasks = async ({
     start += count;
   }
 
-  const processedTasksForRedux: { [key: string]: Task } = {};
-
-  tasks.forEach(([id, task]) => {
-    const serializableTask = { ...task };
-
-    if (serializableTask.subaccount instanceof Uint8Array) {
-      serializableTask.subaccount = Array.from(serializableTask.subaccount);
-    }
-    processedTasksForRedux[id.toString()] = serializableTask;
-  });
+  const storableTasks = tasks.reduce(
+    (acc, [id, val]) => ({
+      ...acc,
+      [id.toString()]: val,
+    }),
+    {}
+  );
 
   dispatch(
     setTasks(
       serify(
         {
-          tasks: processedTasksForRedux,
+          tasks: storableTasks,
           spaceId,
         },
         customSerify
@@ -156,7 +155,7 @@ export const submitSubtaskSubmission = async ({
     subtaskId,
     submission
   );
-
+  
   await unwrapCall<null>({
     call,
     errMsg: "Failed to send subtask submission",

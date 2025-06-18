@@ -77,4 +77,7 @@ pub enum Error {
 
     #[error("A custom error occurred: {0}")]
     CustomError(String),
+
+    #[error("User is not member of a guild")]
+    NotAMemberOfGuild,
 }
