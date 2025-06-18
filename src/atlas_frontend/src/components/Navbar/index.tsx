@@ -14,7 +14,7 @@ import {
 } from "@headlessui/react";
 import { shortPrincipal } from "../../utils/icp.ts";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FiLogOut, FiCopy, FiPlus } from "react-icons/fi";
+import { FiLogOut, FiCopy } from "react-icons/fi";
 import { copy } from "../../utils/shared.ts";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../store/store.ts";
@@ -37,6 +37,8 @@ import { getUserBalance } from "../../canisters/ckUSDC/api.ts";
 import { formatUnits } from "ethers";
 import { DECIMALS } from "../../canisters/ckUSDC/constans.ts";
 import UserIcon from "./UserIcon.tsx";
+import WalletIcon from "../../icons/wallet.svg?react";
+import { FaPlus } from "react-icons/fa";
 
 const ConnectButton = (props: ConnectWalletButtonProps) => (
   <Button
@@ -151,51 +153,58 @@ const DropdownMenuComponent = ({
       <MenuItems
         modal={false}
         anchor="bottom end"
-        className="origin-top-right rounded-xl border border-white/10 bg-white/10 backdrop-blur-lg p-1 text-sm/6 text-white transition duration-100 ease-out [--anchor-gap:--spacing(1)] focus:outline-none data-closed:scale-95 data-closed:opacity-0 !z-[100] overflow-none"
+        className="origin-top-right rounded-xl border border-[#9173FF33] bg-gradient-to-b from-[#1E0F33]/80 to-[#9173FF]/10 backdrop-blur-lg p-1 text-sm/6 text-white transition duration-100 ease-out [--anchor-gap:--spacing(1)] focus:outline-none data-closed:scale-95 data-closed:opacity-0 !z-[100] overflow-none px-6 py-4"
       >
         <MenuItem>
+          <div className="flex justify-center items-center gap-2 mt-2">
+            <div>
+              <UserIcon className="h-12" />
+            </div>
+            {/* <div className="bg-[#1E0F33] font-montserrat font-medium px-4 py-2 rounded-md flex-1 h-10"></div> */}
+          </div>
+        </MenuItem>
+        {parsedUserCkUsdc !== null && (
+          <MenuItem>
+            <div className="flex justify-center items-center gap-2 mt-2">
+              <div>
+                <WalletIcon />
+              </div>
+              <div className="bg-[#9173FF]/20 h-full font-montserrat font-medium px-4 py-2 rounded-md flex-1 text-center">
+                {parsedUserCkUsdc} XP
+              </div>
+            </div>
+          </MenuItem>
+        )}
+        <MenuItem>
           <button
-            className="flex items-center justify-center justify-between w-full gap-6 px-3"
+            className="flex items-center justify-center justify-between mt-2 w-full text-[#9173FF] gap-4"
             onClick={copyAccount}
           >
-            <div>Wallet address</div>{" "}
+            <div>Address:</div>
             <div className="flex items-center justify-center">
               {shortPrincipal(connectedAccount)} <FiCopy className="ml-2" />
             </div>
           </button>
         </MenuItem>
-        {parsedUserCkUsdc && (
-          <MenuItem>
-            <button className="flex items-center justify-center justify-between w-full gap-6 px-3">
-              <div>XP amount:</div>{" "}
-              <div className="flex items-center justify-center">
-                {parsedUserCkUsdc} XP
-              </div>
-            </button>
-          </MenuItem>
-        )}
-        {userBlockchainData?.isSpaceLead() && (
-          <MenuItem>
-            <button
-              className="flex items-center justify-center justify-between w-full gap-6 px-3"
-              onClick={navigateToSpaceBuilder}
-            >
-              <div>
-                Create new space ({ownedSpacesCount}/
-                {appConfig?.spaces_per_space_lead})
-              </div>{" "}
-              <div className="flex items-center justify-center">
-                <FiPlus />
-              </div>
-            </button>
-          </MenuItem>
-        )}
+        {userBlockchainData?.isSpaceLead() &&
+          ownedSpacesCount !== undefined &&
+          appConfig?.spaces_per_space_lead !== undefined &&
+          ownedSpacesCount < appConfig?.spaces_per_space_lead && (
+            <MenuItem>
+              <button
+                className="bg-[#1E0F33] font-montserrat font-medium px-4 py-2 rounded-md mt-2 text-center w-full flex items-center justify-center gap-1"
+                onClick={navigateToSpaceBuilder}
+              >
+                Create new space <FaPlus />
+              </button>
+            </MenuItem>
+          )}
         <MenuItem>
           <button
-            className="flex items-center justify-center justify-between w-full gap-6 px-3"
+            className="bg-[#9173FF] flex items-center justify-center w-full font-montserrat font-medium px-4 py-1 rounded-md mt-2"
             onClick={disconnectWallet}
           >
-            <div>Disconnect</div>{" "}
+            <div>Log out</div>
             <div className="flex items-center justify-center">
               <FiLogOut className="ml-2" />
             </div>
@@ -239,10 +248,10 @@ const Navbar = () => {
               </Button> */}
             </div>
           )}
-            <ConnectWallet
-              connectButtonComponent={ConnectButton}
-              dropdownMenuComponent={DropdownMenuComponent}
-            />
+          <ConnectWallet
+            connectButtonComponent={ConnectButton}
+            dropdownMenuComponent={DropdownMenuComponent}
+          />
         </div>
       </div>
     </div>
