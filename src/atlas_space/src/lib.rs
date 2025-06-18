@@ -13,16 +13,15 @@ mod task;
 use crate::cycles::WalletReceiveResult;
 use crate::errors::Error;
 use crate::methods::query::{GetTasksArgs, GetTasksRes};
+use crate::methods::update::DiscordGuild;
+use crate::methods::update::DiscordInviteApiResponse;
 use crate::state::State;
 use crate::task::submission::Submission;
 use crate::task::CreateTaskArgs;
 use crate::task::TaskId;
-use crate::methods::update::DiscordGuild;
-use crate::methods::update::DiscordInviteApiResponse;
 
-use ic_cdk::api::management_canister::http_request::TransformArgs;
 use ic_cdk::api::management_canister::http_request::HttpResponse;
-
+use ic_cdk::api::management_canister::http_request::TransformArgs;
 
 use candid::Nat;
 use candid::Principal;

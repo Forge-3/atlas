@@ -4,7 +4,6 @@ import type { UserData } from "../../integrations/discord.ts";
 import type {
   Integrations,
   Rank,
-  Space,
   User,
 } from "../../../../declarations/atlas_main/atlas_main.did.js";
 import type { Principal } from "@dfinity/principal";
