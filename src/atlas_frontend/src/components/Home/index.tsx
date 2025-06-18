@@ -6,6 +6,8 @@ import Button from "../Shared/Button.tsx";
 import { ConnectWallet } from "@nfid/identitykit/react";
 import GradientBox from "../../layouts/GradientBox.tsx";
 import EarnRewards from "./EarnRewards/index.tsx";
+import FadeOutBox from "./FadeOutBox.tsx";
+import { IoArrowForwardCircleOutline } from "react-icons/io5";
 
 const Home = () => {
   const data = [
@@ -40,7 +42,12 @@ const Home = () => {
           <ConnectWallet
             connectButtonComponent={({ onClick }) => (
               <Button onClick={onClick} arrow={true} className="mt-8">
+                <div className=" flex items-center justify-center gap-2">
+                  <IoArrowForwardCircleOutline size={30}/>
+               <div>
                 Join your local hub
+                </div>
+                </div>
               </Button>
             )}
             dropdownMenuComponent={() => <></>}
@@ -64,54 +71,46 @@ const Home = () => {
           <EarnRewards />
         </div>
       </GradientBox>
-      <div className="font-semibold md:text-3xl dlg:text-5xl flex justify-center items-center mb my-14">
+      <div className="font-semibold text-5xl flex justify-center items-center mb my-14">
         <h2 className="text-white">
           We are <span className="text-[#9173FF]">big and growing</span>
         </h2>
       </div>{" "}
-      <div className="flex w-full items-center justify-center flex-wrap gap-6 px-20 ">
-        <div className="max-w-[418px] sm:w-[45%]  dlg:w-[30%]  h-[500px]  rounded-3xl bg-gradient-to-t from-[#574599]/5 to-[#9173FF]">
-          <div className="mt-20">
-            <h2 className="text-white md:text-[70px] dlx:text-[100px] font-medium text-center  ">
+      <div className="flex w-full items-center justify-center flex-wrap gap-6 px-20 font-montserrat">
+        <FadeOutBox>
+          <div className="mt-10 flex flex-col gap-8">
+            <h2 className="text-white text-[6rem] font-medium text-center">
               20+{" "}
             </h2>
-          </div>
-          <div className="mt-20">
-            <h2 className="text-white md:text-lg dlg:text-xl dxl:text-2xl font-semibold text-center">
+            <h2 className="text-white text-xl font-semibold text-center">
               Around the globe and <br /> growing
             </h2>
           </div>
-        </div>
-        <div className="max-w-[418px] sm:w-[45%]  dlg:w-[30%]  h-[500px]  rounded-3xl bg-gradient-to-t from-[#574599]/5 to-[#9173FF]">
-          <div className="mt-20">
-            <h2 className="text-white md:text-[70px] dlx:text-[100px] font-medium text-center  ">
+        </FadeOutBox>
+        <FadeOutBox>
+          <div className="mt-10 flex flex-col gap-8">
+            <h2 className="text-white text-[6rem] font-medium text-center  ">
               1000+{" "}
             </h2>
-          </div>
-          <div className="mt-20">
-            <h2 className="text-white md:text-lg dlg:text-xl dxl:text-2xl font-semibold text-center">
+            <h2 className="text-white text-xl font-semibold text-center">
               Ambassadors supporting <br /> ICP worldwide
             </h2>
           </div>
-        </div>
-        <div className="max-w-[418px] sm:w-[45%]  dlg:w-[30%]  h-[500px]  rounded-3xl bg-gradient-to-t from-[#574599]/5  to-[#9173FF]">
-          <div className="mt-20">
-            <h2 className="text-white md:text-[70px] dlx:text-[100px] font-medium text-center  ">
+        </FadeOutBox>
+        <FadeOutBox>
+          <div className="mt-10 flex flex-col gap-8">
+            <h2 className="text-white text-[6rem] font-medium text-center">
               10+
-              <span className="mt-3 md:text-[30px] dlg:text-[40px] dxl:text-[50px]">
-                million
-              </span>
+              <span className="mt-3 text-[3rem]">million</span>
             </h2>
-          </div>
-          <div className="mt-20">
-            <h2 className="text-white md:text-lg dlg:text-xl dxl:text-2xl font-semibold text-center">
+            <h2 className="text-white text-xl font-semibold text-center">
               Reach of ambassador <br /> program
             </h2>
           </div>
-        </div>
+        </FadeOutBox>
       </div>
       <div className="flex flex-col items-center w-full px-20 mb-6 max-md:max-w-full container mx-auto">
-        <div className="font-semibold md:text-3xl dlg:text-5xl flex justify-center items-center mb-2 mt-10">
+        <div className="font-semibold text-5xl flex justify-center items-center mb-2 mt-10">
           <h2 className="text-white">
             Find <span className="text-[#9173FF]">your HUB</span>
           </h2>

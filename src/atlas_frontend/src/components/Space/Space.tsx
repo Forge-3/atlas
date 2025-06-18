@@ -41,7 +41,7 @@ const TasksList = ({ tasks, spaceId }: TasksListProps) => {
         </div>
       </div>
       <div className="relative w-full bg-[#1E0F33] rounded-b-xl">
-        <div className="grid gap-4 px-8 py-6">
+        <div className="flex gap-4 px-8 py-6 flex-wrap justify-center">
           {tasksEntries.map(([id, task]) => {
             return (
               <TaskCard
@@ -62,7 +62,6 @@ const TasksList = ({ tasks, spaceId }: TasksListProps) => {
 interface SpaceProps {
   name: string;
   description: string;
-  symbol: string | null;
   avatarImg: string | null;
   backgroundImg: string | null;
   tasks?: Tasks;
@@ -71,7 +70,6 @@ interface SpaceProps {
 
 const Space = ({
   name,
-  symbol,
   description,
   backgroundImg,
   avatarImg,
@@ -139,12 +137,6 @@ const Space = ({
                     : {}
                 }
               >
-                <div
-                  className={`${backgroundImg ? "absolute bottom-0 right-0" : "absolute top-0 right-0"} flex items-center justify-center gap-2 m-4 text-4xl text-white font-roboto`}
-                >
-                  <img src="/logos/icp-bold-uppercase.svg" draggable="false" />
-                  <span>{symbol}</span>
-                </div>
               </div>
               <div className="flex mt-8">
                 <div className="bg-white flex rounded-3xl w-fit h-fit flex-none">

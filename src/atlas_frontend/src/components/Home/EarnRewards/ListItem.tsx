@@ -14,7 +14,7 @@ const ListItem = ({ children }: ListItemProps) => {
         draggable="false"
       />
 
-      <h3 className="text-white md:text-sm md2:text-lg dxl:text-2xl font-medium">
+      <h3 className="text-white text-lg font-medium">
         {children}
       </h3>
     </div>

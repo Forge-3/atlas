@@ -85,7 +85,7 @@ const LastStep = () => {
   }, [authenticatedAtlasMain]);
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="flex flex-col rounded-xl bg-white p-[20px] gap-[10px]">
         <h2 className="flex items-center justify-between font-semibold font-montserrat">
           Join 

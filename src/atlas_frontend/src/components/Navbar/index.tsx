@@ -1,20 +1,31 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import {
   ConnectWallet,
   useAuth,
   type ConnectWalletButtonProps,
 } from "@nfid/identitykit/react";
 import Button from "../Shared/Button.tsx";
-import { type MenuProps } from "@headlessui/react";
+import {
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuItems,
+  type MenuProps,
+} from "@headlessui/react";
 import { shortPrincipal } from "../../utils/icp.ts";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FiLogOut, FiCopy, FiPlus } from "react-icons/fi";
 import { copy } from "../../utils/shared.ts";
-import { motion } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../store/store.ts";
-import { useUnAuthAtlasMainActor, useUnAuthCkUSDCActor } from "../../hooks/identityKit.ts";
-import { selectUserBlockchainData, selectUserHub } from "../../store/slices/userSlice.ts";
+import {
+  useUnAuthAtlasMainActor,
+  useUnAuthCkUSDCActor,
+} from "../../hooks/identityKit.ts";
+import {
+  selectUserBlockchainData,
+  selectUserHub,
+} from "../../store/slices/userSlice.ts";
 import {
   getAtlasConfig,
   getAtlasUser,
@@ -25,6 +36,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getUserBalance } from "../../canisters/ckUSDC/api.ts";
 import { formatUnits } from "ethers";
 import { DECIMALS } from "../../canisters/ckUSDC/constans.ts";
+import UserIcon from "./UserIcon.tsx";
 
 const ConnectButton = (props: ConnectWalletButtonProps) => (
   <Button
@@ -44,7 +56,6 @@ const DropdownMenuComponent = ({
   icpBalance?: number;
   connectedAccount: string;
 }) => {
-  const [userDropdown, setUserDropdown] = useState(false);
   const unAuthAtlasMain = useUnAuthAtlasMainActor();
   const { user } = useAuth();
   const dispatch = useDispatch();
@@ -97,21 +108,23 @@ const DropdownMenuComponent = ({
     }
   }, [unAuthAtlasMain, user, dispatch]);
 
-
   const { data: userCkUsdc } = useQuery(
     ["user", unAuthCkUSDCActor, user],
     async () => {
       if (!unAuthCkUSDCActor || !user?.principal) return null;
       return await getUserBalance({
         authCkUSDC: unAuthCkUSDCActor,
-        user: user?.principal
-      }
-      )
-    },{
-      enabled: !!user?.principal && !!unAuthCkUSDCActor
+        user: user?.principal,
+      });
+    },
+    {
+      enabled: !!user?.principal && !!unAuthCkUSDCActor,
     }
   );
-  const parsedUserCkUsdc =  userCkUsdc !== null && userCkUsdc !== undefined ? formatUnits(userCkUsdc, DECIMALS) : null
+  const parsedUserCkUsdc =
+    userCkUsdc !== null && userCkUsdc !== undefined
+      ? formatUnits(userCkUsdc, DECIMALS)
+      : null;
 
   const ownedSpacesCount = userBlockchainData?.owned_spaces.length;
   const navigateToSpaceBuilder = () => {
@@ -131,62 +144,65 @@ const DropdownMenuComponent = ({
   };
 
   return (
-    <div className="relative">
-      <button onClick={() => setUserDropdown(!userDropdown)} className="flex">
-        <img
-          src="/icons/user-avatar-small.png"
-          className="h-16"
-          draggable="false"
-        />
-      </button>
-      {userDropdown && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0 }}
-        >
-          <ul className="absolute right-0 px-6 py-2 text-sm bg-white -bottom-18 rounded-xl text-nowrap">
-            <li onClick={copyAccount}>
-              <button className="flex items-center justify-center justify-between w-full gap-6">
-                <div>Wallet address</div>{" "}
-                <div className="flex items-center justify-center">
-                  {shortPrincipal(connectedAccount)} <FiCopy className="ml-2" />
-                </div>
-              </button>
-            </li>
-            {parsedUserCkUsdc && <li>
-              <button className="flex items-center justify-center justify-between w-full gap-6">
-                <div>User XP:</div>{" "}
-                <div className="flex items-center justify-center">
-                  {parsedUserCkUsdc} XP
-                </div>
-              </button>
-            </li>}
-            {userBlockchainData?.isSpaceLead() && (
-              <li onClick={navigateToSpaceBuilder}>
-                <button className="flex items-center justify-center justify-between w-full gap-6">
-                  <div>
-                    Create new space ({ownedSpacesCount}/
-                    {appConfig?.spaces_per_space_lead})
-                  </div>{" "}
-                  <div className="flex items-center justify-center">
-                    <FiPlus />
-                  </div>
-                </button>
-              </li>
-            )}
-            <li onClick={disconnectWallet}>
-              <button className="flex items-center justify-center justify-between w-full gap-6">
-                <div>Disconnect</div>{" "}
-                <div className="flex items-center justify-center">
-                  <FiLogOut className="ml-2" />
-                </div>
-              </button>
-            </li>
-          </ul>
-        </motion.div>
-      )}
-    </div>
+    <Menu>
+      <MenuButton data-hover={true}>
+        <UserIcon />
+      </MenuButton>
+      <MenuItems
+        modal={false}
+        anchor="bottom end"
+        className="origin-top-right rounded-xl border border-white/10 bg-white/10 backdrop-blur-lg p-1 text-sm/6 text-white transition duration-100 ease-out [--anchor-gap:--spacing(1)] focus:outline-none data-closed:scale-95 data-closed:opacity-0 !z-[100] overflow-none"
+      >
+        <MenuItem>
+          <button
+            className="flex items-center justify-center justify-between w-full gap-6 px-3"
+            onClick={copyAccount}
+          >
+            <div>Wallet address</div>{" "}
+            <div className="flex items-center justify-center">
+              {shortPrincipal(connectedAccount)} <FiCopy className="ml-2" />
+            </div>
+          </button>
+        </MenuItem>
+        {parsedUserCkUsdc && (
+          <MenuItem>
+            <button className="flex items-center justify-center justify-between w-full gap-6 px-3">
+              <div>XP amount:</div>{" "}
+              <div className="flex items-center justify-center">
+                {parsedUserCkUsdc} XP
+              </div>
+            </button>
+          </MenuItem>
+        )}
+        {userBlockchainData?.isSpaceLead() && (
+          <MenuItem>
+            <button
+              className="flex items-center justify-center justify-between w-full gap-6 px-3"
+              onClick={navigateToSpaceBuilder}
+            >
+              <div>
+                Create new space ({ownedSpacesCount}/
+                {appConfig?.spaces_per_space_lead})
+              </div>{" "}
+              <div className="flex items-center justify-center">
+                <FiPlus />
+              </div>
+            </button>
+          </MenuItem>
+        )}
+        <MenuItem>
+          <button
+            className="flex items-center justify-center justify-between w-full gap-6 px-3"
+            onClick={disconnectWallet}
+          >
+            <div>Disconnect</div>{" "}
+            <div className="flex items-center justify-center">
+              <FiLogOut className="ml-2" />
+            </div>
+          </button>
+        </MenuItem>
+      </MenuItems>
+    </Menu>
   );
 };
 
@@ -194,7 +210,6 @@ const Navbar = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const userBlockchainData = useSelector(selectUserBlockchainData);
 
   return (
     <div className="sticky top-0 z-30 w-full">
@@ -208,7 +223,7 @@ const Navbar = () => {
           />
         </a>
         <div className="flex items-center justify-center gap-4">
-          {user && userBlockchainData && (
+          {user && (
             <div className="flex items-center justify-center gap-4">
               <Button
                 light={location?.pathname !== "/space"}
@@ -216,18 +231,18 @@ const Navbar = () => {
               >
                 Spaces
               </Button>
-              <Button light={location?.pathname !== "/space/leaderboard"}>
+              {/* <Button light={location?.pathname !== "/space/leaderboard"}>
                 Leaderboard
-              </Button>
-              <Button light={location?.pathname !== "/space/referrals"}>
+              </Button> */}
+              {/* <Button light={location?.pathname !== "/space/referrals"}>
                 Referrals
-              </Button>
+              </Button> */}
             </div>
           )}
-          <ConnectWallet
-            connectButtonComponent={ConnectButton}
-            dropdownMenuComponent={DropdownMenuComponent}
-          />
+            <ConnectWallet
+              connectButtonComponent={ConnectButton}
+              dropdownMenuComponent={DropdownMenuComponent}
+            />
         </div>
       </div>
     </div>

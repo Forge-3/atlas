@@ -65,7 +65,6 @@ const SpacePage = () => {
       spaceId={principal}
       name={spaceData.space_name}
       description={spaceData.space_description}
-      symbol={spaceData.space_symbol}
       backgroundImg={spaceData.space_background}
       avatarImg={spaceData.space_logo}
       tasks={tasks === null ? undefined : tasks}
