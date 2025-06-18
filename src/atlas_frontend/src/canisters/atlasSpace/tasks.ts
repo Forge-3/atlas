@@ -12,7 +12,7 @@ export interface TaskData {
 export interface TasksData {
   [key: string]: {
     submissionData: SubmissionData;
-    taskType: keyof TaskType;
+    taskType: TaskType;
   };
 }
 
@@ -32,11 +32,27 @@ export const getUsersSubmissions = (tasks: TaskType[]) => {
         if (!acc[principalText][`${index}`]) {
           acc[principalText][`${index}`] = {
             submissionData,
-            taskType: "GenericTask",
+            taskType: task,
           };
         }
       });
       return acc;
+    }
+    if ("DiscordTask" in task) {
+        const discordTaskContent = task.DiscordTask;
+        discordTaskContent.submission.forEach(([principal, submissionData]) => {
+          const principalText = principal.toText();
+          if (!acc[principalText]) {
+              acc[principalText] = {};
+          }
+          if (!acc[principalText][`${index}`]) {
+              acc[principalText][`${index}`] = {
+                submissionData,
+                taskType: task,
+              };
+          }
+      });
+        return acc;
     }
     return acc;
   }, {} as UserSubmissionsData);

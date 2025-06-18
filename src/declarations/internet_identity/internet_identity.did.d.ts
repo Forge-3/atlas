@@ -115,7 +115,8 @@ export type CheckCaptchaError = { 'NoRegistrationFlow' : null } |
   { 'WrongSolution' : { 'new_captcha_png_base64' : string } };
 export type CreateAccountError = { 'AccountLimitReached' : null } |
   { 'InternalCanisterError' : string } |
-  { 'Unauthorized' : Principal };
+  { 'Unauthorized' : Principal } |
+  { 'NameTooLong' : null };
 export type CredentialId = Uint8Array | number[];
 export interface Delegation {
   'pubkey' : PublicKey,
@@ -360,7 +361,8 @@ export type Timestamp = bigint;
 export type Token = {};
 export type UpdateAccountError = { 'AccountLimitReached' : null } |
   { 'InternalCanisterError' : string } |
-  { 'Unauthorized' : Principal };
+  { 'Unauthorized' : Principal } |
+  { 'NameTooLong' : null };
 export type UserKey = PublicKey;
 export type UserNumber = bigint;
 export type VerifyTentativeDeviceResponse = {

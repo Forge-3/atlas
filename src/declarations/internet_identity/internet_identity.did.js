@@ -189,6 +189,7 @@ export const idlFactory = ({ IDL }) => {
     'AccountLimitReached' : IDL.Null,
     'InternalCanisterError' : IDL.Text,
     'Unauthorized' : IDL.Principal,
+    'NameTooLong' : IDL.Null,
   });
   const ChallengeKey = IDL.Text;
   const Challenge = IDL.Record({
@@ -439,6 +440,7 @@ export const idlFactory = ({ IDL }) => {
     'AccountLimitReached' : IDL.Null,
     'InternalCanisterError' : IDL.Text,
     'Unauthorized' : IDL.Principal,
+    'NameTooLong' : IDL.Null,
   });
   const VerifyTentativeDeviceResponse = IDL.Variant({
     'device_registration_mode_off' : IDL.Null,

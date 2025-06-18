@@ -22,6 +22,10 @@ import {
 } from "../../canisters/atlasMain/api.ts";
 import { SPACE_BUILDER_PATH, SPACES_PATH } from "../../router/paths.ts";
 
+import { clearDiscordIntegrationData } from "../../store/slices/userSlice.ts";
+
+
+
 const ConnectButton = (props: ConnectWalletButtonProps) => (
   <Button
     onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) =>
@@ -55,6 +59,7 @@ const DropdownMenuComponent = ({
     copy(connectedAccount);
   };
   const disconnectWallet = () => {
+    dispatch(clearDiscordIntegrationData());
     disconnect();
     window.location.href = "/";
   };
@@ -206,3 +211,5 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
+

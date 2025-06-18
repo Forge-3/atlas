@@ -21,6 +21,21 @@ export interface UserData {
   username: string;
   verified: boolean;
 }
+export interface DiscordGuild {
+  id: string;
+  name: string;
+  icon: string | null;
+  owner: boolean;
+  permissions: string;
+  features: string[];
+}
+
+export interface DiscordAuthData {
+  tokenType: string;
+  accessToken: string;
+  state: string;
+  expiresIn: number;
+}
 
 export const getOAuth2URL = (stateData?: string) => {
   const discordBase = "https://discord.com";
@@ -33,15 +48,15 @@ export const getOAuth2URL = (stateData?: string) => {
     new URL(DISCORD_CALLBACK_PATH, window.location.origin).toString()
   );
   url.searchParams.set("response_type", "token");
-  url.searchParams.set("scope", "identify");
+  url.searchParams.set("scope", "identify guilds");
   stateData && url.searchParams.set("state", stateData);
 
   return url.toString();
 };
 
-export const getUserData = async (token: string) => {
-  const { data } = await axios.get<UserData>(
-    "https://discord.com/api/users/@me",
+export const getGuildsData = async (token: string): Promise<DiscordGuild[]> => {
+  const { data } = await axios.get<DiscordGuild[]>(
+    "https://discord.com/api/users/@me/guilds",
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -49,5 +64,7 @@ export const getUserData = async (token: string) => {
     }
   );
 
-  return data
+  return data;
 };
+
+

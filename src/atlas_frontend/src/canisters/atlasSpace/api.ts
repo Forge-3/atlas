@@ -4,6 +4,9 @@ import type {
   GetTasksRes,
   Submission,
   Task,
+  DiscordInviteApiResponse,
+  DiscordGuild,
+  CreateTaskType,
   TaskContent,
 } from "../../../../declarations/atlas_space/atlas_space.did.js";
 import { unwrapCall } from "../delegatedCall.js";
@@ -19,6 +22,12 @@ interface GetAtlasSpaceArgs {
   unAuthAtlasSpace: ActorSubclass<_SERVICE>;
   spaceId: string;
   dispatch: Dispatch<UnknownAction>;
+}
+
+export interface DiscordGuildResponse {
+    id: string;
+    name: string;
+    icon?: string | null;
 }
 
 export const getAtlasSpace = async ({
@@ -40,7 +49,7 @@ interface CreateNewSpaceTaskArgs {
   authAtlasSpaceActor: ActorSubclass<_SERVICE>;
   numberOfUses: bigint;
   rewardPerUsage: bigint;
-  tasks: TaskContent[];
+  task_content: Array<[CreateTaskType, TaskContent]>;
   taskTitle: string;
 }
 
@@ -48,7 +57,7 @@ export const createNewTask = async ({
   authAtlasSpaceActor,
   numberOfUses,
   rewardPerUsage,
-  tasks,
+  task_content,
   taskTitle,
 }: CreateNewSpaceTaskArgs) => {
   const call = authAtlasSpaceActor.create_task({
@@ -58,7 +67,7 @@ export const createNewTask = async ({
         amount: rewardPerUsage,
       },
     },
-    task_content: tasks,
+    task_content,
     number_of_uses: numberOfUses,
   });
 
@@ -79,20 +88,21 @@ export const getSpaceTasks = async ({
   let tasksCount = 0n;
   let start = 0n;
   const count = 200n;
-  const call = unAuthAtlasSpace.get_open_tasks({
+
+  const initialCall = unAuthAtlasSpace.get_open_tasks({
     start,
     count,
   });
-  const res = await unwrapCall<GetTasksRes>({
-    call,
+  const initialRes = await unwrapCall<GetTasksRes>({
+    call: initialCall,
     errMsg: "Failed to get data from blockchain",
   });
 
-  tasksCount = res.tasks_count;
-  tasks.push(...res.tasks);
+  tasksCount = initialRes.tasks_count;
+  tasks.push(...initialRes.tasks);
   start += count;
 
-  while (tasksCount < tasks.length) {
+  while (tasks.length < tasksCount) {
     const call = unAuthAtlasSpace.get_open_tasks({
       start,
       count,
@@ -144,7 +154,7 @@ export const submitSubtaskSubmission = async ({
     subtaskId,
     submission
   );
-
+  
   await unwrapCall<null>({
     call,
     errMsg: "Failed to send subtask submission",
@@ -210,3 +220,27 @@ export const withdrawReward = async ({
     errMsg: "Failed to withdraw rewards",
   });
 };
+
+export const getDiscordGuildsFromCanister = async (
+    actor: ActorSubclass<_SERVICE>,
+    accessToken: string
+    )=> {
+    const call = actor.get_discord_guilds(accessToken);
+    return await unwrapCall<Array<DiscordGuild>>({
+    call,
+    errMsg: "Failed to get Discord guilds",
+  });
+};
+
+export const validateDiscordInviteLinkQuery = async (
+  actor: ActorSubclass<_SERVICE>,
+  inviteLink: string,
+  guildId: string
+  )=> {
+  const call = actor.validate_discord_invite_link(inviteLink, guildId);
+  return await unwrapCall<DiscordInviteApiResponse>({
+    call,
+    errMsg: "Failed to validate Discord invite link",
+  });
+}
+

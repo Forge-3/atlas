@@ -19,8 +19,20 @@ const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
   const navigate = useNavigate();
 
   const reward = formatUnits(task.token_reward.CkUsdc.amount, DECIMALS)
-  const lastTask = task.tasks.at(-1)?.GenericTask.submission.filter(([, submission]) => 'Accepted' in submission.state)
-
+  const lastTaskItem = task.tasks.at(-1);
+  let lastSubmissionCount = 0;
+  if (lastTaskItem && 'GenericTask' in lastTaskItem) {
+    const genericTask = lastTaskItem.GenericTask as {
+    submission: [unknown, { state: Record<string, unknown> }][];
+    }
+    lastSubmissionCount = genericTask.submission.filter(([, submission]) => 'Accepted' in submission.state).length;
+  } else if (lastTaskItem && 'DiscordTask' in lastTaskItem) {
+    const discordTask = lastTaskItem.DiscordTask as {
+    submission: [unknown, { state: Record<string, unknown> }][];
+  };
+    lastSubmissionCount = discordTask.submission.filter(([, submission]) => 'Accepted' in submission.state).length;
+  }
+  
   return (
     <a className="rounded-xl bg-gradient-to-b from-[#9173FF] to-transparent to-[150%] flex flex-col" onClick={() => navigate(getTaskPath(spaceId, id))}>
       <div
@@ -33,7 +45,7 @@ const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
         <InfoBox type={type} startingIn={startingIn} />
       </div>
       <div className="text-white font-montserrat font-medium p-6 flex flex-col gap-2">
-        <h3 className="text-2xl">{task.task_title}</h3>
+        <h3 className="text-2xl">{task.title}</h3>
         <div className="flex justify-end gap-2">
           <InfoBox
             type="points"
@@ -41,7 +53,7 @@ const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
           />
           <InfoBox type="steps" steps={task.tasks.length} />
           {/* //TODO: fix count of submission */}
-          <InfoBox type="uses" uses={`${lastTask?.length}/${task.number_of_uses}`} />
+          <InfoBox type="uses" uses={`${lastSubmissionCount}/${task.number_of_uses}`} />
         </div>
       </div>
     </a>

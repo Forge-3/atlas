@@ -71,4 +71,13 @@ pub enum Error {
 
     #[error("User already rewarded")]
     UserAlreadyRewarded,
+
+    #[error("Invalid Discord token")]
+    InvalidDiscordToken,
+
+    #[error("A custom error occurred: {0}")]
+    CustomError(String),
+
+    #[error("User is not member of a guild")]
+    NotAMemberOfGuild,
 }

@@ -55,7 +55,7 @@ export const idlFactory = ({ IDL }) => {
     }),
     'UserRankToHigh' : IDL.Record({ 'found' : Rank, 'expected' : Rank }),
     'UserAlreadyHaveExpectedRank' : Rank,
-    'UserNotAnOwner' : Space,
+    'UserNotAnOwner' : IDL.Principal,
     'CountToHigh' : IDL.Record({ 'max' : IDL.Nat64, 'found' : IDL.Nat64 }),
     'SpaceNotExist' : IDL.Null,
     'FailedToGetCanisterInfo' : IDL.Text,
@@ -115,7 +115,7 @@ export const idlFactory = ({ IDL }) => {
     'join_space' : IDL.Func([IDL.Principal], [Result_2], []),
     'set_user_admin' : IDL.Func([IDL.Principal], [Result_2], []),
     'set_user_space_lead' : IDL.Func([IDL.Principal], [Result_2], []),
-    'upgrade_space' : IDL.Func([Space], [Result_2], []),
+    'upgrade_space' : IDL.Func([IDL.Principal], [Result_2], []),
     'user_is_admin' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
     'user_is_in_hub' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
     'user_is_in_space' : IDL.Func(

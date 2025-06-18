@@ -2,19 +2,28 @@ type CkUsdcLedger = record { fee : opt nat; "principal" : principal };
 type CreateTaskArgs = record {
   task_title : text;
   token_reward : TokenReward;
-  task_content : vec TaskContent;
+  task_content : vec record { CreateTaskType; TaskContent };
   number_of_uses : nat64;
+};
+type CreateTaskType = variant { DiscordTask; GenericTask };
+type DiscordGuild = record { id : text; icon : opt text; name : text };
+type DiscordInviteApiResponse = record {
+  code : text;
+  guild : opt DiscordGuild;
+  expires_at : opt text;
 };
 type Error = variant {
   BytecodeUpToDate;
   NotParent;
   UsageLimitExceeded;
+  NotAMemberOfGuild;
   UserSubmissionNotFound;
   FailedToUpdateConfig : text;
   UserDoesNotBelongToSpace;
   TaskAlreadyExists : nat64;
   FailedToCallMain : text;
   ConfigNotSet;
+  InvalidDiscordToken;
   UserAlreadyRewarded;
   NotAdminNorOwnerNorParent;
   UserAlreadySubmitted;
@@ -25,6 +34,7 @@ type Error = variant {
   NotOwner;
   FailedToTransfer : text;
   InvalidTaskContent : text;
+  CustomError : text;
   TaskDoNotExists : nat64;
   AnonymousCaller;
   SubmissionNotAccepted;
@@ -34,9 +44,17 @@ type GetTasksRes = record {
   tasks : vec record { nat64; Task };
   tasks_count : nat64;
 };
+type HttpHeader = record { value : text; name : text };
+type HttpResponse = record {
+  status : nat;
+  body : blob;
+  headers : vec HttpHeader;
+};
 type Result = variant { Ok; Err : Error };
 type Result_1 = variant { Ok : nat64; Err : Error };
 type Result_2 = variant { Ok : GetTasksRes; Err : Error };
+type Result_3 = variant { Ok : vec DiscordGuild; Err : text };
+type Result_4 = variant { Ok : DiscordInviteApiResponse; Err : text };
 type SpaceArgs = variant {
   UpgradeArg : record { version : nat64 };
   InitArg : SpaceInitArg;
@@ -59,7 +77,10 @@ type State = record {
   tasks_count : nat64;
   space_description : text;
 };
-type Submission = variant { Text : record { content : text } };
+type Submission = variant {
+  Text : record { content : text };
+  Discord : record { guild_id : text; access_token : text };
+};
 type SubmissionData = record {
   state : SubmissionState;
   submission : Submission;
@@ -70,25 +91,44 @@ type Task = record {
   creator : principal;
   task_title : text;
   token_reward : TokenReward;
+  created_at : nat64;
   rewarded : vec principal;
   number_of_uses : nat64;
 };
 type TaskContent = variant {
+  Discord : record {
+    task_description : text;
+    task_title : text;
+    guild_id : text;
+    discord_invite_link : text;
+    guild_icon : opt text;
+    expires_at : opt text;
+  };
   TitleAndDescription : record { task_description : text; task_title : text };
 };
 type TaskType = variant {
+  DiscordTask : record {
+    guild_id : text;
+    task_content : TaskContent;
+    discord_invite_link : text;
+    guild_icon : opt text;
+    expires_at : opt text;
+    submission : vec record { principal; SubmissionData };
+  };
   GenericTask : record {
     task_content : TaskContent;
     submission : vec record { principal; SubmissionData };
   };
 };
 type TokenReward = variant { CkUsdc : record { amount : nat } };
+type TransformArgs = record { context : blob; response : HttpResponse };
 type WalletReceiveResult = record { accepted : nat64 };
 service : (SpaceArgs) -> {
   accept_subtask_submission : (principal, nat64, nat64) -> (Result);
   create_task : (CreateTaskArgs) -> (Result_1);
   get_closed_tasks : (GetTasksArgs) -> (Result_2) query;
   get_current_bytecode_version : () -> (nat64) query;
+  get_discord_guilds : (text) -> (Result_3);
   get_open_tasks : (GetTasksArgs) -> (Result_2) query;
   get_state : () -> (State) query;
   reject_subtask_submission : (principal, nat64, nat64) -> (Result);
@@ -97,6 +137,8 @@ service : (SpaceArgs) -> {
   set_space_logo : (text) -> (Result);
   set_space_name : (text) -> (Result);
   submit_subtask_submission : (nat64, nat64, Submission) -> (Result);
+  transform_http_response : (TransformArgs) -> (HttpResponse) query;
+  validate_discord_invite_link : (text, text) -> (Result_4);
   wallet_balance : () -> (nat) query;
   wallet_receive : () -> (WalletReceiveResult);
   withdraw_reward : (nat64) -> (Result);

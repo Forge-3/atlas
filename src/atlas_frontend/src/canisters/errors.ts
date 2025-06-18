@@ -10,6 +10,6 @@ function formatPascalCase(input: string): string {
   }
 
 export const formatErrorMsg = (err: Error) => {
-    const [[key, value]] = Object.entries(err)
+    const [[key]] = Object.entries(err)
     return formatPascalCase(key)
 }

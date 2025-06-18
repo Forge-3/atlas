@@ -16,7 +16,7 @@ import { setConfig } from "../../store/slices/appSlice.js";
 import type { _SERVICE as _SERVICE_SPACE } from "../../../../declarations/atlas_space/atlas_space.did.js";
 import { setSpaces } from "../../store/slices/spacesSlice.js";
 import { customSerify } from "../../store/store.js";
-import { deserify, serify } from "@karmaniverous/serify-deserify";
+import { serify } from "@karmaniverous/serify-deserify";
 
 interface CreateNewSpaceArgs {
   authAtlasMain: ActorSubclass<_SERVICE_MAIN>;

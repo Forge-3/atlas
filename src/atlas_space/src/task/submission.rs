@@ -22,6 +22,13 @@ pub enum Submission {
         #[n(0)]
         content: String,
     },
+    #[n(1)]
+    Discord {
+        #[n(0)]
+        access_token: String,
+        #[n(1)]
+        guild_id: String,
+    },
 }
 
 impl Submission {

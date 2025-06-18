@@ -19,6 +19,7 @@ import {
   UserSubmissions,
 } from "../../canisters/atlasSpace/tasks";
 import toast from "react-hot-toast";
+import DiscordTask from "./tasks/Discord";
 
 const Task = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -65,7 +66,6 @@ const Task = () => {
 
   if (!tasks || !taskId) return <></>;
   const currentTask = tasks[taskId];
-
   if (!spaceData || !currentTask) {
     return <></>;
   }
@@ -73,10 +73,9 @@ const Task = () => {
   const usersSubmissions = currentTask?.tasks
     ? getUsersSubmissions(currentTask.tasks)
     : new UserSubmissions({});
-
   if (!user?.principal) return <></>;
-
   const isAccepted = usersSubmissions.isAccepted(user.principal.toText());
+  const userAlreadyRewarded = currentTask.rewarded.includes(user.principal)
 
   const withdraw = async () => {
     if (!authAtlasSpace) {
@@ -93,6 +92,7 @@ const Task = () => {
     });
   }
 
+  console.log(currentTask);
   return (
     <div className="container mx-auto my-4">
       <div className="w-full px-3">
@@ -132,16 +132,32 @@ const Task = () => {
                   {currentTask.task_title}
                 </h2>
                 <div className="mt-6">
-                  {currentTask.tasks.map((task, key) => (
-                    <GenericTask
-                      key={key}
-                      genericTask={task.GenericTask}
-                      spacePrincipal={principal}
-                      taskId={taskId}
-                      subtaskId={key}
-                      unAuthAtlasSpace={unAuthAtlasSpace}
-                    />
-                  ))}
+                  {Object.entries(currentTask.tasks).map(([subtaskId, subtaskType]) => {
+                    if ('GenericTask' in subtaskType) {
+                      return (
+                        <GenericTask
+                          key={subtaskId.toString()}
+                          genericTask={subtaskType['GenericTask']}
+                          spacePrincipal={principal}
+                          taskId={taskId}
+                          subtaskId={Number(subtaskId)}
+                          unAuthAtlasSpace={unAuthAtlasSpace}
+                        />
+                      );
+                    }
+                    else if ('DiscordTask' in subtaskType) {
+                      return (
+                        <DiscordTask
+                          key={subtaskId.toString()}
+                          discordTask={subtaskType['DiscordTask']}
+                          spacePrincipal={principal}
+                          taskId={taskId}
+                          subtaskId={Number(subtaskId)}
+                        />
+                      );
+                    }
+                    return null;
+                  })}
                 </div>
                 <div className="flex mt-3 items-center justify-center">
                   <div className="mr-4">
@@ -159,7 +175,7 @@ const Task = () => {
                     <FaWallet color="1E0F33" />
                   </div>
                 </div>
-                {isAccepted && (
+                {isAccepted && !userAlreadyRewarded && (
                   <div className="flex justify-end mt-4">
                     <Button onClick={withdraw}>Withdraw reward</Button>
                   </div>
