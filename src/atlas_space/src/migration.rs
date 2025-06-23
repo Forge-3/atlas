@@ -8,9 +8,20 @@ use serde::Deserialize;
 use crate::{
     memory::{VMem, CLOSED_TASKS_MAP_MEMORY_ID, MEMORY_MANAGER, OPEN_TASKS_MAP_MEMORY_ID},
     task::{
-        submission::SubmissionData, token_reward::TokenReward, Task, TaskContent, TaskId, TaskType,
+        submission::{Submission, SubmissionData, SubmissionState},
+        token_reward::TokenReward,
+        Task, TaskContent, TaskId, TaskType,
     },
 };
+
+#[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType)]
+pub struct OldSubmissionData {
+    #[n(0)]
+    submission: Submission,
+
+    #[n(1)]
+    state: SubmissionState,
+}
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType)]
 pub struct OldTask {
@@ -35,7 +46,7 @@ pub enum OldTaskType {
         #[n(0)]
         task_content: OldTaskContent,
         #[cbor(n(1), with = "shared::cbor::principal::b_tree_map")]
-        submission: BTreeMap<Principal, SubmissionData>,
+        submission: BTreeMap<Principal, OldSubmissionData>,
     },
 }
 
@@ -67,28 +78,44 @@ impl Storable for OldTask {
 }
 
 thread_local! {
-   static OLD_OPEN_TASKS_MAP: RefCell<StableBTreeMap<TaskId, OldTask, VMem>> = RefCell::new(
+    static OLD_OPEN_TASKS_MAP: RefCell<StableBTreeMap<TaskId, OldTask, VMem>> = RefCell::new(
         StableBTreeMap::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(OPEN_TASKS_MAP_MEMORY_ID)),
         )
     );
-   static OLD_CLOSED_TASKS_MAP: RefCell<StableBTreeMap<TaskId, OldTask, VMem>> = RefCell::new(
+    static OLD_CLOSED_TASKS_MAP: RefCell<StableBTreeMap<TaskId, OldTask, VMem>> = RefCell::new(
         StableBTreeMap::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(CLOSED_TASKS_MAP_MEMORY_ID)),
         )
     );
 
-
-   static NEW_OPEN_TASKS_MAP: RefCell<StableBTreeMap<TaskId, Task, VMem>> = RefCell::new(
+    static NEW_OPEN_TASKS_MAP: RefCell<StableBTreeMap<TaskId, Task, VMem>> = RefCell::new(
         StableBTreeMap::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(OPEN_TASKS_MAP_MEMORY_ID)),
         )
     );
-   static NEW_CLOSED_TASKS_MAP: RefCell<StableBTreeMap<TaskId, Task, VMem>> = RefCell::new(
+    static NEW_CLOSED_TASKS_MAP: RefCell<StableBTreeMap<TaskId, Task, VMem>> = RefCell::new(
         StableBTreeMap::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(CLOSED_TASKS_MAP_MEMORY_ID)),
         )
     );
+}
+
+fn migrate_submission_map(
+    old: &BTreeMap<Principal, OldSubmissionData>,
+) -> BTreeMap<Principal, SubmissionData> {
+    old.iter()
+        .map(|(principal, old_data)| {
+            (
+                *principal,
+                SubmissionData {
+                    submission: old_data.submission.clone(),
+                    state: old_data.state.clone(),
+                    rejection_reason: None,
+                },
+            )
+        })
+        .collect()
 }
 
 pub async fn migrate() {
@@ -121,7 +148,7 @@ pub async fn migrate() {
                                         allow_resubmit: false,
                                     },
                                 },
-                                submission: submission.clone(),
+                                submission: migrate_submission_map(submission),
                             },
                         })
                         .collect(),
@@ -167,7 +194,7 @@ pub async fn migrate() {
                                         allow_resubmit: false,
                                     },
                                 },
-                                submission: submission.clone(),
+                                submission: migrate_submission_map(submission),
                             },
                         })
                         .collect(),

@@ -4,8 +4,10 @@ import type {
   GetTasksRes,
   State,
   Submission,
+  SubmissionData,
   Task,
   TaskContent,
+  TaskType,
 } from "../../../../declarations/atlas_space/atlas_space.did.js";
 import { unwrapCall } from "../delegatedCall.js";
 import { setSpace, setTasks } from "../../store/slices/spacesSlice.js";
@@ -181,7 +183,15 @@ export const submitSubtaskSubmission = async ({
   });
 };
 
-interface SubtaskSubmission {
+export interface RejectSubtaskSubmission {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  userPrincipal: Principal;
+  taskId: bigint;
+  subtaskId: bigint;
+  reason: string | null;
+}
+
+export interface AcceptSubtaskSubmission {
   authAtlasSpace: ActorSubclass<_SERVICE>;
   userPrincipal: Principal;
   taskId: bigint;
@@ -193,7 +203,7 @@ export const acceptSubtaskSubmission = async ({
   userPrincipal,
   taskId,
   subtaskId,
-}: SubtaskSubmission) => {
+}: AcceptSubtaskSubmission) => {
   const call = authAtlasSpace.accept_subtask_submission(
     userPrincipal,
     taskId,
@@ -211,17 +221,37 @@ export const rejectSubtaskSubmission = async ({
   userPrincipal,
   taskId,
   subtaskId,
-}: SubtaskSubmission) => {
+  reason,
+}: RejectSubtaskSubmission) => {
   const call = authAtlasSpace.reject_subtask_submission(
     userPrincipal,
     taskId,
-    subtaskId
+    subtaskId,
+    reason ? [reason] : []
   );
 
   await unwrapCall<null>({
     call,
     errMsg: "Failed to accept submission",
   });
+};
+
+export const getRejectionInfo = (
+  submissionData: SubmissionData | null,
+  submissionState: "Rejected" | "WaitingForReview" | "Accepted" | null
+) => {
+  if (!submissionData || submissionState !== "Rejected") {
+    return { reasonText: null, showRejectionReason: false };
+  }
+
+  const rejectionReason = submissionData.rejection_reason.at(-1);
+
+  const showRejectionReason =
+    typeof rejectionReason === "string" && rejectionReason.length > 0;
+
+  const reasonText = showRejectionReason ? rejectionReason : null;
+
+  return { reasonText, showRejectionReason };
 };
 
 interface WithdrawReward {

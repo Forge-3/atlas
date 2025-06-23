@@ -116,11 +116,9 @@ pub fn user_is_admin(user: Principal) -> bool {
 pub fn user_is_in_space(user: Principal, space_id: Principal) -> bool {
     let user = memory::get_user(&user).unwrap_or_default();
     let (space_index, _) = memory::with_space_vec_iter(|spaces| {
-        spaces.enumerate().find(|(_, space)| {
-            ic_cdk::println!("{:?} {:?}", space.principal().to_text(), space_id.to_text());
-
-            space.principal() == space_id
-        })
+        spaces
+            .enumerate()
+            .find(|(_, space)| space.principal() == space_id)
     })
     .expect("Space do not exist");
     user.belonging_to_spaces()
