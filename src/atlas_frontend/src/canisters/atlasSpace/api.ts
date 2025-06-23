@@ -16,6 +16,13 @@ import { customSerify } from "../../store/store.js";
 import type { Principal } from "@dfinity/principal";
 import type { ExternalLinks } from './types.js';
 
+interface CreateSubtaskArg {
+  task_type: string;
+  title: string;
+  description: string;
+  allow_resubmit: boolean;
+}
+
 interface GetAtlasSpaceArgs {
   unAuthAtlasSpace: ActorSubclass<_SERVICE>;
   spaceId: string;
@@ -41,7 +48,7 @@ interface CreateNewSpaceTaskArgs {
   authAtlasSpaceActor: ActorSubclass<_SERVICE>;
   numberOfUses: bigint;
   rewardPerUsage: bigint;
-  tasks: TaskContent[];
+  tasks: CreateSubtaskArg[];
   taskTitle: string;
 }
 
@@ -59,7 +66,12 @@ export const createNewTask = async ({
         amount: rewardPerUsage,
       },
     },
-    task_content: tasks,
+    task_content: tasks.map(task => ({
+      task_type: task.task_type,
+      title: task.title,
+      description: task.description,
+      allow_resubmit: task.allow_resubmit,
+    })),
     number_of_uses: numberOfUses,
   });
 

@@ -18,8 +18,20 @@ pub mod xp_reward;
 pub struct CreateTaskArgs {
     pub task_title: String,
     pub token_reward: TokenReward,
-    pub task_content: Vec<TaskContent>,
+    pub task_content: Vec<CreateSubtaskArg>,
     pub number_of_uses: u64,
+}
+
+#[derive(CandidType, Deserialize, Debug, Clone, Encode, Decode)]
+pub struct CreateSubtaskArg {
+    #[n(0)]
+    pub task_type: String,
+    #[n(1)]
+    pub title: String,
+    #[n(2)]
+    pub description: String,
+    #[n(3)]
+    pub allow_resubmit: bool,
 }
 
 impl CreateTaskArgs {
@@ -34,7 +46,13 @@ impl CreateTaskArgs {
         }
         self.task_content
             .iter()
-            .try_for_each(|content| content.validate())
+            .try_for_each(|subtask_arg| {
+                let temp_task_content = TaskContent::TitleAndDescription {
+                    task_title: subtask_arg.title.clone(),
+                    task_description: subtask_arg.description.clone(),
+                };
+                temp_task_content.validate()
+            })
     }
 }
 
@@ -72,23 +90,6 @@ impl TaskContent {
     }
 }
 
-impl From<&TaskContent> for TaskType {
-    fn from(content: &TaskContent) -> Self {
-        match content {
-            TaskContent::TitleAndDescription {
-                task_title,
-                task_description,
-            } => Self::GenericTask {
-                task_content: TaskContent::TitleAndDescription {
-                    task_title: task_title.clone(),
-                    task_description: task_description.clone(),
-                },
-                submission: Default::default(),
-            },
-        }
-    }
-}
-
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType)]
 pub enum TaskType {
     #[n(0)]
@@ -97,18 +98,27 @@ pub enum TaskType {
         task_content: TaskContent,
         #[cbor(n(1), with = "shared::cbor::principal::b_tree_map")]
         submission: BTreeMap<Principal, SubmissionData>,
+        #[n(2)]
+        allow_resubmit: bool,
     },
 }
 
 impl TaskType {
     pub fn submit(&mut self, user: Principal, submission: Submission) -> Result<(), Error> {
+        let allow_resubmit = self.get_allow_resubmit();
         match self {
             TaskType::GenericTask {
                 task_content: _,
                 submission: submissions_map,
+                allow_resubmit: _,
             } => {
                 if submissions_map.contains_key(&user) {
-                    return Err(Error::UserAlreadySubmitted);
+                    let existing_submission = submissions_map.get(&user).unwrap();
+                    if existing_submission.get_state() == &SubmissionState::Rejected && allow_resubmit {
+                        submissions_map.remove(&user);
+                    } else {
+                        return Err(Error::UserAlreadySubmitted);
+                    }
                 }
                 if !submission.is_text() {
                     return Err(Error::IncorrectSubmission("Text".to_string()));
@@ -130,6 +140,7 @@ impl TaskType {
             TaskType::GenericTask {
                 task_content: _,
                 submission: submissions_map,
+                allow_resubmit: _,
             } => {
                 let submission = submissions_map
                     .get_mut(&user)
@@ -145,6 +156,7 @@ impl TaskType {
             TaskType::GenericTask {
                 task_content: _,
                 submission: submissions_map,
+                allow_resubmit: _,
             } => {
                 let submission = submissions_map
                     .get_mut(&user)
@@ -161,9 +173,15 @@ impl TaskType {
             TaskType::GenericTask {
                 task_content: _,
                 submission: submissions_map,
+                allow_resubmit: _,
             } => Ok(submissions_map
                 .get(&user)
                 .ok_or(Error::UserSubmissionNotFound)?),
+        }
+    }
+    pub fn get_allow_resubmit(&self) -> bool {
+        match self {
+            TaskType::GenericTask { allow_resubmit, .. } => *allow_resubmit,
         }
     }
 }
@@ -195,14 +213,25 @@ impl Task {
             .deposit_reward(creator, subaccount, create_task_args.number_of_uses)
             .await?;
 
+        let tasks: Vec<TaskType> = create_task_args
+            .task_content
+            .into_iter()
+            .map(|subtask_arg| {
+                TaskType::GenericTask {
+                    task_content: TaskContent::TitleAndDescription {
+                        task_title: subtask_arg.title.clone(),
+                        task_description: subtask_arg.description.clone(),
+                    },
+                    submission: BTreeMap::new(),
+                    allow_resubmit: subtask_arg.allow_resubmit,
+                }
+            })
+            .collect();
+
         Ok(Self {
             creator,
             token_reward: create_task_args.token_reward,
-            tasks: create_task_args
-                .task_content
-                .iter()
-                .map(|content| content.into())
-                .collect(),
+            tasks, 
             number_of_uses: create_task_args.number_of_uses,
             task_title: create_task_args.task_title,
             rewarded: Vec::new(),

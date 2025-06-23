@@ -1,8 +1,14 @@
 type CkUsdcLedger = record { fee : opt nat; "principal" : principal };
+type CreateSubtaskArg = record {
+  title : text;
+  description : text;
+  task_type : text;
+  allow_resubmit : bool;
+};
 type CreateTaskArgs = record {
   task_title : text;
   token_reward : TokenReward;
-  task_content : vec TaskContent;
+  task_content : vec CreateSubtaskArg;
   number_of_uses : nat64;
 };
 type EditSpaceArgs = record {
@@ -89,6 +95,7 @@ type TaskType = variant {
   GenericTask : record {
     task_content : TaskContent;
     submission : vec record { principal; SubmissionData };
+    allow_resubmit : bool;
   };
 };
 type TokenReward = variant { CkUsdc : record { amount : nat } };
