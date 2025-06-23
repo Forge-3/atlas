@@ -47,6 +47,7 @@ type SpaceArgs = variant {
   InitArg : SpaceInitArg;
 };
 type SpaceInitArg = record {
+  external_links : vec record { text; text };
   owner : principal;
   ckusdc_ledger : CkUsdcLedger_1;
   space_symbol : opt text;
@@ -71,9 +72,15 @@ type User = record {
 type WalletReceiveResult = record { accepted : nat64 };
 service : (AtlasArgs) -> {
   app_config : () -> (Config) query;
-  create_new_space : (text, text, opt text, opt text, opt text, SpaceType) -> (
-      Result,
-    );
+  create_new_space : (
+      text,
+      text,
+      opt text,
+      opt text,
+      opt text,
+      SpaceType,
+      vec record { text; text },
+    ) -> (Result);
   get_current_space_bytecode_version : () -> (nat64) query;
   get_space_bytecode_by_version : (nat64) -> (opt blob) query;
   get_spaces : (GetSpacesArgs) -> (Result_1) query;

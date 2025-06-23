@@ -59,6 +59,7 @@ export interface Space { 'id' : Principal, 'space_type' : SpaceType }
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
   { 'InitArg' : SpaceInitArg };
 export interface SpaceInitArg {
+  'external_links' : Array<[string, string]>,
   'owner' : Principal,
   'ckusdc_ledger' : CkUsdcLedger_1,
   'space_symbol' : [] | [string],
@@ -84,7 +85,15 @@ export interface WalletReceiveResult { 'accepted' : bigint }
 export interface _SERVICE {
   'app_config' : ActorMethod<[], Config>,
   'create_new_space' : ActorMethod<
-    [string, string, [] | [string], [] | [string], [] | [string], SpaceType],
+    [
+      string,
+      string,
+      [] | [string],
+      [] | [string],
+      [] | [string],
+      SpaceType,
+      Array<[string, string]>,
+    ],
     Result
   >,
   'get_current_space_bytecode_version' : ActorMethod<[], bigint>,

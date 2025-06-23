@@ -10,7 +10,7 @@
         "./build.sh atlas_main"
       ],
       "dependencies": [
-        "ckusdc_canister"
+        "ckusdc_ledger_canister"
       ],
       "declarations": {
         "bindings": [
@@ -22,7 +22,7 @@
     "atlas_frontend": {
       "dependencies": [
         "atlas_main",
-        "ckusdc_canister"
+        "ckusdc_ledger_canister"
       ],
       "source": [
         "src/atlas_frontend/dist"
@@ -33,7 +33,7 @@
         "bindings": []
       }
     },
-    "ckusdc_canister": {
+    "ckusdc_ledger_canister": {
       "type": "custom",
       "candid": "https://github.com/Forge-3/ic/releases/download/ledger-suite-icrc-2025-01-21/ledger.did",
       "wasm": "https://github.com/Forge-3/ic/releases/download/ledger-suite-icrc-2025-01-21/ic-icrc1-ledger.wasm.gz",

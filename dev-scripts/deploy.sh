@@ -2,23 +2,42 @@ cp dfx.dev.json dfx.json
 dfx deploy atlas_main --argument-file dev-scripts/deploy/atlas_main.did
 dfx deploy internet_identity
 
-export DEFAULT_ACCOUNT_ID=$(dfx ledger account-id)
-dfx deploy ckusdc_canister --argument "
+export DEFAULT_PRINCIPAL=$(dfx identity get-principal)
+dfx deploy ckusdc_ledger_canister --argument "
   (variant {
     Init = record {
-      initial_values = vec {
+      metadata = vec {};
+      initial_balances = vec {
         record {
-          \"$DEFAULT_ACCOUNT_ID\";
-          record { e8s = 100_000_000_000_000_000 : nat64; };
+          record {
+            owner = principal \"$DEFAULT_PRINCIPAL\"
+          };
+          100_000_000_000_000_000 ;
         };
     };
-      minting_account = \"$DEFAULT_ACCOUNT_ID\";
+      minting_account = record {
+        owner = principal \"$DEFAULT_PRINCIPAL\"
+      };
       send_whitelist = vec {};
-      transfer_fee = opt record { e8s = 10_000 : nat64; };
-      token_symbol = opt \"LckUSDC\";
-      token_name = opt \"Local ckUSDC\";
+      transfer_fee =  10_000;
+      token_symbol = \"LckUSDC\";
+      token_name = \"Local ckUSDC\";
+      archive_options = record {
+        num_blocks_to_archive = 100000;
+        trigger_threshold = 100000;
+        controller_id = principal \"$DEFAULT_PRINCIPAL\";
+    };
+    decimals = opt 6
     }
   })
+"
+dfx deploy ckusdc_index_canister --argument "
+ (opt variant {
+  Init = record { 
+    ledger_id = principal \"xevnm-gaaaa-aaaar-qafnq-cai\";
+    retrieve_blocks_from_ledger_interval_seconds = opt 10 
+  }
+})
 "
 
 dfx generate

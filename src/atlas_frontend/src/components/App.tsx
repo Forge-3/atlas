@@ -42,6 +42,11 @@ const App = () => {
             onDisconnect={() => {
               localStorage.removeItem("userHub")
             }}
+            signerClientOptions={
+              {
+                maxTimeToLive: 3_600_000_000_000n
+              }
+            }
           >
             <Main />
           </IdentityKitProvider>

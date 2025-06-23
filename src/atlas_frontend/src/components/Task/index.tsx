@@ -99,7 +99,7 @@ const Task = () => {
     <div className="container mx-auto my-4">
       <div className="w-full px-3">
         {user && userBlockchainData?.isSpaceLead() && (
-          <div className="mb-2 flex justify-end">
+          <div className="my-4 flex justify-end">
             <Button
               onClick={() => navigate(getSubmissionsPath(principal, taskId))}
             >

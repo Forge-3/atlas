@@ -18,6 +18,7 @@ use crate::methods::query::{GetSpacesArgs, GetSpacesRes, GetUserBy};
 use crate::space::Space;
 use crate::space::SpaceType;
 use crate::user::User;
+use std::collections::BTreeMap;
 
 use candid::{Nat, Principal};
 

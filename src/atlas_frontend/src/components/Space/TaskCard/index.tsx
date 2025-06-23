@@ -3,7 +3,7 @@ import InfoBox from "./InfoBox.tsx";
 import type { Task } from "../../../../../declarations/atlas_space/atlas_space.did";
 import { useNavigate } from "react-router-dom";
 import { formatUnits } from "ethers";
-import { DECIMALS } from "../../../canisters/ckUSDC/constans.ts";
+import { DECIMALS } from "../../../canisters/ckUsdcLedger/constans.ts";
 import type { Principal } from "@dfinity/principal";
 import { getTaskPath } from "../../../router/paths.ts";
 

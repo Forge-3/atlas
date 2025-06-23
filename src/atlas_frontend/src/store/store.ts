@@ -35,6 +35,9 @@ export const customSerify = {
     _Principal: serifyPrincipal,
     __principal__: serifyPrincipal,
     Principal: serifyPrincipal,
-    
+    Uint8Array: {
+      serifier: (value: Uint8Array) => Array.from(value),
+      deserifier: (value: Array<number>) => Uint8Array.from(value),
+    },
   },
 };

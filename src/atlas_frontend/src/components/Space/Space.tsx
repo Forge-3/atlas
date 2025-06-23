@@ -7,12 +7,19 @@ import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../store/store.ts";
 import { setScreenBlur } from "../../store/slices/appSlice.ts";
 import { useAuth } from "@nfid/identitykit/react";
-import { selectUserBlockchainData, selectUserHub } from "../../store/slices/userSlice.ts";
+import {
+  selectUserBlockchainData,
+  selectUserHub,
+} from "../../store/slices/userSlice.ts";
 import type { Tasks } from "../../canisters/atlasSpace/api.ts";
 import type { Principal } from "@dfinity/principal";
 import JoinSpaceModal from "../../modals/JoinSpaceModal.tsx";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSpaceId } from "../../hooks/space.ts";
+import { FaDiscord, FaLinkedinIn, FaTelegramPlane } from "react-icons/fa";
+import { FaXTwitter } from "react-icons/fa6";
+import type { ExternalLinks } from "../../canisters/atlasSpace/types.ts";
+import { getSpaceEditPath } from "../../router/paths.ts";
 
 interface TasksListProps {
   tasks: Tasks;
@@ -66,6 +73,7 @@ interface SpaceProps {
   backgroundImg: string | null;
   tasks?: Tasks;
   spaceId: Principal;
+  externalLinks: ExternalLinks;
 }
 
 const Space = ({
@@ -75,6 +83,7 @@ const Space = ({
   avatarImg,
   tasks,
   spaceId,
+  externalLinks,
 }: SpaceProps) => {
   const navigate = useNavigate();
   const { spacePrincipal } = useParams();
@@ -88,7 +97,7 @@ const Space = ({
   const [isCreateTaskModal, setCreateTaskModal] = useState(false);
   const [isJoinHubModal, setJoinHubModal] = useState(false);
   const [preventBlur, setPreventBlur] = useState(false);
-  const principal = useSpaceId({
+  const parsedSpacePrincipal = useSpaceId({
     spacePrincipal,
     navigate,
   });
@@ -103,14 +112,12 @@ const Space = ({
     }
   }, [userInHub, isJoinHubModal, dispatch, user, preventBlur]);
 
-  if (!principal) return <></>;
+  if (!parsedSpacePrincipal) return <></>;
 
   const toggleTaskModal = () => {
     setCreateTaskModal(!isCreateTaskModal);
     dispatch(setScreenBlur(!isScreenBlur));
   };
-
-
 
   const toggleJoinHubModal = () => {
     setPreventBlur(true);
@@ -123,7 +130,10 @@ const Space = ({
       <div className="container mx-auto my-4">
         <div className="w-full px-3">
           {user && userBlockchainData?.isSpaceLead() && (
-            <div className="mb-2 flex justify-end">
+            <div className="my-4 flex justify-end gap-2">
+              <a href={getSpaceEditPath(parsedSpacePrincipal)}>
+                <Button light>Edit space</Button>
+              </a>
               <Button onClick={toggleTaskModal}>Create new task</Button>
             </div>
           )}
@@ -136,9 +146,8 @@ const Space = ({
                     ? { backgroundImage: `url('${backgroundImg}')` }
                     : {}
                 }
-              >
-              </div>
-              <div className="flex mt-8">
+              ></div>
+              <div className="flex mt-8 gap-4">
                 <div className="bg-white flex rounded-3xl w-fit h-fit flex-none">
                   {avatarImg ? (
                     <img
@@ -150,9 +159,39 @@ const Space = ({
                     <div className="bg-[#4A0295] rounded-3xl m-[5px] w-28 h-28"></div>
                   )}
                 </div>
-                <div className="ml-4 my-1 text-white font-montserrat flex-1">
-                  <h2 className="text-4xl font-semibold flex">{name}</h2>
-                  <p>{description}</p>
+                <div className="my-1 text-white font-montserrat flex-1">
+                  <h2 className="text-4xl font-semibold flex mb-2">{name}</h2>
+                  <p className="bg-[#9173FF]/20 px-4 py-2 rounded-xl font-medium w-full">{description}</p>
+                </div>
+                <div className="flex items-center justify-center text-white gap-2">
+                  {externalLinks.discord && (
+                    <a href={externalLinks.discord} target="_blank" rel="noreferrer">
+                      <button className="p-2 bg-[#9173FF]/20 rounded-xl ">
+                        <FaDiscord size={36} />
+                      </button>
+                    </a>
+                  )}
+                  {externalLinks.telegram && (
+                    <a href={externalLinks.telegram} target="_blank" rel="noreferrer">
+                      <button className="p-2 bg-[#9173FF]/20 rounded-xl ">
+                        <FaTelegramPlane size={36} />
+                      </button>
+                    </a>
+                  )}
+                  {externalLinks.x && (
+                    <a href={externalLinks.x} target="_blank" rel="noreferrer">
+                      <button className="p-2 bg-[#9173FF]/20 rounded-xl ">
+                        <FaXTwitter size={36} />
+                      </button>
+                    </a>
+                  )}
+                  {externalLinks.linkedIn && (
+                    <a href={externalLinks.linkedIn} target="_blank" rel="noreferrer">
+                      <button className="p-2 bg-[#9173FF]/20 rounded-xl ">
+                        <FaLinkedinIn size={36} />
+                      </button>
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
@@ -165,7 +204,7 @@ const Space = ({
         <JoinSpaceModal
           callback={toggleJoinHubModal}
           spaceName={name}
-          spacePrincipal={principal}
+          spacePrincipal={parsedSpacePrincipal}
         />
       )}
     </>

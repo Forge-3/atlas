@@ -1,22 +1,25 @@
 import type { ActorSubclass } from "@dfinity/agent";
 import type {
   _SERVICE,
-} from "../../../../declarations/ckusdc_canister/ckusdc_canister.did";
+} from "../../../../declarations/ckusdc_ledger_canister/ckusdc_ledger_canister.did";
 import type { Principal } from "@dfinity/principal";
 import { unwrapCall } from "../delegatedCall";
+import type { Dispatch } from "react";
+import type { UnknownAction } from "@reduxjs/toolkit";
+import { setCkUsdcBalance } from "../../store/slices/userSlice";
 
 interface GetUserSpaceAllowanceArgs {
-  unAuthCkUSD: ActorSubclass<_SERVICE>;
+  unAuthCkUsd: ActorSubclass<_SERVICE>;
   spacePrincipal: Principal;
   userPrincipal: Principal;
 }
 
 export const getUserSpaceAllowance = async ({
-  unAuthCkUSD,
+  unAuthCkUsd,
   spacePrincipal,
   userPrincipal,
 }: GetUserSpaceAllowanceArgs) => {
-  return await unAuthCkUSD.icrc2_allowance({
+  return await unAuthCkUsd.icrc2_allowance({
     account: {
       owner: userPrincipal,
       subaccount: [],
@@ -29,17 +32,17 @@ export const getUserSpaceAllowance = async ({
 };
 
 interface SetUserSpaceAllowanceArgs {
-  authCkUSDC: ActorSubclass<_SERVICE>;
+  authCkUsdc: ActorSubclass<_SERVICE>;
   spacePrincipal: Principal;
   amount: bigint;
 }
 
 export const setUserSpaceAllowance = async ({
-  authCkUSDC,
+  authCkUsdc,
   spacePrincipal,
   amount,
 }: SetUserSpaceAllowanceArgs) => {
-  const call = authCkUSDC.icrc2_approve({
+  const call = authCkUsdc.icrc2_approve({
     fee: [],
     memo: [],
     from_subaccount: [],
@@ -59,22 +62,22 @@ export const setUserSpaceAllowance = async ({
 };
 
 interface SetUserSpaceAllowanceIfNeededArgs {
-  unAuthCkUSD: ActorSubclass<_SERVICE>;
-  authCkUSDC: ActorSubclass<_SERVICE>;
+  unAuthCkUsd: ActorSubclass<_SERVICE>;
+  authCkUsdc: ActorSubclass<_SERVICE>;
   spacePrincipal: Principal;
   userPrincipal: Principal;
   amount: bigint;
 }
 
 export const setUserSpaceAllowanceIfNeeded = async ({
-  unAuthCkUSD,
-  authCkUSDC,
+  unAuthCkUsd,
+  authCkUsdc,
   spacePrincipal,
   amount,
   userPrincipal,
 }: SetUserSpaceAllowanceIfNeededArgs) => {
   const { allowance } = await getUserSpaceAllowance({
-    unAuthCkUSD,
+    unAuthCkUsd,
     spacePrincipal,
     userPrincipal,
   });
@@ -83,24 +86,52 @@ export const setUserSpaceAllowanceIfNeeded = async ({
   }
 
   await setUserSpaceAllowance({
-    authCkUSDC,
+    authCkUsdc,
     spacePrincipal,
     amount,
   });
 };
 
 interface UserBalanceArgs {
-  authCkUSDC: ActorSubclass<_SERVICE>;
-  user: Principal;
+  unAuthCkUsdc: ActorSubclass<_SERVICE>;
+  userPrincipal: Principal;
+  dispatch: Dispatch<UnknownAction>;
 }
 
 export const getUserBalance = async ({
-  authCkUSDC,
-  user,
+  unAuthCkUsdc,
+  userPrincipal,
+  dispatch
 }: UserBalanceArgs) => {
-  return authCkUSDC.icrc1_balance_of({
-    owner: user,
+  const balance = await unAuthCkUsdc.icrc1_balance_of({
+    owner: userPrincipal,
     subaccount: []
   });
-
+  dispatch(setCkUsdcBalance(balance));
+  return balance
 };
+
+interface TransferToPrincipalArgs {
+  authCkUsdc: ActorSubclass<_SERVICE>;
+  userPrincipal: Principal;
+  amount: bigint
+}
+
+export const transferToPrincipal = async ({
+  authCkUsdc,
+  userPrincipal,
+  amount
+}: TransferToPrincipalArgs) => {
+  return authCkUsdc.icrc1_transfer({
+    to: {
+      owner: userPrincipal,
+      subaccount: []
+    },
+    fee: [],
+    memo: [],
+    from_subaccount: [],
+    created_at_time: [],
+    amount
+  });
+};
+

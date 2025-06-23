@@ -10,10 +10,6 @@ import {
 } from "../integrations/discord.ts";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import {
-  setUserDiscordAccessToken,
-  setUserDiscordData,
-} from "../store/slices/userSlice.ts";
 import { useAuthAtlasMainActor } from "../hooks/identityKit.ts";
 
 const LastStep = () => {
@@ -56,8 +52,7 @@ const LastStep = () => {
       navigate("/");
       return <></>;
     }
-    dispatch(setUserDiscordAccessToken(accessToken));
-    dispatch(setUserDiscordData(userData));
+
     navigate("/space");
     dispatch(setScreenBlur(false));
     toast.success("Successfully linked Discord");

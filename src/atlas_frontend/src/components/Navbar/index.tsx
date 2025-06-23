@@ -20,10 +20,10 @@ import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../store/store.ts";
 import {
   useUnAuthAtlasMainActor,
-  useUnAuthCkUSDCActor,
 } from "../../hooks/identityKit.ts";
 import {
   selectUserBlockchainData,
+  selectUserCkUsdc,
   selectUserHub,
 } from "../../store/slices/userSlice.ts";
 import {
@@ -31,14 +31,13 @@ import {
   getAtlasUser,
   getAtlasUserIsInHub,
 } from "../../canisters/atlasMain/api.ts";
-import { SPACE_BUILDER_PATH, SPACES_PATH } from "../../router/paths.ts";
-import { useQuery } from "@tanstack/react-query";
-import { getUserBalance } from "../../canisters/ckUSDC/api.ts";
+import { SPACE_BUILDER_PATH, SPACES_PATH, WALLET } from "../../router/paths.ts";
 import { formatUnits } from "ethers";
-import { DECIMALS } from "../../canisters/ckUSDC/constans.ts";
+import { DECIMALS } from "../../canisters/ckUsdcLedger/constans.ts";
 import UserIcon from "./UserIcon.tsx";
 import WalletIcon from "../../icons/wallet.svg?react";
 import { FaPlus } from "react-icons/fa";
+import { getCkUsdcBalance } from "../../hooks/balances.ts";
 
 const ConnectButton = (props: ConnectWalletButtonProps) => (
   <Button
@@ -67,7 +66,6 @@ const DropdownMenuComponent = ({
     (state: RootState) => state.app.blockchainConfig
   );
   const isUserInHub = useSelector(selectUserHub);
-  const unAuthCkUSDCActor = useUnAuthCkUSDCActor();
 
   const copyAccount = () => {
     copy(connectedAccount);
@@ -110,21 +108,12 @@ const DropdownMenuComponent = ({
     }
   }, [unAuthAtlasMain, user, dispatch]);
 
-  const { data: userCkUsdc } = useQuery(
-    ["user", unAuthCkUSDCActor, user],
-    async () => {
-      if (!unAuthCkUSDCActor || !user?.principal) return null;
-      return await getUserBalance({
-        authCkUSDC: unAuthCkUSDCActor,
-        user: user?.principal,
-      });
-    },
-    {
-      enabled: !!user?.principal && !!unAuthCkUSDCActor,
-    }
-  );
+  getCkUsdcBalance({
+    dispatch
+  });
+  const userCkUsdc = useSelector(selectUserCkUsdc);
   const parsedUserCkUsdc =
-    userCkUsdc !== null && userCkUsdc !== undefined
+    userCkUsdc !== null
       ? formatUnits(userCkUsdc, DECIMALS)
       : null;
 
@@ -165,14 +154,14 @@ const DropdownMenuComponent = ({
         </MenuItem>
         {parsedUserCkUsdc !== null && (
           <MenuItem>
-            <div className="flex justify-center items-center gap-2 mt-2">
+            <a className="flex justify-center items-center gap-2 mt-2 w-full" href={WALLET}>
               <div>
-                <WalletIcon />
+                <WalletIcon className="h-9"/>
               </div>
-              <div className="bg-[#9173FF]/20 h-full font-montserrat font-medium px-4 py-2 rounded-md flex-1 text-center">
+              <div className="bg-[#9173FF]/20 h-full font-montserrat font-medium px-4 py-2 rounded-md flex-1 text-center flex-1">
                 {parsedUserCkUsdc} XP
               </div>
-            </div>
+            </a>
           </MenuItem>
         )}
         <MenuItem>
@@ -219,6 +208,10 @@ const Navbar = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
+  getCkUsdcBalance({
+    dispatch
+  });
 
   return (
     <div className="sticky top-0 z-30 w-full">

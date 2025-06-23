@@ -3,7 +3,7 @@ import ListItem from "./ListItem";
 
 const EarnRewards = () => {
   return (
-    <div className="rounded-2xl w-full flex justify-between my-8 bg-cover bg-[url(/reward-bg-img.png)] font-montserrat">
+    <div className="rounded-2xl w-full flex justify-between my-8 bg-cover bg-[url(/reward-bg-img.png)] font-montserrat [mix-blend-mode:luminosity]">
       <div className="flex flex-col justify-end px-5 mb-4 py-6">
         <h2 className="font-semibold md:text-2xl dlg:text-3xl dxl:text-4xl text-white ">
           Earn rewards by being ICP Ambassador

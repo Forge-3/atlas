@@ -15,8 +15,7 @@ import { unwrapCall } from "../delegatedCall.js";
 import { setConfig } from "../../store/slices/appSlice.js";
 import type { _SERVICE as _SERVICE_SPACE } from "../../../../declarations/atlas_space/atlas_space.did.js";
 import { setSpaces } from "../../store/slices/spacesSlice.js";
-import { customSerify } from "../../store/store.js";
-import { deserify, serify } from "@karmaniverous/serify-deserify";
+import type { ExternalLinks } from "../atlasSpace/types.js";
 
 interface CreateNewSpaceArgs {
   authAtlasMain: ActorSubclass<_SERVICE_MAIN>;
@@ -25,6 +24,7 @@ interface CreateNewSpaceArgs {
   symbol: string | null;
   logo: string | null;
   background: string | null;
+  externalLinks: ExternalLinks;
 }
 export const createNewSpace = async ({
   authAtlasMain,
@@ -33,14 +33,19 @@ export const createNewSpace = async ({
   symbol,
   logo,
   background,
+  externalLinks,
 }: CreateNewSpaceArgs) => {
+  const externalLinksArray = Object.entries(externalLinks).filter(
+    ([_, value]) => value !== null
+  ) as [string, string][];
   const call = authAtlasMain.create_new_space(
     name,
     description,
     symbol ? [symbol] : [],
     logo ? [logo] : [],
     background ? [background] : [],
-    { HUB: null }
+    { HUB: null },
+    externalLinksArray
   );
 
   return unwrapCall<Space>({
@@ -81,7 +86,6 @@ export const getAtlasUserIsInHub = async ({
   const isInHub = await unAuthAtlasMain.get_user_hub(userId);
   const principal = isInHub.pop()?.id;
   if (principal) {
-
     dispatch(setIsUserInHub(principal.toString()));
   } else {
     dispatch(setIsUserInHub(null));

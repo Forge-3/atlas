@@ -4,6 +4,7 @@ export const idlFactory = ({ IDL }) => {
     'principal' : IDL.Principal,
   });
   const SpaceInitArg = IDL.Record({
+    'external_links' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     'owner' : IDL.Principal,
     'ckusdc_ledger' : CkUsdcLedger_1,
     'space_symbol' : IDL.Opt(IDL.Text),
@@ -99,6 +100,7 @@ export const idlFactory = ({ IDL }) => {
           IDL.Opt(IDL.Text),
           IDL.Opt(IDL.Text),
           SpaceType,
+          IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
         ],
         [Result],
         [],
@@ -133,6 +135,7 @@ export const init = ({ IDL }) => {
     'principal' : IDL.Principal,
   });
   const SpaceInitArg = IDL.Record({
+    'external_links' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     'owner' : IDL.Principal,
     'ckusdc_ledger' : CkUsdcLedger_1,
     'space_symbol' : IDL.Opt(IDL.Text),

@@ -1,14 +1,13 @@
-import { deserify, serify } from "@karmaniverous/serify-deserify";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { UserData } from "../../integrations/discord.ts";
 import type {
   Integrations,
   Rank,
-  Space,
   User,
 } from "../../../../declarations/atlas_main/atlas_main.did.js";
-import type { Principal } from "@dfinity/principal";
+import { deserify } from "@karmaniverous/serify-deserify";
 import { customSerify } from "../store.ts";
+import type { UserTransactions } from "../../canisters/ckUsdcIndex/types.ts";
 
 interface StorableUser extends User {
   owned_spaces: Array<bigint>;
@@ -44,6 +43,10 @@ export class BlockchainUser implements StorableUser {
 }
 
 interface UserState {
+  txs: UserTransactions;
+  balances: {
+    ckUsdc: bigint | null;
+  };
   blockchain: StorableUser | null;
   integrations: {
     discord: {
@@ -59,6 +62,10 @@ const initialState = (): UserState => {
   const userData = localStorage.getItem("discordUserData");
 
   return {
+    txs: {},
+    balances: {
+      ckUsdc: null,
+    },
     userHub: null,
     blockchain: null,
     integrations: {
@@ -74,42 +81,26 @@ export const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    setUserDiscordData: (state, action: PayloadAction<UserData>) => {
-      //const principal = (serify(action.payload, customSerify) as Principal).toText()
-      //localStorage.setItem("discordUserData", (action.payload));
-      state.integrations.discord.userData = action.payload;
-    },
-    setUserDiscordAccessToken: (state, action: PayloadAction<string>) => {
-      localStorage.setItem("discordUserAccessToken", action.payload);
-      state.integrations.discord.accessToken = action.payload;
-    },
     setUserBlockchainData: (state, action: PayloadAction<StorableUser>) => {
       state.blockchain = { ...state.blockchain, ...action.payload };
     },
     setIsUserInHub: (state, action: PayloadAction<string | null>) => {
       if (!action.payload) return;
-      console.log(12314, action.payload)
+      console.log(12314, action.payload);
       localStorage.setItem("userHub", action.payload);
       state.userHub = action.payload;
     },
-  },
-  selectors: {
-    selectUserDiscordData: (userState: UserState) => {
-      const localUserData = localStorage.getItem("discordUserData");
-      const parsedLocalUserData =
-        localUserData !== null ? JSON.parse(localUserData) : null;
-
-      const accessToken =
-        userState.integrations.discord.accessToken ||
-        localStorage.getItem("discordUserAccessToken");
-      const userData =
-        userState.integrations.discord.userData || parsedLocalUserData;
-
-      return {
-        accessToken,
-        userData,
+    setCkUsdcBalance: (state, action: PayloadAction<bigint>) => {
+      state.balances.ckUsdc = action.payload;
+    },
+    appendUserTxs: (state, action: PayloadAction<UserTransactions>) => {
+      state.txs = {
+        ...state.txs,
+        ...action.payload,
       };
     },
+  },
+  selectors: {
     selectUserBlockchainData: (userState: UserState) => {
       if (!userState.blockchain) return null;
       return new BlockchainUser(userState.blockchain);
@@ -118,15 +109,27 @@ export const userSlice = createSlice({
       if (userState.userHub) return userState.userHub;
       return localStorage.getItem("userHub");
     },
+    selectUserCkUsdc: (userState: UserState): bigint | null => {
+      if (userState.balances.ckUsdc)
+        return deserify(userState.balances.ckUsdc, customSerify) as bigint;
+      return null;
+    },
+    selectUserTxs: (userState: UserState) => {
+      return deserify(userState.txs, customSerify) as UserTransactions;
+    },
   },
 });
 
 export const {
-  setUserDiscordData,
-  setUserDiscordAccessToken,
   setUserBlockchainData,
   setIsUserInHub,
+  setCkUsdcBalance,
+  appendUserTxs,
 } = userSlice.actions;
-export const { selectUserDiscordData, selectUserBlockchainData, selectUserHub } =
-  userSlice.selectors;
+export const {
+  selectUserBlockchainData,
+  selectUserHub,
+  selectUserCkUsdc,
+  selectUserTxs,
+} = userSlice.selectors;
 export default userSlice.reducer;

@@ -5,7 +5,7 @@
   "atlas_main": {
     "ic": "k7v6i-lqaaa-aaaal-qsnuq-cai"
   },
-  "ckusdc_canister": {
+  "ckusdc_ledger_canister": {
     "ic": "7wg6b-yaaaa-aaaal-qsofq-cai"
   }
 }

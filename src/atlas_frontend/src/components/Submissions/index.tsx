@@ -23,14 +23,13 @@ import {
 import {
   getUsersSubmissions,
   UserSubmissions,
-  type TaskData,
-  type TasksData,
 } from "../../canisters/atlasSpace/tasks";
 import { shortPrincipal } from "../../utils/icp";
 import { TiArrowSortedDown } from "react-icons/ti";
 import Button from "../Shared/Button";
 import type { ActorSubclass } from "@dfinity/agent";
 import { Principal } from "@dfinity/principal";
+import type { TaskData, TasksData } from "../../canisters/atlasSpace/types";
 
 const Submissions = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -86,7 +85,7 @@ const Submissions = () => {
   }
 
   return (
-    <div>
+  
       <div className="container mx-auto my-4">
         <div className="w-full px-3">
           <div className="relative w-full rounded-xl bg-[#1E0F33]/60 mb-1">
@@ -156,7 +155,7 @@ const Submissions = () => {
           </div>
         </div>
       </div>
-    </div>
+  
   );
 };
 

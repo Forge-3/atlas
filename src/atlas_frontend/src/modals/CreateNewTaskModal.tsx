@@ -7,22 +7,24 @@ import { FiPlus } from "react-icons/fi";
 import DecimalInputForm from "../components/Shared/DecimalInputForm";
 import { formatUnits, parseUnits } from "ethers";
 import { useDispatch, useSelector } from "react-redux";
-import { customSerify, type RootState } from "../store/store";
-import { DECIMALS } from "../canisters/ckUSDC/constans";
-import { deserify } from "@karmaniverous/serify-deserify";
+import { DECIMALS } from "../canisters/ckUsdcLedger/constans";
 import GenericTask from "./tasks/GenericTask";
 import NumericInputForm from "../components/Shared/NumericInputForm";
 import { createNewTask, getSpaceTasks } from "../canisters/atlasSpace/api";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   useAuthAtlasSpaceActor,
-  useAuthCkUSDCActor,
-  useUnAuthCkUSDCActor,
+  useAuthCkUsdcLedgerActor,
+  useUnAuthCkUsdcLedgerActor,
 } from "../hooks/identityKit";
 import { useSpaceId } from "../hooks/space";
 import toast from "react-hot-toast";
-import { setUserSpaceAllowanceIfNeeded } from "../canisters/ckUSDC/api";
+import {
+  getUserBalance,
+  setUserSpaceAllowanceIfNeeded,
+} from "../canisters/ckUsdcLedger/api";
 import { useAuth } from "@nfid/identitykit/react";
+import { selectBlockchainConfig } from "../store/slices/appSlice";
 
 type TaskType = "generic";
 const allowedTaskTypes = ["generic"] as const;
@@ -90,7 +92,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
-  
+
   const {
     register,
     handleSubmit,
@@ -118,14 +120,12 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   const spaceId = principal.toString();
 
   const authAtlasSpaceActor = useAuthAtlasSpaceActor(principal);
-  const unAuthCkUSDCActor = useUnAuthCkUSDCActor();
-  const authCkUSDCActor = useAuthCkUSDCActor();
+  const unAuthCkUsdcActor = useUnAuthCkUsdcLedgerActor();
+  const authCkUsdcActor = useAuthCkUsdcLedgerActor();
 
-  const selectedCkUsdcFee = useSelector(
-    (state: RootState) => state.app.blockchainConfig?.ckusdc_ledger.fee
-  );
-  const ckUsdcFee = selectedCkUsdcFee
-    ? (deserify(selectedCkUsdcFee, customSerify) as bigint)
+  const blockchainConfig = useSelector(selectBlockchainConfig);
+  const ckUsdcFee = blockchainConfig
+    ? (blockchainConfig.ckusdc_ledger.fee ?? 0n)
     : 0n;
 
   const numberOfUses = watch("numberOfUses");
@@ -148,15 +148,15 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     numberOfUses,
     rewardPerUsage,
     tasks,
-    taskTitle
+    taskTitle,
   }) => {
     const numberOfUsesBn = BigInt(numberOfUses.toString());
     const rewardPerUsageBn = parseUnits(rewardPerUsage.toString(), DECIMALS);
 
     if (
       !authAtlasSpaceActor ||
-      !unAuthCkUSDCActor ||
-      !authCkUSDCActor ||
+      !unAuthCkUsdcActor ||
+      !authCkUsdcActor ||
       !user
     ) {
       toast.error("Session expired");
@@ -187,8 +187,8 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
       numberOfUsesBn * ckUsdcFee +
       ckUsdcFee;
     const getOrSetAllowance = setUserSpaceAllowanceIfNeeded({
-      unAuthCkUSD: unAuthCkUSDCActor,
-      authCkUSDC: authCkUSDCActor,
+      unAuthCkUsd: unAuthCkUsdcActor,
+      authCkUsdc: authCkUsdcActor,
       spacePrincipal: principal,
       amount: estimatedCost,
       userPrincipal: user.principal,
@@ -211,13 +211,18 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
       success: "Task created successfully",
       error: "Failed to create task",
     });
-    callback()
-        getSpaceTasks({
-          spaceId,
-          unAuthAtlasSpace: authAtlasSpaceActor,
-          dispatch,
-        });
-    navigate(`${location.pathname}/${taskId}`)
+    callback();
+    await getSpaceTasks({
+      spaceId,
+      unAuthAtlasSpace: authAtlasSpaceActor,
+      dispatch,
+    });
+    await getUserBalance({
+      unAuthCkUsdc: unAuthCkUsdcActor,
+      userPrincipal: user?.principal,
+      dispatch,
+    });
+    navigate(`${location.pathname}/${taskId}`);
   };
 
   return (
@@ -276,6 +281,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
               maxDecimalPlaces={DECIMALS}
               name="rewardPerUsage"
               errors={errors}
+              className="mb-2"
             />
 
             {fields.map((field, index) => {
