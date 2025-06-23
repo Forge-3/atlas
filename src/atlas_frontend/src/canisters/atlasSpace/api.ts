@@ -157,6 +157,7 @@ interface SubtaskSubmission {
   userPrincipal: Principal;
   taskId: bigint;
   subtaskId: bigint;
+  reason?: string;
 }
 
 export const acceptSubtaskSubmission = async ({
@@ -182,11 +183,13 @@ export const rejectSubtaskSubmission = async ({
   userPrincipal,
   taskId,
   subtaskId,
+  reason,
 }: SubtaskSubmission) => {
   const call = authAtlasSpace.reject_subtask_submission(
     userPrincipal,
     taskId,
-    subtaskId
+    subtaskId,
+    reason ?? "",
   );
 
   await unwrapCall<null>({

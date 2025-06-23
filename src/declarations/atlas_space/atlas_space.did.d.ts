@@ -74,6 +74,7 @@ export interface State {
 export type Submission = { 'Text' : { 'content' : string } };
 export interface SubmissionData {
   'state' : SubmissionState,
+  'rejection_reason' : [] | [string],
   'submission' : Submission,
 }
 export type SubmissionState = { 'Rejected' : null } |
@@ -113,7 +114,7 @@ export interface _SERVICE {
   'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_2>,
   'get_state' : ActorMethod<[], State>,
   'reject_subtask_submission' : ActorMethod<
-    [Principal, bigint, bigint],
+    [Principal, bigint, bigint, string],
     Result
   >,
   'set_space_background' : ActorMethod<[string], Result>,

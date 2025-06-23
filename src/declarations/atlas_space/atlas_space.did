@@ -71,6 +71,7 @@ type State = record {
 type Submission = variant { Text : record { content : text } };
 type SubmissionData = record {
   state : SubmissionState;
+  rejection_reason : opt text;
   submission : Submission;
 };
 type SubmissionState = variant { Rejected; WaitingForReview; Accepted };
@@ -101,7 +102,7 @@ service : (SpaceArgs) -> {
   get_current_bytecode_version : () -> (nat64) query;
   get_open_tasks : (GetTasksArgs) -> (Result_2) query;
   get_state : () -> (State) query;
-  reject_subtask_submission : (principal, nat64, nat64) -> (Result);
+  reject_subtask_submission : (principal, nat64, nat64, text) -> (Result);
   set_space_background : (text) -> (Result);
   set_space_description : (text) -> (Result);
   set_space_logo : (text) -> (Result);

@@ -104,11 +104,12 @@ pub async fn reject_subtask_submission(
     user: Principal,
     task_id: TaskId,
     subtask_id: usize,
+    reason: String,
 ) -> Result<(), Error> {
     parent_or_owner_or_admin_guard().await?;
     memory::mut_open_task(task_id.clone(), |maybe_task| {
         let task = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
-        task.reject_subtask_submission(user, subtask_id)?;
+        task.reject_subtask_submission(user, subtask_id, reason)?;
         Ok(())
     })??;
 

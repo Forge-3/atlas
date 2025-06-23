@@ -258,6 +258,7 @@ const GenericTaskSummation = ({
 }: GenericTaskSummationProps) => {
   const dispatch = useDispatch();
   const userPrincipal = Principal.from(user)
+  
 
   const acceptSubtask = async () => {
     await acceptSubtaskSubmission({
@@ -273,18 +274,24 @@ const GenericTaskSummation = ({
     });
   };
 
+  const [reason, setReason] = useState<string>("");
+  const [showRejectPopup, setShowRejectPopup] = useState(false);
+
   const rejectSubtask = async () => {
     await rejectSubtaskSubmission({
       authAtlasSpace,
       userPrincipal,
       taskId: BigInt(taskId),
       subtaskId: BigInt(subtaskId),
+      reason,
     });
     await getSpaceTasks({
       spaceId,
       unAuthAtlasSpace,
       dispatch,
     });
+    setShowRejectPopup(false);
+    setReason("");
   };
   const singleSubmissionState = Object.keys(submission.submissionData.state)[0]
 
@@ -300,17 +307,47 @@ const GenericTaskSummation = ({
         <div className="border-2 border-[#9173FF]/20 p-2 rounded-xl w-full mb-4 bg-[#9173FF]/20 text-white">
           {submission.submissionData.submission.Text.content}
         </div>
+        <div className="flex flex-col justify-end gap-2">
+          {submissionState === "WaitingForReview" && singleSubmissionState === "WaitingForReview" && (
+            <>
+              <div className="flex gap-2 justify-end">
+                <Button onClick={acceptSubtask}>Accept</Button>
+                <Button onClick={() => setShowRejectPopup(true)} className="bg-red-500">
+                  Reject
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
-      <div className="flex justify-end gap-2">
-        {submissionState == "WaitingForReview" && singleSubmissionState == "WaitingForReview" && (
-          <>
-            <Button onClick={acceptSubtask}>Accept</Button>
-            <Button onClick={rejectSubtask} className="bg-red-500">
-              Reject
-            </Button>
-          </>
-        )}
-      </div>
+      {showRejectPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96 text-black">
+            <h2 className="text-xl font-bold mb-4">Reason for Rejection</h2>
+            <input
+              type="text"
+              placeholder="Enter reason (optional)"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="w-full p-2 rounded border border-gray-300 mb-4"
+            />
+            <div className="flex justify-end gap-2">
+              <Button 
+                onClick={() => {
+                  setShowRejectPopup(false);
+                  setReason("");
+                }} 
+                className="bg-gray-300 text-black"
+              >
+                Cancel
+              </Button>
+              <Button onClick={rejectSubtask} className="bg-red-500">
+                Submit Rejection
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
