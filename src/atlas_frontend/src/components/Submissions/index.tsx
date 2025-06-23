@@ -307,6 +307,18 @@ const GenericTaskSummation = ({
         <div className="border-2 border-[#9173FF]/20 p-2 rounded-xl w-full mb-4 bg-[#9173FF]/20 text-white">
           {submission.submissionData.submission.Text.content}
         </div>
+        {submissionState === "Rejected" && 
+         Array.isArray(submission.submissionData.rejection_reason) &&
+         submission.submissionData.rejection_reason.length > 0 &&
+         typeof submission.submissionData.rejection_reason[0] === "string" &&
+         submission.submissionData.rejection_reason[0].trim().length > 0 && (
+          <div className="mt-2 p-3 rounded-lg border border-red-500 bg-red-900 bg-opacity-20 text-red-300">
+            <p className="font-semibold text-red-200 mb-1">Reject Reason:</p>
+            <p className="break-words">
+              {submission.submissionData.rejection_reason[0]}
+            </p>
+          </div>
+        )}
         <div className="flex flex-col justify-end gap-2">
           {submissionState === "WaitingForReview" && singleSubmissionState === "WaitingForReview" && (
             <>
