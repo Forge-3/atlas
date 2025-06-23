@@ -56,7 +56,7 @@ const GenericTask = ({
   const dispatch = useDispatch();
   const { user } = useAuth();
   const [openSubmission, setSubmission] = useState(false);
-  const { register, handleSubmit } = useForm({
+  const { register, handleSubmit} = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
       taskSubmission: "",
@@ -89,39 +89,48 @@ const GenericTask = ({
     });
   };
 
-  const userSubmission = user?.principal
+  const [, submissionData] = user?.principal
     ? (genericTask.submission.find(
         ([principal]) => principal.toString() === user.principal.toString()
-      ) ?? null)
+      ) ?? [])
+    : [];
+
+  const currentSubmissionState = submissionData?.state
+    ? Object.keys(submissionData?.state)[0]
     : null;
 
-  const submissionState = userSubmission?.[1].state
-    ? Object.keys(userSubmission?.[1].state)[0]
-    : null;
-  return (
-    <div className="flex mt-4">
-      <div className="flex flex-col mr-2 md:mr-4">
-        <div className="bg-[#1E0F33] p-1 w-[20px] h-[20px] md:w-[32px] md:h-[32px] rounded md:rounded-lg relative">
-          {submissionState === "WaitingForReview" && (
-            <img src="/icons/check-in-box.svg" className="w-6 h-3.5 md:h-6 relative" />
+  const canSubmit = user && isUserInHub && (
+    currentSubmissionState === null ||
+    (currentSubmissionState === "Rejected" && genericTask.task_content.TitleAndDescription.allow_resubmit)
+  );
+
+   return (
+    <div className="flex mt-2">
+      <div className="flex flex-col mr-4">
+        <div className="bg-[#1E0F33] p-1 w-[32px] h-[32px] rounded-lg relative">
+          {currentSubmissionState === "WaitingForReview" && (
+            <img src="/icons/check-in-box.svg" className="w-6 h-6 relative"/>
           )}
-          {submissionState === "Accepted" && (
-            <img src="/icons/check-in-box.svg" className="w-6 h-6 relative" />
+          {currentSubmissionState === "Accepted" && (
+            <img src="/icons/check-in-box.svg" className="w-6 h-6 relative"/>
           )}
         </div>
         <div className="bg-[#1E0F33] flex-1 w-1 rounded-full mx-auto mt-2"></div>
       </div>
       <div className="bg-[#1E0F33] rounded-xl p-3 md:p-6 w-full">
         <div className="mb-4">
-          <h4 className="text-base sm:text-xl md:text-3xl font-medium font-poppins text-white mb-1 text-wrap break-all">
-            {genericTask.task_content.TitleAndDescription.task_title}
+          <h4 className="text-xl font-medium font-poppins text-white mb-1 text-wrap break-all">
+            {"TitleAndDescription" in genericTask.task_content 
+              ? genericTask.task_content.TitleAndDescription.task_title
+              : "N/A"}
           </h4>
-          <p className="text-sm sm:text-base md:text-xl text-zinc-400 text-wrap break-all">
-            {genericTask.task_content.TitleAndDescription.task_description}
+          <p className="text-zinc-400 text-wrap break-all">
+            {"TitleAndDescription" in genericTask.task_content 
+              ? genericTask.task_content.TitleAndDescription.task_description
+              : "N/A"}
           </p>
         </div>
-
-        {user && !userSubmission && openSubmission && (
+        {canSubmit && openSubmission && (
           <form onSubmit={handleSubmit(onSubmit)}>
             <div>
               <p className="text-xs md:text-base text-white font-semibold mb-1">Submit response:</p>
@@ -135,9 +144,11 @@ const GenericTask = ({
             </div>
           </form>
         )}
-        {user && !userSubmission && !openSubmission && isUserInHub && (
+        {canSubmit && !openSubmission && (
           <div className="flex">
-            <Button onClick={() => setSubmission(true)} className="text-[14px] px-2 py-1 rounded-xl">Submit message</Button>
+            <Button onClick={() => setSubmission(true)} className="text-[14px] px-2 py-1 rounded-xl">
+              {currentSubmissionState === "Rejected" ? "Re-submit message" : "Submit message"}
+            </Button>
           </div>
         )}
         {!user && (

@@ -33,7 +33,7 @@ impl CreateTaskArgs {
         }
         self.task_content
             .iter()
-            .try_for_each(|content| content.validate())
+            .try_for_each(|task_content| task_content.validate())
     }
 }
 
@@ -45,6 +45,8 @@ pub enum TaskContent {
         task_title: String,
         #[n(1)]
         task_description: String,
+        #[n(2)]
+        allow_resubmit: bool,
     },
 }
 
@@ -54,6 +56,7 @@ impl TaskContent {
             TaskContent::TitleAndDescription {
                 task_title,
                 task_description,
+                allow_resubmit: _,
             } => {
                 if task_title.trim().len() > 50 {
                     return Err(Error::InvalidTaskContent(
@@ -69,6 +72,12 @@ impl TaskContent {
             }
         }
     }
+
+    pub fn allow_resubmit(&self) -> bool {
+        match self {
+            TaskContent::TitleAndDescription { allow_resubmit, .. } => *allow_resubmit,
+        }
+    }
 }
 
 impl From<&TaskContent> for TaskType {
@@ -77,10 +86,12 @@ impl From<&TaskContent> for TaskType {
             TaskContent::TitleAndDescription {
                 task_title,
                 task_description,
+                allow_resubmit,
             } => Self::GenericTask {
                 task_content: TaskContent::TitleAndDescription {
                     task_title: task_title.clone(),
                     task_description: task_description.clone(),
+                    allow_resubmit: *allow_resubmit,
                 },
                 submission: Default::default(),
             },
@@ -101,13 +112,20 @@ pub enum TaskType {
 
 impl TaskType {
     pub fn submit(&mut self, user: Principal, submission: Submission) -> Result<(), Error> {
+        let allow_resubmit = self.get_allow_resubmit();
         match self {
             TaskType::GenericTask {
                 task_content: _,
                 submission: submissions_map,
             } => {
-                if submissions_map.contains_key(&user) {
-                    return Err(Error::UserAlreadySubmitted);
+                if let Some(existing_submission) = submissions_map.get(&user) {
+                    if existing_submission.get_state() == &SubmissionState::Rejected
+                        && allow_resubmit
+                    {
+                        submissions_map.remove(&user);
+                    } else {
+                        return Err(Error::UserAlreadySubmitted);
+                    }
                 }
                 if !submission.is_text() {
                     return Err(Error::IncorrectSubmission("Text".to_string()));
@@ -165,22 +183,27 @@ impl TaskType {
                 .ok_or(Error::UserSubmissionNotFound)?),
         }
     }
+    pub fn get_allow_resubmit(&self) -> bool {
+        match self {
+            TaskType::GenericTask { task_content, .. } => task_content.allow_resubmit(),
+        }
+    }
 }
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType)]
 pub struct Task {
     #[cbor(n(0), with = "shared::cbor::principal")]
-    creator: Principal,
+    pub(crate) creator: Principal,
     #[n(1)]
-    token_reward: TokenReward,
+    pub(crate) token_reward: TokenReward,
     #[n(2)]
-    tasks: Vec<TaskType>,
+    pub(crate) tasks: Vec<TaskType>,
     #[n(3)]
-    number_of_uses: u64,
+    pub(crate) number_of_uses: u64,
     #[n(4)]
-    task_title: String,
+    pub(crate) task_title: String,
     #[cbor(n(5), with = "shared::cbor::principal::vec")]
-    rewarded: Vec<Principal>,
+    pub(crate) rewarded: Vec<Principal>,
 }
 
 impl Task {

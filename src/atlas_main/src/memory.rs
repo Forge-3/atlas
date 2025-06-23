@@ -142,3 +142,7 @@ pub fn insert_new_version(version: u64, bytecode: Vec<u8>) {
 pub fn get_bytecode_by_version(version: &u64) -> Option<Vec<u8>> {
     WASM_SPACES_MAP.with_borrow(|code_map| code_map.get(version))
 }
+
+pub fn get_bytecode_map_len() -> u64 {
+    WASM_SPACES_MAP.with_borrow(|code_map| code_map.len())
+}

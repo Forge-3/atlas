@@ -51,6 +51,7 @@ export const idlFactory = ({ IDL }) => {
     'TitleAndDescription' : IDL.Record({
       'task_description' : IDL.Text,
       'task_title' : IDL.Text,
+      'allow_resubmit' : IDL.Bool,
     }),
   });
   const CreateTaskArgs = IDL.Record({

@@ -6,6 +6,7 @@ mod guard;
 mod lifecycle;
 mod memory;
 mod methods;
+mod migration;
 mod nat256;
 mod state;
 mod task;

@@ -92,7 +92,11 @@ type Task = record {
   number_of_uses : nat64;
 };
 type TaskContent = variant {
-  TitleAndDescription : record { task_description : text; task_title : text };
+  TitleAndDescription : record {
+    task_description : text;
+    task_title : text;
+    allow_resubmit : bool;
+  };
 };
 type TaskType = variant {
   GenericTask : record {

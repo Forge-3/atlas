@@ -14,6 +14,13 @@ import type { UnknownAction } from "@reduxjs/toolkit";
 import type { Principal } from "@dfinity/principal";
 import type { ExternalLinks } from "./types.js";
 
+interface CreateSubtaskArg {
+  task_type: string;
+  title: string;
+  description: string;
+  allow_resubmit: boolean;
+}
+
 interface GetAtlasSpaceArgs {
   unAuthAtlasSpace: ActorSubclass<_SERVICE>;
   spaceId: string;
@@ -63,7 +70,7 @@ interface CreateNewSpaceTaskArgs {
   authAtlasSpaceActor: ActorSubclass<_SERVICE>;
   numberOfUses: bigint;
   rewardPerUsage: bigint;
-  tasks: TaskContent[];
+  tasks: CreateSubtaskArg[];
   taskTitle: string;
 }
 
@@ -74,6 +81,14 @@ export const createNewTask = async ({
   tasks,
   taskTitle,
 }: CreateNewSpaceTaskArgs) => {
+  const transformedTasks: TaskContent[] = tasks.map((arg) => ({
+    TitleAndDescription: {
+      task_title: arg.title,
+      task_description: arg.description,
+      allow_resubmit: arg.allow_resubmit,
+    },
+  }));
+
   const call = authAtlasSpaceActor.create_task({
     task_title: taskTitle,
     token_reward: {
@@ -81,7 +96,7 @@ export const createNewTask = async ({
         amount: rewardPerUsage,
       },
     },
-    task_content: tasks,
+    task_content: transformedTasks,
     number_of_uses: numberOfUses,
   });
 
