@@ -44,7 +44,6 @@ const DecimalInputForm = <TFormValues extends FieldValues>({
             decimalValue !== -1 &&
             input.value.length - decimalValue - 1 > (maxDecimalPlaces || 0)
           ) {
-            console.log(input.value)
             input.value = input.value.slice(
               0,
               decimalValue + (maxDecimalPlaces || 0) + 1

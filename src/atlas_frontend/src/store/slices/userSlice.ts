@@ -1,32 +1,46 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { UserData } from "../../integrations/discord.ts";
 import type {
   Integrations,
   Rank,
-  User,
+  CandidUser,
+  Space,
 } from "../../../../declarations/atlas_main/atlas_main.did.js";
 import { deserify } from "@karmaniverous/serify-deserify";
 import { customSerify } from "../store.ts";
 import type { UserTransactions } from "../../canisters/ckUsdcIndex/types.ts";
+import type { Principal } from "@dfinity/principal";
 
-interface StorableUser extends User {
-  owned_spaces: Array<bigint>;
-}
-export class BlockchainUser implements StorableUser {
-  "integrations": Integrations;
-  "rank": Rank;
-  "owned_spaces": Array<bigint>;
-  "space_creation_in_progress": boolean;
-  "belonging_to_spaces": Array<bigint>;
+export class BlockchainUser implements Omit<CandidUser, 'in_hub'> {
+  public integrations: Integrations;
+  public rank: Rank;
+  public space_creation_in_progress: boolean;
+  public belonging_to_spaces: Space[];
+  public owned_spaces: Space[];
+  public in_hub: Space | null
 
-  constructor(user: StorableUser) {
+  constructor(public user: CandidUser) {
     this.integrations = user.integrations;
     this.rank = user.rank;
+    this.space_creation_in_progress = user.space_creation_in_progress;
+    this.belonging_to_spaces = user.belonging_to_spaces;
     this.owned_spaces = user.owned_spaces;
+    this.in_hub = user.in_hub.pop() ?? null
+  }
+
+  belongingToAnySpace() {
+    return this.belonging_to_spaces.length > 0
+  }
+
+  belongingToSpace(space: Principal) {
+    return this.belonging_to_spaces.some(({id}) => id.toString() === space.toString())
+  }
+
+  ownSpaces(space: Principal) {
+    return this.owned_spaces.some(({id}) => id.toString() === space.toString())
   }
 
   getRank() {
-    return Object.keys(this.rank)[0] as keyof Rank;
+    return Object.keys(this.user.rank)[0] as keyof Rank;
   }
 
   isSpaceLead() {
@@ -47,20 +61,11 @@ interface UserState {
   balances: {
     ckUsdc: bigint | null;
   };
-  blockchain: StorableUser | null;
-  integrations: {
-    discord: {
-      accessToken: string | null;
-      userData: UserData | null;
-    };
-  };
+  blockchain: CandidUser | null;
   userHub: string | null;
 }
 
 const initialState = (): UserState => {
-  const accessToken = localStorage.getItem("discordUserAccessToken");
-  const userData = localStorage.getItem("discordUserData");
-
   return {
     txs: {},
     balances: {
@@ -68,12 +73,6 @@ const initialState = (): UserState => {
     },
     userHub: null,
     blockchain: null,
-    integrations: {
-      discord: {
-        accessToken,
-        userData: userData !== null ? JSON.parse(userData) : null,
-      },
-    },
   };
 };
 
@@ -81,14 +80,8 @@ export const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    setUserBlockchainData: (state, action: PayloadAction<StorableUser>) => {
+    setUserBlockchainData: (state, action: PayloadAction<CandidUser>) => {
       state.blockchain = { ...state.blockchain, ...action.payload };
-    },
-    setIsUserInHub: (state, action: PayloadAction<string | null>) => {
-      if (!action.payload) return;
-      console.log(12314, action.payload);
-      localStorage.setItem("userHub", action.payload);
-      state.userHub = action.payload;
     },
     setCkUsdcBalance: (state, action: PayloadAction<bigint>) => {
       state.balances.ckUsdc = action.payload;
@@ -103,11 +96,9 @@ export const userSlice = createSlice({
   selectors: {
     selectUserBlockchainData: (userState: UserState) => {
       if (!userState.blockchain) return null;
-      return new BlockchainUser(userState.blockchain);
-    },
-    selectUserHub: (userState: UserState) => {
-      if (userState.userHub) return userState.userHub;
-      return localStorage.getItem("userHub");
+      return new BlockchainUser(
+        deserify(userState.blockchain, customSerify) as CandidUser
+      );
     },
     selectUserCkUsdc: (userState: UserState): bigint | null => {
       if (userState.balances.ckUsdc)
@@ -122,13 +113,11 @@ export const userSlice = createSlice({
 
 export const {
   setUserBlockchainData,
-  setIsUserInHub,
   setCkUsdcBalance,
   appendUserTxs,
 } = userSlice.actions;
 export const {
   selectUserBlockchainData,
-  selectUserHub,
   selectUserCkUsdc,
   selectUserTxs,
 } = userSlice.selectors;

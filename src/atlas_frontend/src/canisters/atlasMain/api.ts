@@ -1,6 +1,7 @@
 import type { ActorSubclass } from "@dfinity/agent";
 import type {
   _SERVICE as _SERVICE_MAIN,
+  CandidUser,
   GetSpacesRes,
   Space,
 } from "../../../../declarations/atlas_main/atlas_main.did.js";
@@ -8,7 +9,6 @@ import type { Principal } from "@dfinity/principal";
 import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import {
-  setIsUserInHub,
   setUserBlockchainData,
 } from "../../store/slices/userSlice.js";
 import { unwrapCall } from "../delegatedCall.js";
@@ -16,6 +16,8 @@ import { setConfig } from "../../store/slices/appSlice.js";
 import type { _SERVICE as _SERVICE_SPACE } from "../../../../declarations/atlas_space/atlas_space.did.js";
 import { setSpaces } from "../../store/slices/spacesSlice.js";
 import type { ExternalLinks } from "../atlasSpace/types.js";
+import { serify } from "@karmaniverous/serify-deserify";
+import { customSerify } from "../../store/store.js";
 
 interface CreateNewSpaceArgs {
   authAtlasMain: ActorSubclass<_SERVICE_MAIN>;
@@ -70,26 +72,17 @@ export const getAtlasUser = async ({
   });
 
   dispatch(
-    setUserBlockchainData({
-      ...userData,
-      owned_spaces: Array.from(userData.owned_spaces),
-      belonging_to_spaces: Array.from(userData.owned_spaces),
-    })
+    setUserBlockchainData(
+      serify(
+        {
+          ...userData,
+          owned_spaces: Array.from(userData.owned_spaces),
+          belonging_to_spaces: Array.from(userData.owned_spaces),
+        },
+        customSerify
+      ) as CandidUser
+    )
   );
-};
-
-export const getAtlasUserIsInHub = async ({
-  unAuthAtlasMain,
-  userId,
-  dispatch,
-}: GetAtlasUserArgs) => {
-  const isInHub = await unAuthAtlasMain.get_user_hub(userId);
-  const principal = isInHub.pop()?.id;
-  if (principal) {
-    dispatch(setIsUserInHub(principal.toString()));
-  } else {
-    dispatch(setIsUserInHub(null));
-  }
 };
 
 interface GetAtlasData {
@@ -137,6 +130,7 @@ export const getAllSpaces = async ({
   }, {});
 
   dispatch(setSpaces(spacesList));
+  return spacesList;
 };
 
 export const getAtlasConfig = async ({

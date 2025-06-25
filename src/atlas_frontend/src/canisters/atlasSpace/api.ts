@@ -14,7 +14,8 @@ import { storableState } from "./storable.js";
 import { serify } from "@karmaniverous/serify-deserify";
 import { customSerify } from "../../store/store.js";
 import type { Principal } from "@dfinity/principal";
-import type { ExternalLinks } from './types.js';
+import type { ExternalLinks } from "./types.js";
+import { keyframes } from "framer-motion";
 
 interface GetAtlasSpaceArgs {
   unAuthAtlasSpace: ActorSubclass<_SERVICE>;
@@ -227,14 +228,14 @@ export const editSpace = async ({
   description,
   logo,
   background,
-  externalLinks
+  externalLinks,
 }: EditSpaceArgs) => {
   const call = authAtlasSpace.edit_space({
-    external_links: Object.entries(externalLinks),
-    space_background: background? [background] : [],
-    space_logo: logo? [logo] :[],
+    external_links: Object.entries(externalLinks).filter(([, val]) => !!val),
+    space_background: background ? [background] : [],
+    space_logo: logo ? [logo] : [],
     space_name: name,
-    space_description: description
+    space_description: description,
   });
 
   await unwrapCall<null>({

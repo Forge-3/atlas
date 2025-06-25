@@ -3,7 +3,8 @@ import Button from "../components/Shared/Button";
 import { useNavigate } from "react-router-dom";
 import { SPACES_PATH } from "../router/paths";
 import {
-  getAtlasUserIsInHub,
+  
+  getAtlasUser,
   joinAtlasSpace,
 } from "../canisters/atlasMain/api";
 import type { Principal } from "@dfinity/principal";
@@ -38,10 +39,8 @@ const JoinSpaceModal = ({
   const unAuthAtlasMain = useUnAuthAtlasMainActor();
 
   const joinSpace = async () => {
-    console.log({authAtlasMain, unAuthAtlasMain, user})
     if (!authAtlasMain || !unAuthAtlasMain || !user) {
-      callback();
-      navigate("/");
+
       return;
     }
     await toast.promise(joinAtlasSpace({
@@ -53,12 +52,11 @@ const JoinSpaceModal = ({
     success: "Succesfully joined to space",
     error: "Failed to join to space",
   });
-    getAtlasUserIsInHub({
+    getAtlasUser({
       unAuthAtlasMain,
       dispatch,
       userId: user.principal,
     });
-    callback();
   };
 
   return (

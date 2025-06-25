@@ -21,7 +21,7 @@ pub struct SpaceInitArg {
     pub space_background: Option<String>,
     pub ckusdc_ledger: CkUsdcLedger,
     pub current_wasm_version: u64,
-    pub external_links: BTreeMap<String, String>
+    pub external_links: BTreeMap<String, String>,
 }
 
 #[derive(Deserialize, CandidType, Clone)]

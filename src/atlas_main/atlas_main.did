@@ -5,6 +5,14 @@ type AtlasArgs = variant {
   };
   InitArg : Config;
 };
+type CandidUser = record {
+  integrations : Integrations;
+  rank : Rank;
+  in_hub : opt Space;
+  space_creation_in_progress : bool;
+  belonging_to_spaces : vec Space;
+  owned_spaces : vec Space;
+};
 type CkUsdcLedger = record { fee : opt nat; "principal" : principal };
 type CkUsdcLedger_1 = record { fee : opt nat; "principal" : principal };
 type Config = record {
@@ -62,13 +70,6 @@ type UpdateConfig = record {
   spaces_per_space_lead : opt nat8;
   ckusdc_ledger : opt CkUsdcLedger_1;
 };
-type User = record {
-  integrations : Integrations;
-  rank : Rank;
-  space_creation_in_progress : bool;
-  belonging_to_spaces : vec nat64;
-  owned_spaces : vec nat64;
-};
 type WalletReceiveResult = record { accepted : nat64 };
 service : (AtlasArgs) -> {
   app_config : () -> (Config) query;
@@ -84,7 +85,7 @@ service : (AtlasArgs) -> {
   get_current_space_bytecode_version : () -> (nat64) query;
   get_space_bytecode_by_version : (nat64) -> (opt blob) query;
   get_spaces : (GetSpacesArgs) -> (Result_1) query;
-  get_user : (GetUserBy) -> (User) query;
+  get_user : (GetUserBy) -> (CandidUser) query;
   get_user_hub : (principal) -> (opt Space) query;
   join_space : (principal) -> (Result_2);
   set_user_admin : (principal) -> (Result_2);

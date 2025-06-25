@@ -5,14 +5,14 @@ const Footer = () => {
   return (
     <div className="flex flex-col items-center self-stretch px-20 pt-10 pb-12 mt-0 w-full text-lg font-medium leading-tight text-center text-violet-500 bg-[#1E0F33] max-md:px-5 max-md:max-w-full">
       <div className="gap-y-4 gap-x-10 px-20 py-5 max-w-full rounded-3xl text-[#9173FF] bg-[#150826] bg-opacity-50 max-md:px-5 w-full grid grid-cols-4">
-        <a href="/eligibility">Eligibility</a>
-        <a href="/responsibilities">Responsibilities</a>
-        <a href="/content-guidelines">Content Guidelines</a>
-        <a href="/intellectual-property">Intellectual Property</a>
-        <a href="/legal-compliance">Legal Compliance</a>
-        <a href="/restrictions">Restrictions</a>
-        <a href="/termination">Termination</a>
-        <a href="/data-privacy">Data Privacy</a>
+        <a href="/help#eligibility">Eligibility</a>
+        <a href="/help#responsibilities">Responsibilities</a>
+        <a href="/help#content-guidelines">Content Guidelines</a>
+        <a href="/help#intellectual-property">Intellectual Property</a>
+        <a href="/help#legal-compliance">Legal Compliance</a>
+        <a href="/help#restrictions">Restrictions</a>
+        <a href="/help#termination">Termination</a>
+        <a href="/help#data-privacy">Data Privacy</a>
         <a href="https://x.com/ICPHUBS" target="_blank" rel="noreferrer" className="flex items-center justify-center">
           <BsTwitterX className="w-6 h-6" />
         </a>

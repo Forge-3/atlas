@@ -8,6 +8,7 @@ import SpacesList from "../components/Space/SpacesList/index.tsx";
 import Task from "../components/Task/index.tsx";
 import {
   DISCORD_CALLBACK_PATH,
+  HELP,
   REVIEW_SUMMATIONS_PATH,
   SPACE_BUILDER_PATH,
   SPACE_EDIT_PATH,
@@ -18,6 +19,7 @@ import {
 } from "./paths.ts";
 import Submissions from "../components/Submissions/index.tsx";
 import Wallet from "../components/Wallet/index.tsx";
+import Help from "../components/Help/index.tsx";
 
 const Router = () => {
   return (
@@ -31,6 +33,7 @@ const Router = () => {
       <Route path={TASK_PATH} element={<Task />} />
       <Route path={REVIEW_SUMMATIONS_PATH} element={<Submissions />} />
       <Route path={WALLET} element={<Wallet />} />
+      <Route path={HELP} element={<Help />} />
     </Routes>
   );
 };

@@ -18,19 +18,12 @@ import { FiLogOut, FiCopy } from "react-icons/fi";
 import { copy } from "../../utils/shared.ts";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../store/store.ts";
-import {
-  useUnAuthAtlasMainActor,
-} from "../../hooks/identityKit.ts";
+import { useUnAuthAtlasMainActor } from "../../hooks/identityKit.ts";
 import {
   selectUserBlockchainData,
   selectUserCkUsdc,
-  selectUserHub,
 } from "../../store/slices/userSlice.ts";
-import {
-  getAtlasConfig,
-  getAtlasUser,
-  getAtlasUserIsInHub,
-} from "../../canisters/atlasMain/api.ts";
+import { getAtlasConfig, getAtlasUser } from "../../canisters/atlasMain/api.ts";
 import { SPACE_BUILDER_PATH, SPACES_PATH, WALLET } from "../../router/paths.ts";
 import { formatUnits } from "ethers";
 import { DECIMALS } from "../../canisters/ckUsdcLedger/constans.ts";
@@ -65,7 +58,6 @@ const DropdownMenuComponent = ({
   const appConfig = useSelector(
     (state: RootState) => state.app.blockchainConfig
   );
-  const isUserInHub = useSelector(selectUserHub);
 
   const copyAccount = () => {
     copy(connectedAccount);
@@ -98,37 +90,26 @@ const DropdownMenuComponent = ({
           unAuthAtlasMain,
         });
       }
-      if (isUserInHub == null) {
-        getAtlasUserIsInHub({
-          dispatch,
-          userId: user.principal,
-          unAuthAtlasMain,
-        });
-      }
     }
   }, [unAuthAtlasMain, user, dispatch]);
 
   getCkUsdcBalance({
-    dispatch
+    dispatch,
   });
   const userCkUsdc = useSelector(selectUserCkUsdc);
   const parsedUserCkUsdc =
-    userCkUsdc !== null
-      ? formatUnits(userCkUsdc, DECIMALS)
-      : null;
+    userCkUsdc !== null ? formatUnits(userCkUsdc, DECIMALS) : null;
 
   const ownedSpacesCount = userBlockchainData?.owned_spaces.length;
+  const userCanCreateSpace =
+    (userBlockchainData?.isSpaceLead() &&
+      ownedSpacesCount !== undefined &&
+      appConfig?.spaces_per_space_lead !== undefined &&
+      ownedSpacesCount < appConfig?.spaces_per_space_lead) ??
+    false;
+
   const navigateToSpaceBuilder = () => {
-    if (
-      ownedSpacesCount === undefined ||
-      appConfig?.spaces_per_space_lead === undefined
-    ) {
-      return;
-    }
-    if (
-      ownedSpacesCount < appConfig?.spaces_per_space_lead &&
-      userBlockchainData?.isSpaceLead()
-    ) {
+    if (userCanCreateSpace) {
       navigate(SPACE_BUILDER_PATH);
       return;
     }
@@ -154,9 +135,12 @@ const DropdownMenuComponent = ({
         </MenuItem>
         {parsedUserCkUsdc !== null && (
           <MenuItem>
-            <a className="flex justify-center items-center gap-2 mt-2 w-full" href={WALLET}>
+            <a
+              className="flex justify-center items-center gap-2 mt-2 w-full"
+              href={WALLET}
+            >
               <div>
-                <WalletIcon className="h-9"/>
+                <WalletIcon className="h-9" />
               </div>
               <div className="bg-[#9173FF]/20 h-full font-montserrat font-medium px-4 py-2 rounded-md flex-1 text-center flex-1">
                 {parsedUserCkUsdc} XP
@@ -175,19 +159,16 @@ const DropdownMenuComponent = ({
             </div>
           </button>
         </MenuItem>
-        {userBlockchainData?.isSpaceLead() &&
-          ownedSpacesCount !== undefined &&
-          appConfig?.spaces_per_space_lead !== undefined &&
-          ownedSpacesCount < appConfig?.spaces_per_space_lead && (
-            <MenuItem>
-              <button
-                className="bg-[#1E0F33] font-montserrat font-medium px-4 py-2 rounded-md mt-2 text-center w-full flex items-center justify-center gap-1"
-                onClick={navigateToSpaceBuilder}
-              >
-                Create new space <FaPlus />
-              </button>
-            </MenuItem>
-          )}
+        {userCanCreateSpace && (
+          <MenuItem>
+            <button
+              className="bg-[#1E0F33] font-montserrat font-medium px-4 py-2 rounded-md mt-2 text-center w-full flex items-center justify-center gap-1"
+              onClick={navigateToSpaceBuilder}
+            >
+              Create new space <FaPlus />
+            </button>
+          </MenuItem>
+        )}
         <MenuItem>
           <button
             className="bg-[#9173FF] flex items-center justify-center w-full font-montserrat font-medium px-4 py-1 rounded-md mt-2"
@@ -210,7 +191,7 @@ const Navbar = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   getCkUsdcBalance({
-    dispatch
+    dispatch,
   });
 
   return (

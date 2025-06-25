@@ -81,12 +81,13 @@ export const idlFactory = ({ IDL }) => {
   const Result_1 = IDL.Variant({ 'Ok' : GetSpacesRes, 'Err' : Error });
   const GetUserBy = IDL.Variant({ 'Principal' : IDL.Principal });
   const Integrations = IDL.Record({ 'discord_id' : IDL.Opt(IDL.Text) });
-  const User = IDL.Record({
+  const CandidUser = IDL.Record({
     'integrations' : Integrations,
     'rank' : Rank,
+    'in_hub' : IDL.Opt(Space),
     'space_creation_in_progress' : IDL.Bool,
-    'belonging_to_spaces' : IDL.Vec(IDL.Nat64),
-    'owned_spaces' : IDL.Vec(IDL.Nat64),
+    'belonging_to_spaces' : IDL.Vec(Space),
+    'owned_spaces' : IDL.Vec(Space),
   });
   const Result_2 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });
   const WalletReceiveResult = IDL.Record({ 'accepted' : IDL.Nat64 });
@@ -112,7 +113,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'get_spaces' : IDL.Func([GetSpacesArgs], [Result_1], ['query']),
-    'get_user' : IDL.Func([GetUserBy], [User], ['query']),
+    'get_user' : IDL.Func([GetUserBy], [CandidUser], ['query']),
     'get_user_hub' : IDL.Func([IDL.Principal], [IDL.Opt(Space)], ['query']),
     'join_space' : IDL.Func([IDL.Principal], [Result_2], []),
     'set_user_admin' : IDL.Func([IDL.Principal], [Result_2], []),

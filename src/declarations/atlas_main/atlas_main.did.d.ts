@@ -9,6 +9,14 @@ export type AtlasArgs = {
     }
   } |
   { 'InitArg' : Config };
+export interface CandidUser {
+  'integrations' : Integrations,
+  'rank' : Rank,
+  'in_hub' : [] | [Space],
+  'space_creation_in_progress' : boolean,
+  'belonging_to_spaces' : Array<Space>,
+  'owned_spaces' : Array<Space>,
+}
 export interface CkUsdcLedger { 'fee' : [] | [bigint], 'principal' : Principal }
 export interface CkUsdcLedger_1 {
   'fee' : [] | [bigint],
@@ -74,13 +82,6 @@ export interface UpdateConfig {
   'spaces_per_space_lead' : [] | [number],
   'ckusdc_ledger' : [] | [CkUsdcLedger_1],
 }
-export interface User {
-  'integrations' : Integrations,
-  'rank' : Rank,
-  'space_creation_in_progress' : boolean,
-  'belonging_to_spaces' : BigUint64Array | bigint[],
-  'owned_spaces' : BigUint64Array | bigint[],
-}
 export interface WalletReceiveResult { 'accepted' : bigint }
 export interface _SERVICE {
   'app_config' : ActorMethod<[], Config>,
@@ -102,7 +103,7 @@ export interface _SERVICE {
     [] | [Uint8Array | number[]]
   >,
   'get_spaces' : ActorMethod<[GetSpacesArgs], Result_1>,
-  'get_user' : ActorMethod<[GetUserBy], User>,
+  'get_user' : ActorMethod<[GetUserBy], CandidUser>,
   'get_user_hub' : ActorMethod<[Principal], [] | [Space]>,
   'join_space' : ActorMethod<[Principal], Result_2>,
   'set_user_admin' : ActorMethod<[Principal], Result_2>,
