@@ -19,22 +19,26 @@ const SpacePage = () => {
   const dispatch = useDispatch();
   const { spacePrincipal } = useParams();
   const navigate = useNavigate();
+  const agent = useUnAuthAgent();
 
   const principal = useSpaceId({
     spacePrincipal,
     navigate,
   });
-  if (!principal) return <></>;
+  if (!principal) {
+    navigate("/")
+    return <></>;
+  }
   const spaceId = principal.toString();
   const space = useSelector(
     (state: RootState) => state.spaces?.spaces?.[principal.toString()] ?? null
   );
-  const tasks = space?.tasks ? deserify(space?.tasks, customSerify) as {
-    [key: string]: Task;
-  } : null;
+  const tasks = space?.tasks
+    ? (deserify(space?.tasks, customSerify) as {
+        [key: string]: Task;
+      })
+    : null;
   const spaceData = space?.state;
-
-  const agent = useUnAuthAgent();
 
   useEffect(() => {
     if (!agent || spaceData) return;
@@ -65,9 +69,9 @@ const SpacePage = () => {
       spaceId={principal}
       name={spaceData.space_name}
       description={spaceData.space_description}
-      symbol={spaceData.space_symbol}
       backgroundImg={spaceData.space_background}
       avatarImg={spaceData.space_logo}
+      externalLinks={spaceData.external_links}
       tasks={tasks === null ? undefined : tasks}
     />
   );

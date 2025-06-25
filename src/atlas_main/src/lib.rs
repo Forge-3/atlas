@@ -14,10 +14,11 @@ use crate::config::Config;
 use crate::cycles::WalletReceiveResult;
 use crate::errors::Error;
 use crate::lifecycle::AtlasArgs;
-use crate::methods::query::{GetSpacesArgs, GetSpacesRes, GetUserBy};
+use crate::methods::query::{CandidUser, GetSpacesArgs, GetSpacesRes, GetUserBy};
 use crate::space::Space;
 use crate::space::SpaceType;
-use crate::user::User;
+
+use std::collections::BTreeMap;
 
 use candid::{Nat, Principal};
 

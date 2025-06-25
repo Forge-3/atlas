@@ -3,7 +3,7 @@ import InfoBox from "./InfoBox.tsx";
 import type { Task } from "../../../../../declarations/atlas_space/atlas_space.did";
 import { useNavigate } from "react-router-dom";
 import { formatUnits } from "ethers";
-import { DECIMALS } from "../../../canisters/ckUSDC/constans.ts";
+import { DECIMALS } from "../../../canisters/ckUsdcLedger/constans.ts";
 import type { Principal } from "@dfinity/principal";
 import { getTaskPath } from "../../../router/paths.ts";
 
@@ -22,6 +22,7 @@ const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
   const lastTask = task.tasks.at(-1)?.GenericTask.submission.filter(([, submission]) => 'Accepted' in submission.state)
 
   return (
+    <div className="w-[20rem]">
     <a className="rounded-xl bg-gradient-to-b from-[#9173FF] to-transparent to-[150%] flex flex-col" onClick={() => navigate(getTaskPath(spaceId, id))}>
       <div
         className={`h-40 p-4 rounded-t-xl ${
@@ -45,6 +46,7 @@ const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
         </div>
       </div>
     </a>
+    </div>
   );
 };
 

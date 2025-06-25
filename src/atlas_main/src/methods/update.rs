@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use candid::{Encode, Principal};
 use ic_cdk::{
     api::management_canister::main::{CanisterInstallMode, InstallCodeArgument},
@@ -48,6 +50,7 @@ pub async fn create_new_space(
     space_logo: Option<String>,
     space_background: Option<String>,
     space_type: SpaceType,
+    external_links: BTreeMap<String, String>,
 ) -> Result<Space, Error> {
     let caller = authenticated_guard()?;
     let user = memory::user_rank_match(&caller, &[Rank::SpaceLead])?;
@@ -82,6 +85,7 @@ pub async fn create_new_space(
             fee: config.ckusdc_ledger.fee,
         },
         current_wasm_version: config.current_space_version,
+        external_links,
     };
     let space = Space::create_space(space_init_args, space_type).await;
     memory::mut_user(caller, |maybe_user| {

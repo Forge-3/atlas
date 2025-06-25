@@ -9,6 +9,13 @@ export interface CreateTaskArgs {
   'task_content' : Array<TaskContent>,
   'number_of_uses' : bigint,
 }
+export interface EditSpaceArgs {
+  'external_links' : Array<[string, string]>,
+  'space_background' : [] | [string],
+  'space_logo' : [] | [string],
+  'space_name' : string,
+  'space_description' : string,
+}
 export type Error = { 'BytecodeUpToDate' : null } |
   { 'NotParent' : null } |
   { 'UsageLimitExceeded' : null } |
@@ -45,6 +52,7 @@ export type Result_2 = { 'Ok' : GetTasksRes } |
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
   { 'InitArg' : SpaceInitArg };
 export interface SpaceInitArg {
+  'external_links' : Array<[string, string]>,
   'owner' : Principal,
   'ckusdc_ledger' : CkUsdcLedger,
   'space_symbol' : [] | [string],
@@ -55,6 +63,7 @@ export interface SpaceInitArg {
   'space_description' : string,
 }
 export interface State {
+  'external_links' : Array<[string, string]>,
   'space_symbol' : [] | [string],
   'space_background' : [] | [string],
   'space_logo' : [] | [string],
@@ -98,6 +107,7 @@ export interface _SERVICE {
     Result
   >,
   'create_task' : ActorMethod<[CreateTaskArgs], Result_1>,
+  'edit_space' : ActorMethod<[EditSpaceArgs], Result>,
   'get_closed_tasks' : ActorMethod<[GetTasksArgs], Result_2>,
   'get_current_bytecode_version' : ActorMethod<[], bigint>,
   'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_2>,

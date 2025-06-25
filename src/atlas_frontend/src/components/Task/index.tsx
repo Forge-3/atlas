@@ -6,8 +6,17 @@ import { customSerify, type RootState } from "../../store/store";
 import { deserify } from "@karmaniverous/serify-deserify";
 import type { Task as TaskType } from "../../../../declarations/atlas_space/atlas_space.did";
 import { useEffect } from "react";
-import { useAuthAtlasSpaceActor, useUnAuthAtlasSpaceActor } from "../../hooks/identityKit";
-import { getAtlasSpace, getSpaceTasks, withdrawReward } from "../../canisters/atlasSpace/api";
+import {
+  useAuthAtlasMainActor,
+  useAuthAtlasSpaceActor,
+  useUnAuthAtlasMainActor,
+  useUnAuthAtlasSpaceActor,
+} from "../../hooks/identityKit";
+import {
+  getAtlasSpace,
+  getSpaceTasks,
+  withdrawReward,
+} from "../../canisters/atlasSpace/api";
 import GenericTask from "./tasks/GenericTask";
 import { FaWallet } from "react-icons/fa";
 import { useAuth } from "@nfid/identitykit/react";
@@ -19,6 +28,11 @@ import {
   UserSubmissions,
 } from "../../canisters/atlasSpace/tasks";
 import toast from "react-hot-toast";
+import {
+  getAtlasUser,
+  
+  joinAtlasSpace,
+} from "../../canisters/atlasMain/api";
 
 const Task = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -26,16 +40,18 @@ const Task = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const userBlockchainData = useSelector(selectUserBlockchainData);
-
-  const principal = useSpaceId({
+  const inHub = userBlockchainData?.in_hub ?? null;
+  const authAtlasMain = useAuthAtlasMainActor();
+  const unAuthAtlasMain = useUnAuthAtlasMainActor();
+  const parsedSpacePrincipal = useSpaceId({
     spacePrincipal,
     navigate,
   });
-  if (!principal) return <></>;
-  const spaceId = principal.toString();
-  const authAtlasSpace = useAuthAtlasSpaceActor(principal);
+  if (!parsedSpacePrincipal) return <></>;
+  const spaceId = parsedSpacePrincipal.toString();
+  const authAtlasSpace = useAuthAtlasSpaceActor(parsedSpacePrincipal);
   const space = useSelector(
-    (state: RootState) => state.spaces?.spaces?.[principal.toString()] ?? null
+    (state: RootState) => state.spaces?.spaces?.[spaceId] ?? null
   );
   const tasks = space?.tasks
     ? (deserify(space?.tasks, customSerify) as {
@@ -43,7 +59,8 @@ const Task = () => {
       })
     : null;
   const spaceData = space?.state;
-  const unAuthAtlasSpace = useUnAuthAtlasSpaceActor(principal);
+  const unAuthAtlasSpace = useUnAuthAtlasSpaceActor(parsedSpacePrincipal);
+  const isUserInHub = inHub?.id.toString() === spacePrincipal;
 
   useEffect(() => {
     if (!unAuthAtlasSpace || spaceData) return;
@@ -52,7 +69,7 @@ const Task = () => {
       unAuthAtlasSpace,
       dispatch,
     });
-  }, [dispatch, unAuthAtlasSpace, spaceData, principal]);
+  }, [dispatch, unAuthAtlasSpace, spaceData, parsedSpacePrincipal]);
 
   useEffect(() => {
     if (!unAuthAtlasSpace || tasks) return;
@@ -61,7 +78,7 @@ const Task = () => {
       unAuthAtlasSpace,
       dispatch,
     });
-  }, [dispatch, unAuthAtlasSpace, tasks, principal]);
+  }, [dispatch, unAuthAtlasSpace, tasks, parsedSpacePrincipal]);
 
   if (!tasks || !taskId) return <></>;
   const currentTask = tasks[taskId];
@@ -75,36 +92,71 @@ const Task = () => {
     : new UserSubmissions({});
 
   if (!user?.principal) return <></>;
-
   const isAccepted = usersSubmissions.isAccepted(user.principal.toText());
+  const userAlreadyRewarded = currentTask.rewarded.includes(user.principal);
 
   const withdraw = async () => {
     if (!authAtlasSpace) {
-      navigate("/")
+      navigate("/");
       return;
     }
-    await toast.promise(withdrawReward({
-      authAtlasSpace,
-      taskId: BigInt(taskId)
-    }), {
-      loading: "Withdrawing funds...",
-      success: "Funds withdrawn successfully.",
-      error: "Failed to withdraw funds",
+    await toast.promise(
+      withdrawReward({
+        authAtlasSpace,
+        taskId: BigInt(taskId),
+      }),
+      {
+        loading: "Withdrawing funds...",
+        success: "Funds withdrawn successfully.",
+        error: "Failed to withdraw funds",
+      }
+    );
+  };
+
+  const didUserCanAdministrate =
+    (user &&
+      userBlockchainData?.isSpaceLead() &&
+      userBlockchainData?.ownSpaces(parsedSpacePrincipal)) ??
+    false;
+
+  const joinSpace = async () => {
+    if (!authAtlasMain || !unAuthAtlasMain || !user) {
+      return;
+    }
+    await toast.promise(
+      joinAtlasSpace({
+        authAtlasMain,
+        space: parsedSpacePrincipal,
+      }),
+      {
+        loading: "Trying to join space...",
+        success: "Succesfully joined to space",
+        error: "Failed to join to space",
+      }
+    );
+    getAtlasUser({
+      unAuthAtlasMain,
+      dispatch,
+      userId: user.principal,
     });
-  }
+  };
 
   return (
     <div className="container mx-auto my-4">
       <div className="w-full px-3">
-        {user && userBlockchainData?.isSpaceLead() && (
-          <div className="mb-2 flex justify-end">
+        <div className="my-4 flex justify-end">
+          {userBlockchainData && !inHub && <Button onClick={joinSpace}>Join space</Button>}
+          {didUserCanAdministrate && (
             <Button
-              onClick={() => navigate(getSubmissionsPath(principal, taskId))}
+              onClick={() =>
+                navigate(getSubmissionsPath(parsedSpacePrincipal, taskId))
+              }
             >
               Review submission
             </Button>
-          </div>
-        )}
+          )}
+        </div>
+
         <div className="relative w-full rounded-xl bg-[#1E0F33]/60 mb-1">
           <div className="px-16 py-12">
             <div className="flex items-center gap-4">
@@ -136,10 +188,11 @@ const Task = () => {
                     <GenericTask
                       key={key}
                       genericTask={task.GenericTask}
-                      spacePrincipal={principal}
+                      spacePrincipal={parsedSpacePrincipal}
                       taskId={taskId}
                       subtaskId={key}
                       unAuthAtlasSpace={unAuthAtlasSpace}
+                      isUserInHub={isUserInHub}
                     />
                   ))}
                 </div>
@@ -159,7 +212,7 @@ const Task = () => {
                     <FaWallet color="1E0F33" />
                   </div>
                 </div>
-                {isAccepted && (
+                {isAccepted && !userAlreadyRewarded && (
                   <div className="flex justify-end mt-4">
                     <Button onClick={withdraw}>Withdraw reward</Button>
                   </div>

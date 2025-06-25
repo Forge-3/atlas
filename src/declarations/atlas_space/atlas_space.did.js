@@ -4,6 +4,7 @@ export const idlFactory = ({ IDL }) => {
     'principal' : IDL.Principal,
   });
   const SpaceInitArg = IDL.Record({
+    'external_links' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     'owner' : IDL.Principal,
     'ckusdc_ledger' : CkUsdcLedger,
     'space_symbol' : IDL.Opt(IDL.Text),
@@ -58,6 +59,13 @@ export const idlFactory = ({ IDL }) => {
     'number_of_uses' : IDL.Nat64,
   });
   const Result_1 = IDL.Variant({ 'Ok' : IDL.Nat64, 'Err' : Error });
+  const EditSpaceArgs = IDL.Record({
+    'external_links' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
+    'space_background' : IDL.Opt(IDL.Text),
+    'space_logo' : IDL.Opt(IDL.Text),
+    'space_name' : IDL.Text,
+    'space_description' : IDL.Text,
+  });
   const GetTasksArgs = IDL.Record({ 'count' : IDL.Nat64, 'start' : IDL.Nat64 });
   const SubmissionState = IDL.Variant({
     'Rejected' : IDL.Null,
@@ -91,6 +99,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const Result_2 = IDL.Variant({ 'Ok' : GetTasksRes, 'Err' : Error });
   const State = IDL.Record({
+    'external_links' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     'space_symbol' : IDL.Opt(IDL.Text),
     'space_background' : IDL.Opt(IDL.Text),
     'space_logo' : IDL.Opt(IDL.Text),
@@ -106,6 +115,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'create_task' : IDL.Func([CreateTaskArgs], [Result_1], []),
+    'edit_space' : IDL.Func([EditSpaceArgs], [Result], []),
     'get_closed_tasks' : IDL.Func([GetTasksArgs], [Result_2], ['query']),
     'get_current_bytecode_version' : IDL.Func([], [IDL.Nat64], ['query']),
     'get_open_tasks' : IDL.Func([GetTasksArgs], [Result_2], ['query']),
@@ -135,6 +145,7 @@ export const init = ({ IDL }) => {
     'principal' : IDL.Principal,
   });
   const SpaceInitArg = IDL.Record({
+    'external_links' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     'owner' : IDL.Principal,
     'ckusdc_ledger' : CkUsdcLedger,
     'space_symbol' : IDL.Opt(IDL.Text),

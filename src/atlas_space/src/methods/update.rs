@@ -1,13 +1,17 @@
+use std::collections::BTreeMap;
+
 use crate::{
     errors::Error,
     guard::{parent_or_owner_or_admin_guard, user_is_in_space},
     memory,
+    state::EditSpaceArgs,
     task::{submission::Submission, CreateTaskArgs, Task, TaskId},
 };
 
-use candid::Principal;
+use candid::{CandidType, Principal};
 use ic_cdk::update;
 use ic_stable_structures::Storable;
+use serde::Deserialize;
 use sha2::Digest;
 
 #[update]
@@ -35,10 +39,18 @@ pub async fn set_space_logo(logo: String) -> Result<(), Error> {
 }
 
 #[update]
-pub async fn set_space_background(space_background: String) -> Result<(), Error> {
+pub async fn set_space_background(background: String) -> Result<(), Error> {
     parent_or_owner_or_admin_guard().await?;
 
-    memory::mut_state(|state| state.set_space_background(space_background));
+    memory::mut_state(|state| state.set_space_background(background));
+    Ok(())
+}
+
+#[update]
+pub async fn edit_space(edit_space_args: EditSpaceArgs) -> Result<(), Error> {
+    parent_or_owner_or_admin_guard().await?;
+
+    memory::mut_state(|state| state.edit_space(edit_space_args));
     Ok(())
 }
 

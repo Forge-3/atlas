@@ -1,6 +1,7 @@
 import type { ActorSubclass } from "@dfinity/agent";
 import type {
   _SERVICE as _SERVICE_MAIN,
+  CandidUser,
   GetSpacesRes,
   Space,
 } from "../../../../declarations/atlas_main/atlas_main.did.js";
@@ -8,15 +9,15 @@ import type { Principal } from "@dfinity/principal";
 import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import {
-  setIsUserInHub,
   setUserBlockchainData,
 } from "../../store/slices/userSlice.js";
 import { unwrapCall } from "../delegatedCall.js";
 import { setConfig } from "../../store/slices/appSlice.js";
 import type { _SERVICE as _SERVICE_SPACE } from "../../../../declarations/atlas_space/atlas_space.did.js";
 import { setSpaces } from "../../store/slices/spacesSlice.js";
+import type { ExternalLinks } from "../atlasSpace/types.js";
+import { serify } from "@karmaniverous/serify-deserify";
 import { customSerify } from "../../store/store.js";
-import { deserify, serify } from "@karmaniverous/serify-deserify";
 
 interface CreateNewSpaceArgs {
   authAtlasMain: ActorSubclass<_SERVICE_MAIN>;
@@ -25,6 +26,7 @@ interface CreateNewSpaceArgs {
   symbol: string | null;
   logo: string | null;
   background: string | null;
+  externalLinks: ExternalLinks;
 }
 export const createNewSpace = async ({
   authAtlasMain,
@@ -33,14 +35,19 @@ export const createNewSpace = async ({
   symbol,
   logo,
   background,
+  externalLinks,
 }: CreateNewSpaceArgs) => {
+  const externalLinksArray = Object.entries(externalLinks).filter(
+    ([_, value]) => value !== null
+  ) as [string, string][];
   const call = authAtlasMain.create_new_space(
     name,
     description,
     symbol ? [symbol] : [],
     logo ? [logo] : [],
     background ? [background] : [],
-    { HUB: null }
+    { HUB: null },
+    externalLinksArray
   );
 
   return unwrapCall<Space>({
@@ -63,28 +70,19 @@ export const getAtlasUser = async ({
   const userData = await unAuthAtlasMain.get_user({
     Principal: userId,
   });
-  dispatch(
-    setUserBlockchainData({
-      ...userData,
-      owned_spaces: Array.from(userData.owned_spaces),
-      belonging_to_spaces: Array.from(userData.owned_spaces),
-    })
-  );
-};
 
-export const getAtlasUserIsInHub = async ({
-  unAuthAtlasMain,
-  userId,
-  dispatch,
-}: GetAtlasUserArgs) => {
-  const isInHub = await unAuthAtlasMain.get_user_hub(userId);
-  const principal = isInHub.pop()?.id;
-  if (principal) {
-    
-    dispatch(setIsUserInHub(serify(principal, customSerify) as Principal));
-  } else {
-    dispatch(setIsUserInHub(null));
-  }
+  dispatch(
+    setUserBlockchainData(
+      serify(
+        {
+          ...userData,
+          owned_spaces: Array.from(userData.owned_spaces),
+          belonging_to_spaces: Array.from(userData.owned_spaces),
+        },
+        customSerify
+      ) as CandidUser
+    )
+  );
 };
 
 interface GetAtlasData {
@@ -132,6 +130,7 @@ export const getAllSpaces = async ({
   }, {});
 
   dispatch(setSpaces(spacesList));
+  return spacesList;
 };
 
 export const getAtlasConfig = async ({

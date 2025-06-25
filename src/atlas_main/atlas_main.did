@@ -5,6 +5,14 @@ type AtlasArgs = variant {
   };
   InitArg : Config;
 };
+type CandidUser = record {
+  integrations : Integrations;
+  rank : Rank;
+  in_hub : opt Space;
+  space_creation_in_progress : bool;
+  belonging_to_spaces : vec Space;
+  owned_spaces : vec Space;
+};
 type CkUsdcLedger = record { fee : opt nat; "principal" : principal };
 type CkUsdcLedger_1 = record { fee : opt nat; "principal" : principal };
 type Config = record {
@@ -20,7 +28,7 @@ type Error = variant {
   UserRichSpaceLimit : record { found : nat64; expected : nat64 };
   UserRankToHigh : record { found : Rank; expected : Rank };
   UserAlreadyHaveExpectedRank : Rank;
-  UserNotAnOwner : Space;
+  UserNotAnOwner : principal;
   CountToHigh : record { max : nat64; found : nat64 };
   SpaceNotExist;
   FailedToGetCanisterInfo : text;
@@ -47,6 +55,7 @@ type SpaceArgs = variant {
   InitArg : SpaceInitArg;
 };
 type SpaceInitArg = record {
+  external_links : vec record { text; text };
   owner : principal;
   ckusdc_ledger : CkUsdcLedger_1;
   space_symbol : opt text;
@@ -61,28 +70,27 @@ type UpdateConfig = record {
   spaces_per_space_lead : opt nat8;
   ckusdc_ledger : opt CkUsdcLedger_1;
 };
-type User = record {
-  integrations : Integrations;
-  rank : Rank;
-  space_creation_in_progress : bool;
-  belonging_to_spaces : vec nat64;
-  owned_spaces : vec nat64;
-};
 type WalletReceiveResult = record { accepted : nat64 };
 service : (AtlasArgs) -> {
   app_config : () -> (Config) query;
-  create_new_space : (text, text, opt text, opt text, opt text, SpaceType) -> (
-      Result,
-    );
+  create_new_space : (
+      text,
+      text,
+      opt text,
+      opt text,
+      opt text,
+      SpaceType,
+      vec record { text; text },
+    ) -> (Result);
   get_current_space_bytecode_version : () -> (nat64) query;
   get_space_bytecode_by_version : (nat64) -> (opt blob) query;
   get_spaces : (GetSpacesArgs) -> (Result_1) query;
-  get_user : (GetUserBy) -> (User) query;
+  get_user : (GetUserBy) -> (CandidUser) query;
   get_user_hub : (principal) -> (opt Space) query;
   join_space : (principal) -> (Result_2);
   set_user_admin : (principal) -> (Result_2);
   set_user_space_lead : (principal) -> (Result_2);
-  upgrade_space : (Space) -> (Result_2);
+  upgrade_space : (principal) -> (Result_2);
   user_is_admin : (principal) -> (bool) query;
   user_is_in_hub : (principal) -> (bool) query;
   user_is_in_space : (principal, principal) -> (bool) query;

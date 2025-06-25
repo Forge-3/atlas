@@ -4,6 +4,7 @@ export const idlFactory = ({ IDL }) => {
     'principal' : IDL.Principal,
   });
   const SpaceInitArg = IDL.Record({
+    'external_links' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     'owner' : IDL.Principal,
     'ckusdc_ledger' : CkUsdcLedger_1,
     'space_symbol' : IDL.Opt(IDL.Text),
@@ -55,7 +56,7 @@ export const idlFactory = ({ IDL }) => {
     }),
     'UserRankToHigh' : IDL.Record({ 'found' : Rank, 'expected' : Rank }),
     'UserAlreadyHaveExpectedRank' : Rank,
-    'UserNotAnOwner' : Space,
+    'UserNotAnOwner' : IDL.Principal,
     'CountToHigh' : IDL.Record({ 'max' : IDL.Nat64, 'found' : IDL.Nat64 }),
     'SpaceNotExist' : IDL.Null,
     'FailedToGetCanisterInfo' : IDL.Text,
@@ -80,12 +81,13 @@ export const idlFactory = ({ IDL }) => {
   const Result_1 = IDL.Variant({ 'Ok' : GetSpacesRes, 'Err' : Error });
   const GetUserBy = IDL.Variant({ 'Principal' : IDL.Principal });
   const Integrations = IDL.Record({ 'discord_id' : IDL.Opt(IDL.Text) });
-  const User = IDL.Record({
+  const CandidUser = IDL.Record({
     'integrations' : Integrations,
     'rank' : Rank,
+    'in_hub' : IDL.Opt(Space),
     'space_creation_in_progress' : IDL.Bool,
-    'belonging_to_spaces' : IDL.Vec(IDL.Nat64),
-    'owned_spaces' : IDL.Vec(IDL.Nat64),
+    'belonging_to_spaces' : IDL.Vec(Space),
+    'owned_spaces' : IDL.Vec(Space),
   });
   const Result_2 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });
   const WalletReceiveResult = IDL.Record({ 'accepted' : IDL.Nat64 });
@@ -99,6 +101,7 @@ export const idlFactory = ({ IDL }) => {
           IDL.Opt(IDL.Text),
           IDL.Opt(IDL.Text),
           SpaceType,
+          IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
         ],
         [Result],
         [],
@@ -110,12 +113,12 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'get_spaces' : IDL.Func([GetSpacesArgs], [Result_1], ['query']),
-    'get_user' : IDL.Func([GetUserBy], [User], ['query']),
+    'get_user' : IDL.Func([GetUserBy], [CandidUser], ['query']),
     'get_user_hub' : IDL.Func([IDL.Principal], [IDL.Opt(Space)], ['query']),
     'join_space' : IDL.Func([IDL.Principal], [Result_2], []),
     'set_user_admin' : IDL.Func([IDL.Principal], [Result_2], []),
     'set_user_space_lead' : IDL.Func([IDL.Principal], [Result_2], []),
-    'upgrade_space' : IDL.Func([Space], [Result_2], []),
+    'upgrade_space' : IDL.Func([IDL.Principal], [Result_2], []),
     'user_is_admin' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
     'user_is_in_hub' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
     'user_is_in_space' : IDL.Func(
@@ -133,6 +136,7 @@ export const init = ({ IDL }) => {
     'principal' : IDL.Principal,
   });
   const SpaceInitArg = IDL.Record({
+    'external_links' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     'owner' : IDL.Principal,
     'ckusdc_ledger' : CkUsdcLedger_1,
     'space_symbol' : IDL.Opt(IDL.Text),

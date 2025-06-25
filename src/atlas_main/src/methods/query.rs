@@ -7,7 +7,7 @@ use crate::{
     errors::Error,
     memory,
     space::{Space, SpaceType},
-    user::{Rank, User},
+    user::{Integrations, Rank},
 };
 
 const MAX_SPACES_PER_RESPONSE: u8 = 200;
@@ -22,10 +22,44 @@ pub enum GetUserBy {
     Principal(Principal),
 }
 
+#[derive(CandidType)]
+pub struct CandidUser {
+    pub(crate) integrations: Integrations,
+    pub(crate) rank: Rank,
+    pub(crate) space_creation_in_progress: bool,
+    pub(crate) owned_spaces: Vec<Space>,
+    pub(crate) belonging_to_spaces: Vec<Space>,
+    pub(crate) in_hub: Option<Space>,
+}
+
 #[query]
-pub fn get_user(by: GetUserBy) -> User {
-    match by {
+pub fn get_user(by: GetUserBy) -> CandidUser {
+    let user = match by {
         GetUserBy::Principal(principal) => memory::get_user(&principal).unwrap_or_default(),
+    };
+    let owned_spaces: Vec<_> = user
+        .owned_spaces()
+        .iter()
+        .map(|space_index| memory::get_space(*space_index).expect("Space do not exist?!"))
+        .collect();
+    let belonging_to_spaces: Vec<_> = user
+        .belonging_to_spaces()
+        .iter()
+        .map(|space_index| memory::get_space(*space_index).expect("Space do not exist?!"))
+        .collect();
+
+    let in_hub = belonging_to_spaces
+        .iter()
+        .find(|space| space.space_type() == SpaceType::HUB)
+        .cloned();
+
+    CandidUser {
+        integrations: user.integrations,
+        rank: user.rank,
+        space_creation_in_progress: user.space_creation_in_progress,
+        owned_spaces,
+        belonging_to_spaces,
+        in_hub,
     }
 }
 
@@ -94,18 +128,12 @@ pub fn user_is_in_space(user: Principal, space_id: Principal) -> bool {
 #[query]
 pub fn user_is_in_hub(user: Principal) -> bool {
     let user = memory::get_user(&user).unwrap_or_default();
-    let belonging_to_spaces = user.belonging_to_spaces();
-    let maybe_space = memory::with_space_vec_iter(|spaces| {
-        spaces.enumerate().find(|(index, space)| {
-            space.space_type() == SpaceType::HUB
-                && belonging_to_spaces.contains(&(*index).try_into().unwrap())
-        })
-    });
-    if let Some((space_index, _)) = maybe_space {
-        belonging_to_spaces.contains(&space_index.try_into().unwrap())
-    } else {
-        false
-    }
+
+    user.belonging_to_spaces()
+        .iter()
+        .map(|space_index| memory::get_space(*space_index).expect("Space do not exist?!"))
+        .find(|space| space.space_type() == SpaceType::HUB)
+        .is_some()
 }
 
 #[query]

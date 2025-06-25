@@ -1,4 +1,6 @@
+import { deserify } from "@karmaniverous/serify-deserify";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { customSerify } from "../store";
 
 export interface StorableConfig {
   spaces_per_space_lead: number;
@@ -27,7 +29,10 @@ export const appSlice = createSlice({
     },
   },
   selectors: {
-    selectBlockchainConfig: (state: AppState) => state.blockchainConfig
+    selectBlockchainConfig: (state: AppState) => {
+      if (state.blockchainConfig) return deserify(state.blockchainConfig, customSerify) as StorableConfig
+      return null
+    }
   }
 });
 

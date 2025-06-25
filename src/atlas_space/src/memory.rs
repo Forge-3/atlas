@@ -143,7 +143,7 @@ pub fn get_open_tasks_len() -> u64 {
 // Closed task methods
 
 pub fn insert_closed_task(task_id: TaskId, new_task: Task) -> Result<(), Error> {
-    OPEN_TASKS_MAP.with_borrow_mut(|tasks| {
+    CLOSED_TASKS_MAP.with_borrow_mut(|tasks| {
         if tasks.contains_key(&task_id) {
             return Err(Error::TaskAlreadyExists(task_id));
         }
@@ -156,9 +156,9 @@ pub fn with_closed_tasks_iter<F, R>(f: F) -> R
 where
     F: for<'a> FnOnce(Box<dyn Iterator<Item = (TaskId, Task)> + 'a>) -> R,
 {
-    OPEN_TASKS_MAP.with_borrow(|tasks| f(Box::new(tasks.iter())))
+    CLOSED_TASKS_MAP.with_borrow(|tasks| f(Box::new(tasks.iter())))
 }
 
 pub fn get_closed_tasks_len() -> u64 {
-    OPEN_TASKS_MAP.with_borrow(|tasks| tasks.len())
+    CLOSED_TASKS_MAP.with_borrow(|tasks| tasks.len())
 }

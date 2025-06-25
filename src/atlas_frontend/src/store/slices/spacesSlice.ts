@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { StorableState } from "../../canisters/atlasSpace/storable";
 import type { Task } from "../../../../declarations/atlas_space/atlas_space.did";
+import type { StorableState } from "../../canisters/atlasSpace/types";
 
 type Spaces = {
   [key: string]: {

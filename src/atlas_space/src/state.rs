@@ -1,8 +1,9 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::BTreeMap};
 
 use candid::CandidType;
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
+use serde::Deserialize;
 use shared::SpaceInitArg;
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Default, Clone, CandidType)]
@@ -19,6 +20,8 @@ pub struct State {
     space_symbol: Option<String>,
     #[n(5)]
     tasks_count: u64,
+    #[n(6)]
+    external_links: BTreeMap<String, String>,
 }
 
 impl State {
@@ -58,6 +61,14 @@ impl State {
         self.tasks_count = next_task_id;
         next_task_id
     }
+
+    pub fn edit_space(&mut self, edit_space_args: EditSpaceArgs) {
+        self.space_logo = edit_space_args.space_logo;
+        self.space_background = edit_space_args.space_background;
+        self.space_name = edit_space_args.space_name;
+        self.space_description = edit_space_args.space_description;
+        self.external_links = edit_space_args.external_links;
+    }
 }
 
 impl From<SpaceInitArg> for State {
@@ -69,6 +80,7 @@ impl From<SpaceInitArg> for State {
             space_background: init_args.space_background,
             space_symbol: init_args.space_symbol,
             tasks_count: 0,
+            external_links: init_args.external_links,
         }
     }
 }
@@ -86,4 +98,13 @@ impl Storable for State {
     }
 
     const BOUND: Bound = Bound::Unbounded;
+}
+
+#[derive(Debug, CandidType, Deserialize)]
+pub struct EditSpaceArgs {
+    space_logo: Option<String>,
+    space_background: Option<String>,
+    space_name: String,
+    space_description: String,
+    external_links: BTreeMap<String, String>,
 }

@@ -10,7 +10,7 @@ const ReferralCard = ({
   subtitle,
 }: ReferralCardProps) => {
   return (
-    <div className="rounded-2xl pl-3  bg-[#9173FF] h-[457px] flex flex-col justify-between shadow-lg shadow-[#1E0F33]/50 max-w-[418px] sm:w-[45%]  dlg:w-[30%]">
+    <div className="rounded-2xl pl-3  bg-[#9173FF] h-96 flex flex-col justify-between shadow-lg shadow-[#1E0F33]/50 max-w-[418px] sm:w-[45%]  dlg:w-[30%]">
       <div className="flex gap-4 p-4">
         <img
           src="/logos/small-white-logo.png"

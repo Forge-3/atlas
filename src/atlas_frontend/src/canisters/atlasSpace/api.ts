@@ -14,6 +14,8 @@ import { storableState } from "./storable.js";
 import { serify } from "@karmaniverous/serify-deserify";
 import { customSerify } from "../../store/store.js";
 import type { Principal } from "@dfinity/principal";
+import type { ExternalLinks } from "./types.js";
+import { keyframes } from "framer-motion";
 
 interface GetAtlasSpaceArgs {
   unAuthAtlasSpace: ActorSubclass<_SERVICE>;
@@ -208,5 +210,36 @@ export const withdrawReward = async ({
   await unwrapCall<null>({
     call,
     errMsg: "Failed to withdraw rewards",
+  });
+};
+
+interface EditSpaceArgs {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  name: string;
+  description: string;
+  logo: string | null;
+  background: string | null;
+  externalLinks: ExternalLinks;
+}
+
+export const editSpace = async ({
+  authAtlasSpace,
+  name,
+  description,
+  logo,
+  background,
+  externalLinks,
+}: EditSpaceArgs) => {
+  const call = authAtlasSpace.edit_space({
+    external_links: Object.entries(externalLinks).filter(([, val]) => !!val),
+    space_background: background ? [background] : [],
+    space_logo: logo ? [logo] : [],
+    space_name: name,
+    space_description: description,
+  });
+
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to edit space",
   });
 };

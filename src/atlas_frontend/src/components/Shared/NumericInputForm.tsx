@@ -52,9 +52,9 @@ const NumericInputForm = <TFormValues extends FieldValues>({
           }`}
       />
       {errors?.[name]?.message && (
-        <span className="text-red-500">
+        <p className="text-red-500 mt-1">
           {errors?.[name]?.message.toString()}
-        </span>
+        </p>
       )}
     </div>
   );

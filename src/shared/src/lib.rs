@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use candid::{CandidType, Nat, Principal};
 use serde::Deserialize;
 
@@ -19,6 +21,7 @@ pub struct SpaceInitArg {
     pub space_background: Option<String>,
     pub ckusdc_ledger: CkUsdcLedger,
     pub current_wasm_version: u64,
+    pub external_links: BTreeMap<String, String>,
 }
 
 #[derive(Deserialize, CandidType, Clone)]

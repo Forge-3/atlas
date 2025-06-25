@@ -8,6 +8,8 @@ interface DecimalInputFormProps<TFormValues extends FieldValues> {
   maxDecimalPlaces?: number;
   small?: string;
   name: Path<TFormValues>;
+  className?: string | undefined,
+  placeholder?: string
 }
 
 const DecimalInputForm = <TFormValues extends FieldValues>({
@@ -16,15 +18,18 @@ const DecimalInputForm = <TFormValues extends FieldValues>({
   maxDecimalPlaces = 18,
   small,
   name,
-  errors
+  errors,
+  className,
+  placeholder
 }: DecimalInputFormProps<TFormValues>) => {
   return (
-    <div className="mb-4">
+    <div>
       {label && <p className="text-gray-600">{label}</p>}
-      <small className="text-gray-600">{small}</small>
+      {small && <small className="text-gray-600">{small}</small>}
       <input
         type="text"
         autoComplete="off"
+        placeholder={placeholder}
         {...register(name, {
           required: "This field is required",
           pattern: {
@@ -34,7 +39,6 @@ const DecimalInputForm = <TFormValues extends FieldValues>({
         })}
         onInput={(e) => {
           const input = e.target as HTMLInputElement;
-          //const value = input.value;
           const decimalValue = input.value.indexOf(".");
           if (
             decimalValue !== -1 &&
@@ -60,12 +64,12 @@ const DecimalInputForm = <TFormValues extends FieldValues>({
         inputMode="decimal"
         className={`border-2 p-2 rounded-xl w-full ${
           errors?.[name]?.message && "border-red-500"
-        }`}
+        } ${className ?? ""}`}
       />
       {errors?.[name]?.message && (
-        <span className="text-red-500">
+        <p className="text-red-500 mt-1">
           {errors?.[name]?.message.toString()}
-        </span>
+        </p>
       )}
     </div>
   );

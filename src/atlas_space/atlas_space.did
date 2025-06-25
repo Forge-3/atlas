@@ -5,6 +5,13 @@ type CreateTaskArgs = record {
   task_content : vec TaskContent;
   number_of_uses : nat64;
 };
+type EditSpaceArgs = record {
+  external_links : vec record { text; text };
+  space_background : opt text;
+  space_logo : opt text;
+  space_name : text;
+  space_description : text;
+};
 type Error = variant {
   BytecodeUpToDate;
   NotParent;
@@ -42,6 +49,7 @@ type SpaceArgs = variant {
   InitArg : SpaceInitArg;
 };
 type SpaceInitArg = record {
+  external_links : vec record { text; text };
   owner : principal;
   ckusdc_ledger : CkUsdcLedger;
   space_symbol : opt text;
@@ -52,6 +60,7 @@ type SpaceInitArg = record {
   space_description : text;
 };
 type State = record {
+  external_links : vec record { text; text };
   space_symbol : opt text;
   space_background : opt text;
   space_logo : opt text;
@@ -87,6 +96,7 @@ type WalletReceiveResult = record { accepted : nat64 };
 service : (SpaceArgs) -> {
   accept_subtask_submission : (principal, nat64, nat64) -> (Result);
   create_task : (CreateTaskArgs) -> (Result_1);
+  edit_space : (EditSpaceArgs) -> (Result);
   get_closed_tasks : (GetTasksArgs) -> (Result_2) query;
   get_current_bytecode_version : () -> (nat64) query;
   get_open_tasks : (GetTasksArgs) -> (Result_2) query;

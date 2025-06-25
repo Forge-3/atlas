@@ -3,7 +3,8 @@ import Button from "../components/Shared/Button";
 import { useNavigate } from "react-router-dom";
 import { SPACES_PATH } from "../router/paths";
 import {
-  getAtlasUserIsInHub,
+  
+  getAtlasUser,
   joinAtlasSpace,
 } from "../canisters/atlasMain/api";
 import type { Principal } from "@dfinity/principal";
@@ -13,6 +14,7 @@ import {
 } from "../hooks/identityKit";
 import { useDispatch } from "react-redux";
 import { useAuth } from "@nfid/identitykit/react";
+import toast from "react-hot-toast";
 
 interface JoinSpaceModalArgs {
   callback: () => void;
@@ -38,24 +40,28 @@ const JoinSpaceModal = ({
 
   const joinSpace = async () => {
     if (!authAtlasMain || !unAuthAtlasMain || !user) {
-      navigate("/");
+
       return;
     }
-    await joinAtlasSpace({
+    await toast.promise(joinAtlasSpace({
       authAtlasMain,
       space: spacePrincipal,
-    });
-    getAtlasUserIsInHub({
+    }),
+  {
+    loading: "Trying to join space...",
+    success: "Succesfully joined to space",
+    error: "Failed to join to space",
+  });
+    getAtlasUser({
       unAuthAtlasMain,
       dispatch,
       userId: user.principal,
     });
-    callback();
   };
 
   return (
     <div
-      className="absolute inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center"
       onClick={callback}
     >
       <div
