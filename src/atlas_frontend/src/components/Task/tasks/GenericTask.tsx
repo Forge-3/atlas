@@ -55,7 +55,7 @@ const GenericTask = ({
   const dispatch = useDispatch();
   const { user } = useAuth();
   const [openSubmission, setSubmission] = useState(false);
-  const { register, handleSubmit } = useForm({
+  const { register, handleSubmit} = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
       taskSubmission: "",
@@ -94,18 +94,23 @@ const GenericTask = ({
       ) ?? null)
     : null;
 
-  const submissionState = userSubmission?.[1].state
+  const currentSubmissionState = userSubmission?.[1].state
     ? Object.keys(userSubmission?.[1].state)[0]
     : null;
-  return (
+
+  const canSubmit = !user || !isUserInHub ? false :
+                    currentSubmissionState === null ||
+                    (currentSubmissionState === "Rejected" && genericTask.allow_resubmit);
+  
+   return (
     <div className="flex mt-2">
       <div className="flex flex-col mr-4">
-        <div className="bg-[#1E0F33] p-1  w-[32px] h-[32px] rounded-lg relative">
-          {submissionState === "WaitingForReview" && (
-            <img src="/icons/check-in-box.svg" className="w-6 h-6 relative" />
+        <div className="bg-[#1E0F33] p-1 w-[32px] h-[32px] rounded-lg relative">
+          {currentSubmissionState === "WaitingForReview" && (
+            <img src="/icons/check-in-box.svg" className="w-6 h-6 relative"/>
           )}
-          {submissionState === "Accepted" && (
-            <img src="/icons/check-in-box.svg" className="w-6 h-6 relative" />
+          {currentSubmissionState === "Accepted" && (
+            <img src="/icons/check-in-box.svg" className="w-6 h-6 relative"/>
           )}
         </div>
         <div className="bg-[#1E0F33] flex-1 w-1 rounded-full mx-auto mt-2"></div>
@@ -113,14 +118,17 @@ const GenericTask = ({
       <div className="bg-[#1E0F33] rounded-xl p-6 w-full">
         <div className="mb-4">
           <h4 className="text-xl font-medium font-poppins text-white mb-1 text-wrap break-all">
-            {genericTask.task_content.TitleAndDescription.task_title}
+            {"TitleAndDescription" in genericTask.task_content 
+              ? genericTask.task_content.TitleAndDescription.task_title
+              : "N/A"}
           </h4>
           <p className="text-zinc-400 text-wrap break-all">
-            {genericTask.task_content.TitleAndDescription.task_description}
+            {"TitleAndDescription" in genericTask.task_content 
+              ? genericTask.task_content.TitleAndDescription.task_description
+              : "N/A"}
           </p>
         </div>
-
-        {user && !userSubmission && openSubmission && (
+        {user && isUserInHub && canSubmit && openSubmission && (
           <form onSubmit={handleSubmit(onSubmit)}>
             <div>
               <p className="text-white font-semibold mb-1">Submit response:</p>
@@ -134,9 +142,11 @@ const GenericTask = ({
             </div>
           </form>
         )}
-        {user && !userSubmission && !openSubmission && isUserInHub && (
+        {user && isUserInHub && canSubmit && !openSubmission && (
           <div className="flex">
-            <Button onClick={() => setSubmission(true)}>Submit message</Button>
+            <Button onClick={() => setSubmission(true)}>
+              {currentSubmissionState === "Rejected" ? "Re-submit message" : "Submit message"}
+            </Button>
           </div>
         )}
         {!user && (

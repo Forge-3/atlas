@@ -46,16 +46,16 @@ export const idlFactory = ({ IDL }) => {
   const TokenReward = IDL.Variant({
     'CkUsdc' : IDL.Record({ 'amount' : IDL.Nat }),
   });
-  const TaskContent = IDL.Variant({
-    'TitleAndDescription' : IDL.Record({
-      'task_description' : IDL.Text,
-      'task_title' : IDL.Text,
-    }),
+  const CreateSubtaskArg = IDL.Record({
+    'title' : IDL.Text,
+    'description' : IDL.Text,
+    'task_type' : IDL.Text,
+    'allow_resubmit' : IDL.Bool,
   });
   const CreateTaskArgs = IDL.Record({
     'task_title' : IDL.Text,
     'token_reward' : TokenReward,
-    'task_content' : IDL.Vec(TaskContent),
+    'task_content' : IDL.Vec(CreateSubtaskArg),
     'number_of_uses' : IDL.Nat64,
   });
   const Result_1 = IDL.Variant({ 'Ok' : IDL.Nat64, 'Err' : Error });
@@ -67,6 +67,12 @@ export const idlFactory = ({ IDL }) => {
     'space_description' : IDL.Text,
   });
   const GetTasksArgs = IDL.Record({ 'count' : IDL.Nat64, 'start' : IDL.Nat64 });
+  const TaskContent = IDL.Variant({
+    'TitleAndDescription' : IDL.Record({
+      'task_description' : IDL.Text,
+      'task_title' : IDL.Text,
+    }),
+  });
   const SubmissionState = IDL.Variant({
     'Rejected' : IDL.Null,
     'WaitingForReview' : IDL.Null,
@@ -83,6 +89,7 @@ export const idlFactory = ({ IDL }) => {
     'GenericTask' : IDL.Record({
       'task_content' : TaskContent,
       'submission' : IDL.Vec(IDL.Tuple(IDL.Principal, SubmissionData)),
+      'allow_resubmit' : IDL.Bool,
     }),
   });
   const Task = IDL.Record({

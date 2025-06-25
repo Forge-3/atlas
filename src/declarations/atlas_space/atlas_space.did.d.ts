@@ -3,10 +3,16 @@ import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
 export interface CkUsdcLedger { 'fee' : [] | [bigint], 'principal' : Principal }
+export interface CreateSubtaskArg {
+  'title' : string,
+  'description' : string,
+  'task_type' : string,
+  'allow_resubmit' : boolean,
+}
 export interface CreateTaskArgs {
   'task_title' : string,
   'token_reward' : TokenReward,
-  'task_content' : Array<TaskContent>,
+  'task_content' : Array<CreateSubtaskArg>,
   'number_of_uses' : bigint,
 }
 export interface EditSpaceArgs {
@@ -97,6 +103,7 @@ export type TaskType = {
     'GenericTask' : {
       'task_content' : TaskContent,
       'submission' : Array<[Principal, SubmissionData]>,
+      'allow_resubmit' : boolean,
     }
   };
 export type TokenReward = { 'CkUsdc' : { 'amount' : bigint } };

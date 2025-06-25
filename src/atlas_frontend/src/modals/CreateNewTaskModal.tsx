@@ -37,6 +37,7 @@ interface CreateNewTaskFormInput {
     taskType: TaskType;
     title: string;
     description: string;
+    allowresubmit: boolean;
   }[];
 }
 const maxSubtitleLength = 50;
@@ -58,6 +59,7 @@ const taskSchema = yup.object({
     .min(2)
     .required()
     .label("Task description"),
+    allowresubmit: yup.boolean().required(),
 });
 
 const schema = yup.object({
@@ -104,7 +106,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     defaultValues: {
       numberOfUses: 1,
       rewardPerUsage: 0.1,
-      tasks: [{ taskType: "generic", title: "", description: "" }],
+      tasks: [{ taskType: "generic", title: "", description: "", allowresubmit: false }],
     },
   });
   const { fields, append, remove } = useFieldArray({
@@ -168,10 +170,10 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
       ?.map((task) => {
         if (task.taskType === "generic") {
           return {
-            TitleAndDescription: {
-              task_description: task.description,
-              task_title: task.title,
-            },
+            task_type: "generic",
+            title: task.title,
+            description: task.description,
+            allow_resubmit: task.allowresubmit,
           };
         }
       })
@@ -245,6 +247,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                   taskType: "generic",
                   title: "",
                   description: "",
+                  allowresubmit: false,
                 })
               }
               className="flex gap-2"
@@ -283,7 +286,6 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
               errors={errors}
               className="mb-2"
             />
-
             {fields.map((field, index) => {
               const taskType = watch(`tasks.${index}.taskType`);
 
@@ -322,6 +324,22 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                         maxDescriptionLength={maxDescriptionLength}
                       />
                     )}
+                    <div className="flex items-center gap-2 mt-4">
+                      <input
+                        type="checkbox"
+                        id={`allowresubmit-${index}`}
+                        {...register(`tasks.${index}.allowresubmit`)}
+                        className="form-checkbox h-5 w-5 text-[#9173FF] rounded"
+                      />
+                      <label htmlFor={`allowresubmit-${index}`} className="text-gray-600 font-semibold">
+                        Allow re-submission for this subtask if rejected
+                      </label>
+                      {errors?.tasks?.[index]?.allowresubmit?.message && (
+                        <span className="text-red-500">
+                          {errors.tasks[index].allowresubmit.message.toString()}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
