@@ -51,13 +51,13 @@ impl Config {
 impl Storable for Config {
     fn to_bytes(&self) -> Cow<[u8]> {
         let mut buf = vec![];
-        minicbor::encode(self, &mut buf).expect("User encoding should always succeed");
+        minicbor::encode(self, &mut buf).expect("Config encoding should always succeed");
         Cow::Owned(buf)
     }
 
     fn from_bytes(bytes: Cow<[u8]>) -> Self {
         minicbor::decode(bytes.as_ref())
-            .unwrap_or_else(|e| panic!("failed to decode User bytes {}: {e}", hex::encode(bytes)))
+            .unwrap_or_else(|e| panic!("failed to decode Config bytes {}: {e}", hex::encode(bytes)))
     }
 
     const BOUND: Bound = Bound::Unbounded;

@@ -101,13 +101,13 @@ impl_from_unchecked!( Nat256, usize u8 u16 u32 u64 u128 );
 impl Storable for Nat256 {
     fn to_bytes(&self) -> Cow<[u8]> {
         let mut buf = vec![];
-        minicbor::encode(self, &mut buf).expect("User encoding should always succeed");
+        minicbor::encode(self, &mut buf).expect("Nat256 encoding should always succeed");
         Cow::Owned(buf)
     }
 
     fn from_bytes(bytes: Cow<[u8]>) -> Self {
         minicbor::decode(bytes.as_ref())
-            .unwrap_or_else(|e| panic!("failed to decode User bytes {}: {e}", hex::encode(bytes)))
+            .unwrap_or_else(|e| panic!("failed to decode Nat256 bytes {}: {e}", hex::encode(bytes)))
     }
 
     const BOUND: Bound = Bound::Unbounded;
