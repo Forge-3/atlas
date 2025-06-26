@@ -98,11 +98,11 @@ const GenericTask = ({
     ? Object.keys(userSubmission?.[1].state)[0]
     : null;
   return (
-    <div className="flex mt-2">
-      <div className="flex flex-col mr-4">
-        <div className="bg-[#1E0F33] p-1  w-[32px] h-[32px] rounded-lg relative">
+    <div className="flex mt-4">
+      <div className="flex flex-col mr-2 sm:mr-4">
+        <div className="bg-[#1E0F33] p-1 w-[20px] h-[20px] sm:w-[32px] sm:h-[32px] rounded sm:rounded-lg relative">
           {submissionState === "WaitingForReview" && (
-            <img src="/icons/check-in-box.svg" className="w-6 h-6 relative" />
+            <img src="/icons/check-in-box.svg" className="w-6 h-3.5 sm:h-6 relative" />
           )}
           {submissionState === "Accepted" && (
             <img src="/icons/check-in-box.svg" className="w-6 h-6 relative" />
@@ -110,12 +110,12 @@ const GenericTask = ({
         </div>
         <div className="bg-[#1E0F33] flex-1 w-1 rounded-full mx-auto mt-2"></div>
       </div>
-      <div className="bg-[#1E0F33] rounded-xl p-6 w-full">
+      <div className="bg-[#1E0F33] rounded-xl p-3 sm:p-6 w-full">
         <div className="mb-4">
-          <h4 className="text-xl font-medium font-poppins text-white mb-1 text-wrap break-all">
+          <h4 className="text-base sm:text-3xl font-medium font-poppins text-white mb-1 text-wrap break-all">
             {genericTask.task_content.TitleAndDescription.task_title}
           </h4>
-          <p className="text-zinc-400 text-wrap break-all">
+          <p className="text-sm sm:text-xl text-zinc-400 text-wrap break-all">
             {genericTask.task_content.TitleAndDescription.task_description}
           </p>
         </div>
@@ -123,10 +123,10 @@ const GenericTask = ({
         {user && !userSubmission && openSubmission && (
           <form onSubmit={handleSubmit(onSubmit)}>
             <div>
-              <p className="text-white font-semibold mb-1">Submit response:</p>
+              <p className="text-xs sm:text-base text-white font-semibold mb-1">Submit response:</p>
               <textarea
                 {...register("taskSubmission")}
-                className="border-2 border-[#9173FF]/20 p-2 rounded-xl w-full mb-4 bg-[#9173FF]/20 text-white"
+                className="border-2 border-[#9173FF]/20 p-2 h-32 sm:h-20 sm:p-4 rounded-xl w-full mb-2 bg-[#9173FF]/20 text-white"
               ></textarea>
             </div>
             <div className="flex justify-end">

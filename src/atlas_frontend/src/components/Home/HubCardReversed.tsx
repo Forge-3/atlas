@@ -11,7 +11,7 @@ const HubCardReversed = ({
 }: HubCardReversedProps) => {
   return (
     <div
-      className="flex flex-col items-center border rounded-t-xl rounded-b-full border-2 border-white border-solid gap-4 font-montserrat"
+      className="flex flex-col items-center border rounded-t-xl rounded-b-full border-2 border-white border-solid gap-4 font-montserrat max-w-[180px]"
       style={{
         borderTopLeftRadius: "0.75rem",
         borderTopRightRadius: "0.75rem",

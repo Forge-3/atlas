@@ -15,18 +15,19 @@ const HubCards = () => {
   ];
 
   return (
-    <div className="flex flex-wrap w-full mt-12 items-center justify-center text-xs leading-none text-center text-white">
-      <div className="flex justify-center flex-wrap gap-5">
-        {data.map((hubData, idx) => (
-          <div key={idx} className="flex gap-3">
-            {idx % 2 === 0 ? (
-              <HubCard {...hubData} />
-            ) : (
-              <HubCardReversed {...hubData} />
-            )}
-          </div>
-        ))}
-      </div>
+    <div className="flex flex-wrap justify-center gap-x-12 gap-y-10 w-full mt-7 sm:mt-12 text-xs leading-none text-center text-white">
+      {data.map((hubData, idx) => (
+        <div
+          key={idx}
+          className="flex-shrink-0 flex-grow-0 basis-[calc(33.33%-1.3333rem) sm:basis-full max-w-20 flex justify-center"
+        >
+          {idx % 2 === 0 ? (
+            <HubCard {...hubData} />
+          ) : (
+            <HubCardReversed {...hubData} />
+          )}
+        </div>
+      ))}
     </div>
   );
 };

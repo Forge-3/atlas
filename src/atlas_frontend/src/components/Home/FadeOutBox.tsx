@@ -6,7 +6,7 @@ interface FadeOutBoxProps {
 
 const FadeOutBox = ({ children }: FadeOutBoxProps) => {
   return (
-    <div className="max-w-[418px] sm:w-[45%] dlg:w-[30%] h-[28rem] rounded-t-3xl bg-gradient-to-t from-transparent to-[#9173FF]">
+    <div className="w-40 sm:w-[40%] md:w-[30%] lg:w-[30%] h-[17rem] sm:h-[28rem] rounded-t-3xl bg-gradient-to-t from-transparent to-[#9173FF]">
       {children}
     </div>
   );

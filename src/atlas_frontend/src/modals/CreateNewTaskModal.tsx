@@ -232,7 +232,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
         onClick={callback}
       >
         <div
-          className="flex flex-col rounded-xl bg-white p-[20px] gap-[10px] w-[40rem] max-h-[80vh] overflow-y-auto"
+          className="flex flex-col rounded-xl bg-white p-[20px] gap-[10px] sm:w-[40rem] max-h-[80vh] overflow-y-auto"
           onClick={(e) => {
             e.stopPropagation();
           }}

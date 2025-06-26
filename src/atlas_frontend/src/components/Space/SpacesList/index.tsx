@@ -62,7 +62,7 @@ const SpacesList = () => {
   const spacesEntries = Object.entries(spaces);
   if (spacesEntries.length > 0) {
     return (
-      <div className="grid grid-cols-3 gap-2 container mx-auto my-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 container mx-2 sm:mx-auto my-4 mx-auto px-4">
         {spacesEntries.map(
           ([key, value]) =>
             value?.state && (

@@ -23,16 +23,16 @@ const SpaceItem = ({
             backgroundImg ? { backgroundImage: `url('${backgroundImg}')` } : {}
           }
         ></div>
-        <div className={`relative -top-16 mb-16 ${!backgroundImg ? "pt-16" : ""}`}>
+        <div className={`relative -top-16 mb-8 sm:mb-16 ${!backgroundImg ? "pt-16" : ""}`}>
           <div className="absolute flex">
             {avatarImg ? (
               <img
                 src={avatarImg}
                 draggable="false"
-                className="rounded-3xl m-[5px] w-28 h-28"
+                className="rounded-3xl m-[5px] w-20 h-20 sm:w-28 sm:h-28"
               />
             ) : (
-              <div className="bg-[#4A0295] rounded-3xl m-[5px] w-28 h-28"></div>
+              <div className="bg-[#4A0295] rounded-3xl m-[5px] w-20 h-20 sm:w-28 sm:h-28"></div>
             )}
           </div>
         </div>

@@ -8,7 +8,7 @@ interface AmbassadorCardProps {
 function AmbassadorCard({ ambassadorsCount, country }: AmbassadorCardProps) {
   return (
     <div
-      className="flex w-full flex-col items-center border-2 border-white border-solid gap-4 font-montserrat"
+      className="flex flex-col justify-items-center border-2 border-white border-solid gap-4 font-montserrat max-w-[180px]"
       style={{
         borderTopLeftRadius: "4rem",
         borderTopRightRadius: "4rem",

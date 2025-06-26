@@ -153,15 +153,15 @@ const Space = ({
                     <img
                       src={avatarImg}
                       draggable="false"
-                      className="rounded-3xl m-[5px] w-28 h-28"
+                      className="rounded-3xl m-[3px] w-20 h-20 sm:m-[5px] sm:w-28 sm:h-28"
                     />
                   ) : (
                     <div className="bg-[#4A0295] rounded-3xl m-[5px] w-28 h-28"></div>
                   )}
                 </div>
                 <div className="my-1 text-white font-montserrat flex-1">
-                  <h2 className="text-4xl font-semibold flex mb-2">{name}</h2>
-                  <p className="bg-[#9173FF]/20 px-4 py-2 rounded-xl font-medium w-full">{description}</p>
+                  <h2 className="text-base sm:text-4xl font-semibold flex mb-2">{name}</h2>
+                  <p className="bg-[#9173FF]/20 text-xs sm:text-base px-4 py-2 rounded-xl font-medium w-full">{description}</p>
                 </div>
                 <div className="flex items-center justify-center text-white gap-2">
                   {externalLinks.discord && (
