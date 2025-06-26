@@ -221,27 +221,26 @@ const Navbar = () => {
   });
 
   return (
-    <>
-      <div className="sticky top-0 z-30 w-full">
-        <div className="py-6 top-0 px-10 rounded-b-xl flex justify-between items-center mx-3 backdrop-blur-lg shadow-lg bg-[#1E0F33]/30">
-          <a className="flex items-center gap-5" onClick={() => navigate("/")}>
-            <img
-              src="/logos/logo.png"
-              alt="Atlas logo"
-              className="h-8"
-              draggable="false"
-            />
-          </a>
-          <div className="flex items-center justify-center gap-4">
-            {user && (
-              <div className="flex items-center justify-center gap-4">
-                <Button
-                  light={location?.pathname !== "/space"}
-                  onClick={() => navigate(SPACES_PATH)}
-                >
-                  Spaces
-                </Button>
-                {/* <Button light={location?.pathname !== "/space/leaderboard"}>
+    <div className="sticky top-0 z-30 w-full">
+      <div className=" py-2 sm:py-6 top-0 px-2 rounded-b-xl flex justify-between items-center mx-2 backdrop-blur-lg shadow-lg bg-[#1E0F33]/30">
+        <a className="flex items-center gap-5" onClick={() => navigate("/")}>
+          <img
+            src="/logos/logo.png"
+            alt="Atlas logo"
+            className="h-6 sm:h-8"
+            draggable="false"
+          />
+        </a>
+        <div className="flex items-center justify-center gap-6">
+          {user && (
+            <div className="flex items-center justify-center gap-6">
+              <Button
+                light={location?.pathname !== "/space"}
+                onClick={() => navigate(SPACES_PATH)}
+              >
+                Spaces
+              </Button>
+              {/* <Button light={location?.pathname !== "/space/leaderboard"}>
                 Leaderboard
               </Button> */}
                 {/* <Button light={location?.pathname !== "/space/referrals"}>
@@ -256,7 +255,6 @@ const Navbar = () => {
           </div>
         </div>
       </div>
-    </>
   );
 };
 
