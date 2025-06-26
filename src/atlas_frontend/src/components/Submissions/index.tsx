@@ -19,6 +19,7 @@ import {
   getAtlasSpace,
   getSpaceTasks,
   rejectSubtaskSubmission,
+  type SubtaskSubmission,
 } from "../../canisters/atlasSpace/api";
 import {
   getUsersSubmissions,
@@ -30,6 +31,7 @@ import Button from "../Shared/Button";
 import type { ActorSubclass } from "@dfinity/agent";
 import { Principal } from "@dfinity/principal";
 import type { TaskData, TasksData } from "../../canisters/atlasSpace/types";
+import { useForm, type SubmitHandler} from "react-hook-form"
 
 const Submissions = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -259,6 +261,10 @@ const GenericTaskSummation = ({
   const dispatch = useDispatch();
   const userPrincipal = Principal.from(user)
   
+  const { register, handleSubmit, watch } = useForm<SubtaskSubmission>()
+  const onSubmit: SubmitHandler<SubtaskSubmission> = () => {};
+  const reason = watch("reason");
+  const [showRejectPopup, setShowRejectPopup] = useState(false);
 
   const acceptSubtask = async () => {
     await acceptSubtaskSubmission({
@@ -274,9 +280,6 @@ const GenericTaskSummation = ({
     });
   };
 
-  const [reason, setReason] = useState<string>("");
-  const [showRejectPopup, setShowRejectPopup] = useState(false);
-
   const rejectSubtask = async () => {
     await rejectSubtaskSubmission({
       authAtlasSpace,
@@ -291,7 +294,6 @@ const GenericTaskSummation = ({
       dispatch,
     });
     setShowRejectPopup(false);
-    setReason("");
   };
   const singleSubmissionState = Object.keys(submission.submissionData.state)[0]
 
@@ -336,18 +338,13 @@ const GenericTaskSummation = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96 text-black">
             <h2 className="text-xl font-bold mb-4">Reason for Rejection</h2>
-            <input
-              type="text"
-              placeholder="Enter reason (optional)"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              className="w-full p-2 rounded border border-gray-300 mb-4"
-            />
+            <form onSubmit={handleSubmit(onSubmit)} className="my-3 shadow-lg border-2 rounded-lg">
+              <input {...register("reason")} className="" placeholder="Enter reason here"/>
+            </form>
             <div className="flex justify-end gap-2">
               <Button 
                 onClick={() => {
                   setShowRejectPopup(false);
-                  setReason("");
                 }} 
                 className="bg-gray-300 text-black"
               >
