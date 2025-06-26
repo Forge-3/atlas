@@ -140,7 +140,7 @@ impl TaskType {
 
         Ok(())
     }
-    pub fn reject(&mut self, user: Principal) -> Result<(), Error> {
+    pub fn reject(&mut self, user: Principal, reason: String,) -> Result<(), Error> {
         match self {
             TaskType::GenericTask {
                 task_content: _,
@@ -150,6 +150,7 @@ impl TaskType {
                     .get_mut(&user)
                     .ok_or(Error::UserSubmissionNotFound)?;
                 submission.set_state(SubmissionState::Rejected);
+                submission.set_rejection_reason(reason);
             }
         }
 
@@ -242,12 +243,13 @@ impl Task {
         &mut self,
         user: Principal,
         subtask_id: usize,
+        reason: String,
     ) -> Result<(), Error> {
         let subtask = self
             .tasks
             .get_mut(subtask_id)
             .ok_or(Error::SubtaskDoNotExists(subtask_id))?;
-        subtask.reject(user)?;
+        subtask.reject(user, reason)?;
 
         Ok(())
     }

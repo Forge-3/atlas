@@ -19,6 +19,7 @@ import {
   getAtlasSpace,
   getSpaceTasks,
   rejectSubtaskSubmission,
+  type SubtaskSubmission,
 } from "../../canisters/atlasSpace/api";
 import {
   getUsersSubmissions,
@@ -30,6 +31,7 @@ import Button from "../Shared/Button";
 import type { ActorSubclass } from "@dfinity/agent";
 import { Principal } from "@dfinity/principal";
 import type { TaskData, TasksData } from "../../canisters/atlasSpace/types";
+import { useForm, type SubmitHandler} from "react-hook-form"
 
 const Submissions = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -258,6 +260,11 @@ const GenericTaskSummation = ({
 }: GenericTaskSummationProps) => {
   const dispatch = useDispatch();
   const userPrincipal = Principal.from(user)
+  
+  const { register, handleSubmit, watch } = useForm<SubtaskSubmission>()
+  const onSubmit: SubmitHandler<SubtaskSubmission> = () => {};
+  const reason = watch("reason");
+  const [showRejectPopup, setShowRejectPopup] = useState(false);
 
   const acceptSubtask = async () => {
     await acceptSubtaskSubmission({
@@ -279,12 +286,14 @@ const GenericTaskSummation = ({
       userPrincipal,
       taskId: BigInt(taskId),
       subtaskId: BigInt(subtaskId),
+      reason,
     });
     await getSpaceTasks({
       spaceId,
       unAuthAtlasSpace,
       dispatch,
     });
+    setShowRejectPopup(false);
   };
   const singleSubmissionState = Object.keys(submission.submissionData.state)[0]
 
@@ -300,17 +309,54 @@ const GenericTaskSummation = ({
         <div className="border-2 border-[#9173FF]/20 p-2 rounded-xl w-full mb-4 bg-[#9173FF]/20 text-white">
           {submission.submissionData.submission.Text.content}
         </div>
-      </div>
-      <div className="flex justify-end gap-2">
-        {submissionState == "WaitingForReview" && singleSubmissionState == "WaitingForReview" && (
-          <>
-            <Button onClick={acceptSubtask}>Accept</Button>
-            <Button onClick={rejectSubtask} className="bg-red-500">
-              Reject
-            </Button>
-          </>
+        {submissionState === "Rejected" && 
+         Array.isArray(submission.submissionData.rejection_reason) &&
+         submission.submissionData.rejection_reason.length > 0 &&
+         typeof submission.submissionData.rejection_reason[0] === "string" &&
+         submission.submissionData.rejection_reason[0].trim().length > 0 && (
+          <div className="mt-2 p-3 rounded-lg border border-red-500 bg-red-900 bg-opacity-20 text-red-300">
+            <p className="font-semibold text-red-200 mb-1">Reject Reason:</p>
+            <p className="break-words">
+              {submission.submissionData.rejection_reason[0]}
+            </p>
+          </div>
         )}
+        <div className="flex flex-col justify-end gap-2">
+          {submissionState === "WaitingForReview" && singleSubmissionState === "WaitingForReview" && (
+            <>
+              <div className="flex gap-2 justify-end">
+                <Button onClick={acceptSubtask}>Accept</Button>
+                <Button onClick={() => setShowRejectPopup(true)} className="bg-red-500">
+                  Reject
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
+      {showRejectPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96 text-black">
+            <h2 className="text-xl font-bold mb-4">Reason for Rejection</h2>
+            <form onSubmit={handleSubmit(onSubmit)} className="my-3 shadow-lg border-2 rounded-lg">
+              <input {...register("reason")} className="" placeholder="Enter reason here"/>
+            </form>
+            <div className="flex justify-end gap-2">
+              <Button 
+                onClick={() => {
+                  setShowRejectPopup(false);
+                }} 
+                className="bg-gray-300 text-black"
+              >
+                Cancel
+              </Button>
+              <Button onClick={rejectSubtask} className="bg-red-500">
+                Submit Rejection
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

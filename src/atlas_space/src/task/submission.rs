@@ -37,11 +37,17 @@ pub struct SubmissionData {
 
     #[n(1)]
     state: SubmissionState,
+
+    #[n(2)]
+    rejection_reason: Option<String>,
 }
 
 impl SubmissionData {
     pub fn new(submission: Submission, state: SubmissionState) -> Self {
-        Self { submission, state }
+        Self { submission, state, rejection_reason: None, }
+    }
+    pub fn set_rejection_reason(&mut self, reason: String) {
+        self.rejection_reason = Some(reason);
     }
 
     pub fn set_state(&mut self, state: SubmissionState) {

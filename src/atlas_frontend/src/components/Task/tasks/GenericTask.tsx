@@ -9,6 +9,7 @@ import { useForm, type SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import {
+  getRejectionInfo,
   getSpaceTasks,
   submitSubtaskSubmission,
 } from "../../../canisters/atlasSpace/api";
@@ -97,6 +98,11 @@ const GenericTask = ({
   const submissionState = userSubmission?.[1].state
     ? Object.keys(userSubmission?.[1].state)[0]
     : null;
+
+  const { reasonText, ShowRejectionReason } = userSubmission && submissionState
+      ? getRejectionInfo(userSubmission[1], submissionState as "Rejected" | "WaitingForReview" | "Accepted")
+      : { reasonText: null, ShowRejectionReason: false };
+
   return (
     <div className="flex mt-2">
       <div className="flex flex-col mr-4">
@@ -119,6 +125,14 @@ const GenericTask = ({
             {genericTask.task_content.TitleAndDescription.task_description}
           </p>
         </div>
+        {ShowRejectionReason && (
+            <div className="mt-2 p-3 rounded-lg border border-red-500 bg-red-900 bg-opacity-20 text-red-300">
+              <p className="font-semibold text-red-200 mb-1">Rejected reason:</p>
+              <p className="break-words">
+                {reasonText}
+              </p>
+            </div>
+          )}
 
         {user && !userSubmission && openSubmission && (
           <form onSubmit={handleSubmit(onSubmit)}>

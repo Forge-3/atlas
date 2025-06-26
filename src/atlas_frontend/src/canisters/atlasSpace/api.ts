@@ -3,6 +3,7 @@ import type {
   _SERVICE,
   GetTasksRes,
   Submission,
+  SubmissionData,
   Task,
   TaskContent,
 } from "../../../../declarations/atlas_space/atlas_space.did.js";
@@ -153,11 +154,12 @@ export const submitSubtaskSubmission = async ({
   });
 };
 
-interface SubtaskSubmission {
+export interface SubtaskSubmission {
   authAtlasSpace: ActorSubclass<_SERVICE>;
   userPrincipal: Principal;
   taskId: bigint;
   subtaskId: bigint;
+  reason?: string;
 }
 
 export const acceptSubtaskSubmission = async ({
@@ -183,11 +185,13 @@ export const rejectSubtaskSubmission = async ({
   userPrincipal,
   taskId,
   subtaskId,
+  reason,
 }: SubtaskSubmission) => {
   const call = authAtlasSpace.reject_subtask_submission(
     userPrincipal,
     taskId,
-    subtaskId
+    subtaskId,
+    reason ?? "",
   );
 
   await unwrapCall<null>({
@@ -195,6 +199,28 @@ export const rejectSubtaskSubmission = async ({
     errMsg: "Failed to accept submission",
   });
 };
+
+export const getRejectionInfo = (
+  submissionData: SubmissionData,
+  submissionState: "Rejected" | "WaitingForReview" | "Accepted"
+) => {
+  const rejectionReasonArray = submissionData.rejection_reason;
+
+  const ShowRejectionReason =
+    submissionState === "Rejected" &&
+    Array.isArray(rejectionReasonArray) &&
+    rejectionReasonArray.length > 0 &&
+    typeof rejectionReasonArray[0] === "string" &&
+    rejectionReasonArray[0].length > 0 &&
+    rejectionReasonArray[0].trim().length > 0;
+
+  const reasonText = ShowRejectionReason && rejectionReasonArray[0]
+    ? rejectionReasonArray[0].trim()
+    : null;
+
+  return { reasonText, ShowRejectionReason };
+};
+
 
 interface WithdrawReward {
   authAtlasSpace: ActorSubclass<_SERVICE>;
