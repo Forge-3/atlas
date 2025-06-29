@@ -190,6 +190,27 @@ pub fn get_closed_tasks_len() -> u64 {
     CLOSED_TASKS_MAP.with_borrow(|tasks| tasks.len())
 }
 
+// Other methods
+
+pub fn close_task(task_id: TaskId) -> Result<(), Error> {
+    let task = remove_open_task(&task_id)?;
+    let closed_task: ClosedTask = task.into();
+    
+    insert_closed_task(task_id, closed_task)?;
+    Ok(())
+}
+
+pub fn close_task_if_expired(task_id: TaskId) -> Result<bool, Error> {
+    let task = get_open_task(&task_id).ok_or(Error::TaskNotFound(task_id))?;
+
+    if task.is_expired() {
+        close_task(task_id)?;
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
 pub fn delete_closed_task(task_id: &TaskId) -> Option<ClosedTask> {
     CLOSED_TASKS_MAP.with_borrow_mut(|tasks| tasks.remove(task_id))
 }
