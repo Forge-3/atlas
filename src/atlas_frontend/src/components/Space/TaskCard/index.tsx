@@ -5,14 +5,15 @@ import { formatUnits } from "ethers";
 import { DECIMALS } from "../../../canisters/ckUsdcLedger/constans.ts";
 import type { Principal } from "@dfinity/principal";
 import { getTaskPath } from "../../../router/paths.ts";
-import type { Task } from "../../../../../declarations/atlas_space/atlas_space.did";
+import type { AnyTask } from "../../../canisters/atlasSpace/api.ts";
 
 interface TaskCardProps {
-  type: "ongoing" | "starting" | "expired";
+  type: "closed" | "expired" | "starting" | "ongoing";
   startingIn?: string;
   id: string,
-  task: Task;
-  spaceId: Principal
+  task: AnyTask,
+  spaceId: Principal,
+  time: number
 }
 
 const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
@@ -28,7 +29,7 @@ const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
         className={`h-40 p-4 rounded-t-xl ${
           type === "ongoing" && "bg-[#9173FF]/20"
         } ${type === "starting" && "bg-[#4A0295]"} ${
-          type === "expired" && "bg-[#202020]"
+          (type === "expired" || type === "closed") && "bg-[#202020]"
         }`}
       >
         <InfoBox type={type} startingIn={startingIn} />

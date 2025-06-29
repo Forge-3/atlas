@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FiFilter, FiStar } from "react-icons/fi";
 import Button from "../Shared/Button.tsx";
 import TaskCard from "./TaskCard/index.tsx";
@@ -28,15 +28,30 @@ import {
 import { getAtlasUser, joinAtlasSpace } from "../../canisters/atlasMain/api.ts";
 import TransferSpaceModal from "../../modals/TransferSpaceModal.tsx";
 import { getErrorWithInfoToast } from "../../utils/errors.ts";
+import { nowInSeconds } from "../../utils/date.ts";
 import LocalBlurOverlay from "../Shared/LocalBlurOverlay.tsx";
 import { runWithLoading } from "../../utils/loading.ts";
+import { getStartingIn, getTaskType } from "../../utils/tasks.ts";
 
 interface TasksListProps {
   tasks?: Tasks;
   spaceId: Principal;
 }
 
-const TasksList = ({ tasks, spaceId }: TasksListProps) => {
+const TasksList = ({ tasks = {}, spaceId }: TasksListProps) => {
+  const [time, setTime] = useState(nowInSeconds());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime(nowInSeconds());
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const tasksEntries = Object.entries(tasks);
+  if (tasksEntries.length === 0) return <></>;
+
   return (
     <>
       <div className="relative w-full bg-[#1E0F33] mb-1">
@@ -51,20 +66,26 @@ const TasksList = ({ tasks, spaceId }: TasksListProps) => {
           </div>
         </div>
       </div>
+
       <div className="relative w-full bg-[#1E0F33] rounded-b-xl">
         <div className="flex gap-4 md:mx-3 px-8 py-6 flex-wrap justify-between md:justify-center">
           <LocalBlurOverlay isLoading={!tasks} />
-          {tasks && Object.entries(tasks).map(([id, task]) => {
-            return (
+          {tasksEntries &&
+            tasksEntries.map(([key, taskData]) => (
               <TaskCard
-                key={id}
-                task={task}
-                type={"ongoing"}
-                id={id}
+                key={key}
+                id={key}
+                task={taskData}
+                type={getTaskType(taskData, time)}
                 spaceId={spaceId}
+                startingIn={getStartingIn(
+                  taskData,
+                  time,
+                  getTaskType(taskData, time)
+                )}
+                time={time}
               />
-            );
-          })}
+            ))}
         </div>
       </div>
     </>
@@ -76,7 +97,7 @@ interface SpaceProps {
   description: string;
   avatarImg: string | null;
   backgroundImg: string | null;
-  tasks?: Tasks;
+  tasks: Tasks;
   spaceId: Principal;
   externalLinks: ExternalLinks;
 }
@@ -131,7 +152,7 @@ const Space = ({
     if (!authAtlasMain || !unAuthAtlasMain || !user) {
       return;
     }
-    
+
     await runWithLoading(async () => {
       await toast.promise(
         joinAtlasSpace({
@@ -151,7 +172,7 @@ const Space = ({
       });
     }, dispatch);
   };
-  
+
   return (
     <>
       <div className="container mx-auto my-4">
@@ -177,23 +198,31 @@ const Space = ({
                 <div className="hidden"></div>
               )}
             </div>
-            {(didUserCanAdministrate || (!didUserCanAdministrate && userBlockchainData && !inHub)) && (
+            {(didUserCanAdministrate ||
+              (!didUserCanAdministrate && userBlockchainData && !inHub)) && (
               <div className="flex flex-1 w-full gap-2 md:flex-none md:w-auto md:gap-none">
                 {!didUserCanAdministrate && userBlockchainData && !inHub ? (
                   <Button className="flex-1 md:flex-none" onClick={joinSpace}>
                     Join space
                   </Button>
-                ) : didUserCanAdministrate && (
-                  <Button
-                    light
-                    className="flex-1 md:flex-none"
-                    onClick={() => navigate(getSpaceEditPath(parsedSpacePrincipal))}
-                  >
-                    Edit space
-                  </Button>
-                ) }
+                ) : (
+                  didUserCanAdministrate && (
+                    <Button
+                      light
+                      className="flex-1 md:flex-none"
+                      onClick={() =>
+                        navigate(getSpaceEditPath(parsedSpacePrincipal))
+                      }
+                    >
+                      Edit space
+                    </Button>
+                  )
+                )}
                 {didUserCanAdministrate && (
-                  <Button className="flex-1 md:flex-none" onClick={toggleTaskModal}>
+                  <Button
+                    className="flex-1 md:flex-none"
+                    onClick={toggleTaskModal}
+                  >
                     Create new task
                   </Button>
                 )}
@@ -211,21 +240,23 @@ const Space = ({
                 }
               ></div>
               <div className="flex md:mt-2 flex-col md:flex-row">
-              <div className="absolute md:static left-12 transform -translate-x -translate-y-16 md:mt-8 md:gap-4 md:-translate-y-4">
-                <div className="bg-white  flex rounded-3xl w-fit h-fit flex-none">
-                  {avatarImg ? (
-                    <img
-                      src={avatarImg}
-                      draggable="false"
-                      className="rounded-3xl m-[3px] w-20 h-20 md:m-[5px] md:w-28 md:h-28"
-                    />
-                  ) : (
-                    <div className="bg-[#4A0295] rounded-3xl m-[3px] w-20 h-20 md:m-[5px] md:w-28 md:h-28"></div>
-                  )}
-                </div>
+                <div className="absolute md:static left-12 transform -translate-x -translate-y-16 md:mt-8 md:gap-4 md:-translate-y-4">
+                  <div className="bg-white  flex rounded-3xl w-fit h-fit flex-none">
+                    {avatarImg ? (
+                      <img
+                        src={avatarImg}
+                        draggable="false"
+                        className="rounded-3xl m-[3px] w-20 h-20 md:m-[5px] md:w-28 md:h-28"
+                      />
+                    ) : (
+                      <div className="bg-[#4A0295] rounded-3xl m-[3px] w-20 h-20 md:m-[5px] md:w-28 md:h-28"></div>
+                    )}
+                  </div>
                 </div>
                 <div className="mt-8 mb-2 md:mb-6 md:mt-6 md:mx-5 text-white font-montserrat min-w-0 md:flex-wrap md:my-1 flex-1">
-                  <h2 className="text-base sm:text-2xl md:text-3xl lg:text-4xl font-semibold mb-2 truncate">{name}</h2>
+                  <h2 className="text-base sm:text-2xl md:text-3xl lg:text-4xl font-semibold mb-2 truncate">
+                    {name}
+                  </h2>
                   <p className="bg-[#9173FF]/20 text-xs md:text-base lg:text-2xl px-2 md:px-4 py-2 rounded-xl font-medium truncate">
                     {description}
                   </p>

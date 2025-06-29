@@ -99,7 +99,14 @@ const WalletHeader = () => {
 
   const handleWithdrawFunds: SubmitHandler<WithdrawalFormInput> = async (data) => {
     await runWithLoading(async () => {
-      const userPrincipal = Principal.from(data.withdrawalPrincipal);
+      let userPrincipal: Principal;
+      try {
+        userPrincipal = Principal.from(data.withdrawalPrincipal);
+      } catch {
+        toast.error("Invalid principal address.");
+        return;
+      }
+
       const amount = parseUnits(data.withdrawalAmount.toString(), DECIMALS);
       if (!authCkUsdc || !user?.principal) return;
       const call = transferToPrincipal({

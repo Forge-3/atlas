@@ -1,10 +1,10 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Task } from "../../../../declarations/atlas_space/atlas_space.did";
 import type { StorableState } from "../../canisters/atlasSpace/types";
+import type { AnyTask } from "../../canisters/atlasSpace/api";
 
 export type Space = {
   state: null | StorableState;
-  tasks: null | { [key: string]: Task };
+  tasks: null | { [key: string]: AnyTask };
 };
 export type Spaces = {
   [key: string]: Space;
@@ -47,7 +47,7 @@ export const spaceSlice = createSlice({
     setTasks: (
       state,
       action: PayloadAction<{
-        tasks: { [key: string]: Task };
+        tasks: { [key: string]: AnyTask };
         spaceId: string;
       }>
     ) => {
@@ -59,6 +59,16 @@ export const spaceSlice = createSlice({
         };
       }
     },
+    deleteTask: (
+      state,
+      action: PayloadAction<{
+        taskId: string;
+        spaceId: string;
+      }>
+    ) => {
+      const { spaceId, taskId } = action.payload;
+      delete state.spaces?.[spaceId].tasks?.[taskId];
+    },
   },
   selectors: {
     getSpace: (state: SpacesState, action: PayloadAction<string>) =>
@@ -66,7 +76,7 @@ export const spaceSlice = createSlice({
   },
 });
 
-export const { setSpaces, setSpace, setTasks } = spaceSlice.actions;
+export const { setSpaces, setSpace, setTasks, deleteTask } = spaceSlice.actions;
 export const { getSpace } = spaceSlice.selectors;
 
 export default spaceSlice.reducer;
