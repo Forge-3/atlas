@@ -6,7 +6,7 @@ use std::future::Future;
 use crate::config::Config;
 use crate::errors::Error;
 use crate::state::State;
-use crate::task::{Task, TaskId};
+use crate::task::{Task, TaskId, ClosedTask};
 
 type VMem = VirtualMemory<DefaultMemoryImpl>;
 
@@ -46,7 +46,7 @@ thread_local! {
             MEMORY_MANAGER.with(|m| m.borrow().get(OPEN_TASKS_MAP_MEMORY_ID)),
         )
     );
-    static CLOSED_TASKS_MAP: RefCell<StableBTreeMap<TaskId, Task, VMem>> = RefCell::new(
+    static CLOSED_TASKS_MAP: RefCell<StableBTreeMap<TaskId, ClosedTask, VMem>> = RefCell::new(
         StableBTreeMap::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(CLOSED_TASKS_MAP_MEMORY_ID)),
         )
@@ -109,6 +109,14 @@ pub fn insert_open_task(task_id: TaskId, new_task: Task) -> Result<(), Error> {
     })
 }
 
+pub fn remove_open_task(task_id: &TaskId) -> Result<Task, Error> {
+    OPEN_TASKS_MAP.with_borrow_mut(|tasks| {
+        tasks
+            .remove(task_id)
+            .ok_or(Error::TaskNotFound(*task_id))
+    })
+}
+
 pub fn mut_open_task<F, R>(task_id: TaskId, f: F) -> Result<R, Error>
 where
     F: FnOnce(&mut Option<Task>) -> R,
@@ -132,7 +140,7 @@ where
     OPEN_TASKS_MAP.with_borrow(|tasks| f(Box::new(tasks.iter())))
 }
 
-pub fn get_open_tasks(task_id: &TaskId) -> Option<Task> {
+pub fn get_open_task(task_id: &TaskId) -> Option<Task> {
     OPEN_TASKS_MAP.with_borrow_mut(|tasks| tasks.get(task_id))
 }
 
@@ -142,7 +150,7 @@ pub fn get_open_tasks_len() -> u64 {
 
 // Closed task methods
 
-pub fn insert_closed_task(task_id: TaskId, new_task: Task) -> Result<(), Error> {
+pub fn insert_closed_task(task_id: TaskId, new_task: ClosedTask) -> Result<(), Error> {
     CLOSED_TASKS_MAP.with_borrow_mut(|tasks| {
         if tasks.contains_key(&task_id) {
             return Err(Error::TaskAlreadyExists(task_id));
@@ -152,13 +160,54 @@ pub fn insert_closed_task(task_id: TaskId, new_task: Task) -> Result<(), Error> 
     })
 }
 
+pub fn mut_closed_task<F, R>(task_id: TaskId, f: F) -> Result<R, Error>
+where
+    F: FnOnce(&mut Option<ClosedTask>) -> R,
+{
+    CLOSED_TASKS_MAP.with_borrow_mut(|tasks| {
+        let mut task = tasks.get(&task_id);
+        let result = f(&mut task);
+
+        if let Some(task) = task {
+            tasks.insert(task_id, task);
+        }
+
+        Ok(result)
+    })
+}
+
 pub fn with_closed_tasks_iter<F, R>(f: F) -> R
 where
-    F: for<'a> FnOnce(Box<dyn Iterator<Item = (TaskId, Task)> + 'a>) -> R,
+    F: for<'a> FnOnce(Box<dyn Iterator<Item = (TaskId, ClosedTask)> + 'a>) -> R,
 {
     CLOSED_TASKS_MAP.with_borrow(|tasks| f(Box::new(tasks.iter())))
 }
 
+pub fn get_closed_task(task_id: &TaskId) -> Option<ClosedTask> {
+    CLOSED_TASKS_MAP.with_borrow_mut(|tasks| tasks.get(task_id))
+}
+
 pub fn get_closed_tasks_len() -> u64 {
     CLOSED_TASKS_MAP.with_borrow(|tasks| tasks.len())
+}
+
+// Other methods
+
+pub fn close_task(task_id: TaskId) -> Result<(), Error> {
+    let task = remove_open_task(&task_id)?;
+    let closed_task: ClosedTask = task.into();
+    
+    insert_closed_task(task_id, closed_task)?;
+    Ok(())
+}
+
+pub fn close_task_if_expired(task_id: TaskId) -> Result<bool, Error> {
+    let task = get_open_task(&task_id).ok_or(Error::TaskNotFound(task_id))?;
+
+    if task.is_expired() {
+        close_task(task_id)?;
+        Ok(true)
+    } else {
+        Ok(false)
+    }
 }

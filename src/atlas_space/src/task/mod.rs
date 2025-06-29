@@ -9,6 +9,7 @@ use submission::{Submission, SubmissionData, SubmissionState};
 use token_reward::TokenReward;
 
 use crate::errors::Error;
+use crate::memory;
 
 pub mod submission;
 pub mod token_reward;
@@ -20,6 +21,8 @@ pub struct CreateTaskArgs {
     pub token_reward: TokenReward,
     pub task_content: Vec<TaskContent>,
     pub number_of_uses: u64,
+    pub start_time: u64,
+    pub end_time: u64,
 }
 
 impl CreateTaskArgs {
@@ -31,6 +34,13 @@ impl CreateTaskArgs {
         }
         if self.task_content.len() > 10 {
             return Err(Error::InvalidTaskContent("Too many subtasks".into()));
+        }
+        if self.end_time <= self.start_time {
+            return Err(Error::InvalidTaskContent("Task End time must be after start time".into()));
+        }
+        let now = ic_cdk::api::time() / 1_000_000_000;
+        if self.end_time <= now {
+            return Err(Error::InvalidTaskContent("Task end time must be in the future".into()));
         }
         self.task_content
             .iter()
@@ -113,9 +123,9 @@ impl TaskType {
                 if !submission.is_text() {
                     return Err(Error::IncorrectSubmission("Text".to_string()));
                 }
-                match &submission {
-                    Submission::Text { content } => content.trim().len(),
-                };
+                // match &submission {
+                //     Submission::Text { content } => content.trim().len(),
+                // };
 
                 submissions_map.insert(
                     user,
@@ -156,14 +166,32 @@ impl TaskType {
         Ok(())
     }
 
+    pub fn clone_with_accepted_only(&self) -> Self {
+        let mut cloned = self.clone();
+        let map = cloned.get_submission_map_mut();
+        for data in map.values_mut() {
+            if data.get_state() != &SubmissionState::Accepted {
+                data.clear_content();
+            }
+        }
+        cloned
+    }
+
     pub fn get_submission(&self, user: Principal) -> Result<&SubmissionData, Error> {
+        self.get_submission_map()
+            .get(&user)
+            .ok_or(Error::UserSubmissionNotFound)
+    }
+
+    pub fn get_submission_map(&self) -> &BTreeMap<Principal, SubmissionData> {
         match self {
-            TaskType::GenericTask {
-                task_content: _,
-                submission: submissions_map,
-            } => Ok(submissions_map
-                .get(&user)
-                .ok_or(Error::UserSubmissionNotFound)?),
+            TaskType::GenericTask { submission, .. } => submission,
+        }
+    }
+
+    pub fn get_submission_map_mut(&mut self) -> &mut BTreeMap<Principal, SubmissionData> {
+        match self {
+            TaskType::GenericTask { submission, .. } => submission,
         }
     }
 }
@@ -182,6 +210,10 @@ pub struct Task {
     task_title: String,
     #[cbor(n(5), with = "shared::cbor::principal::vec")]
     rewarded: Vec<Principal>,
+    #[n(6)]
+    start_time: u64, // in seconds
+    #[n(7)]
+    end_time: u64, // in seconds
 }
 
 impl Task {
@@ -206,7 +238,18 @@ impl Task {
             number_of_uses: create_task_args.number_of_uses,
             task_title: create_task_args.task_title,
             rewarded: Vec::new(),
+            start_time: create_task_args.start_time,
+            end_time: create_task_args.end_time,
         })
+    }
+
+    pub fn creator(&self) -> &Principal {
+        &self.creator
+    }
+
+    pub fn is_expired(&self) -> bool {
+        let current_time_seconds = ic_cdk::api::time() / 1_000_000_000;
+        current_time_seconds > self.end_time
     }
 
     pub fn submit_subtask_submission(
@@ -286,6 +329,148 @@ impl Storable for Task {
     fn from_bytes(bytes: Cow<[u8]>) -> Self {
         minicbor::decode(bytes.as_ref())
             .unwrap_or_else(|e| panic!("failed to decode Task bytes {}: {e}", hex::encode(bytes)))
+    }
+
+    const BOUND: Bound = Bound::Unbounded;
+}
+
+#[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType)]
+pub struct ClosedTask {
+    #[cbor(n(0), with = "shared::cbor::principal")]
+    creator: Principal,
+    #[n(1)]
+    token_reward: TokenReward,
+    #[n(2)]
+    accepted_tasks: Vec<TaskType>,
+    #[n(3)]
+    number_of_uses: u64,
+    #[n(4)]
+    task_title: String,
+    #[cbor(n(5), with = "shared::cbor::principal::vec")]
+    rewarded: Vec<Principal>,
+    #[n(6)]
+    start_time: u64, // in seconds
+    #[n(7)]
+    end_time: u64, // in seconds
+    #[n(8)]
+    refunded: bool, // Indicates if creator has claimed unused rewards
+}
+
+impl ClosedTask {
+    pub fn creator(&self) -> &Principal {
+        &self.creator
+    }
+
+    pub async fn claim_reward(
+        &mut self,
+        user: Principal,
+        subaccount: [u8; 32],
+    ) -> Result<(), Error> {
+        let subtask = self.accepted_tasks.iter().all(|task| {
+            let state = task.get_submission(user).unwrap().get_state();
+            state == &SubmissionState::Accepted
+        });
+        if !subtask {
+            return Err(Error::SubmissionNotAccepted);
+        }
+        if Nat::from(self.rewarded.len()) >= self.number_of_uses {
+            return Err(Error::UsageLimitExceeded);
+        }
+        if self.rewarded.contains(&user) {
+            return Err(Error::UserAlreadyRewarded);
+        }
+        self.token_reward.withdraw_reward(user, subaccount).await?;
+        self.rewarded.push(user);
+        Ok(())
+    }
+
+    pub async fn claim_remains(
+        &mut self,
+        caller: Principal,
+        subaccount: [u8; 32],
+    ) -> Result<(), Error> {
+        if caller != self.creator {
+            return Err(Error::NotTaskCreator);
+        }
+
+        if self.refunded {
+            return Err(Error::RewardAlreadyRefunded);
+        }
+
+        let rewarded_count = self.rewarded.len() as u64;
+        if rewarded_count >= self.number_of_uses {
+            return Err(Error::NoUnusedRewards);
+        }
+
+        if self.accepted_tasks.is_empty() {
+            self.token_reward.withdraw_remains(caller, subaccount, self.number_of_uses).await?;
+            self.refunded = true;
+            return Ok(());
+        }
+
+        let mut accepted_users = std::collections::HashSet::<Principal>::new();
+        let first_task_accepted_users: std::collections::HashSet<_> = self.accepted_tasks[0]
+            .get_submission_map()
+            .iter()
+            .filter_map(|(user, data)| {
+                if data.get_state() == &SubmissionState::Accepted {
+                    Some(user.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        accepted_users = first_task_accepted_users.into_iter().filter(|user| {
+            self.accepted_tasks.iter().all(|task| {
+                match task.get_submission(*user) {
+                    Ok(sub) => sub.get_state() == &SubmissionState::Accepted,
+                    Err(_) => false,
+                }
+            }) 
+        }).collect();
+
+        let unused = self.number_of_uses - accepted_users.len() as u64;
+        if unused == 0 {
+            return Err(Error::NoUnusedRewards);
+        }
+
+        self.token_reward.withdraw_remains(caller, subaccount, unused).await?;
+        self.refunded = true;
+        Ok(())
+    }
+}
+
+impl From<Task> for ClosedTask {
+    fn from(task: Task) -> Self {
+        Self {
+            creator: task.creator,
+            token_reward: task.token_reward,
+            accepted_tasks: task
+                .tasks
+                .into_iter()
+                .map(|task_type| task_type.clone_with_accepted_only())
+                .collect(),
+            number_of_uses: task.number_of_uses,
+            task_title: task.task_title,
+            rewarded: task.rewarded,
+            start_time: task.start_time,
+            end_time: task.end_time,
+            refunded: false,
+        }
+    }
+}
+
+impl Storable for ClosedTask {
+    fn to_bytes(&self) -> Cow<[u8]> {
+        let mut buf = vec![];
+        minicbor::encode(self, &mut buf).expect("ClosedTask encoding should always succeed");
+        Cow::Owned(buf)
+    }
+
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
+        minicbor::decode(bytes.as_ref())
+            .unwrap_or_else(|e| panic!("failed to decode ClosedTask bytes {}: {e}", hex::encode(bytes)))
     }
 
     const BOUND: Bound = Bound::Unbounded;

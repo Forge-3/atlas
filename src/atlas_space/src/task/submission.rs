@@ -22,6 +22,8 @@ pub enum Submission {
         #[n(0)]
         content: String,
     },
+    #[n(255)]
+    Empty,
 }
 
 impl Submission {
@@ -50,5 +52,9 @@ impl SubmissionData {
 
     pub fn get_state(&self) -> &SubmissionState {
         &self.state
+    }
+
+    pub fn clear_content(&mut self) {
+        self.submission = Submission::Empty;
     }
 }

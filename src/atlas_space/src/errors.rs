@@ -71,4 +71,16 @@ pub enum Error {
 
     #[error("User already rewarded")]
     UserAlreadyRewarded,
+
+    #[error("Caller is not the task creator")]
+    NotTaskCreator,
+
+    #[error("All task rewards have been claimed")]
+    NoUnusedRewards,
+
+    #[error("Creator has claimed unused rewards")]
+    RewardAlreadyRefunded,
+
+    #[error("Task with TaskId ({0}) not found")]
+    TaskNotFound(TaskId),
 }

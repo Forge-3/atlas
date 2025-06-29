@@ -8,7 +8,7 @@ use crate::{
     errors::Error,
     memory,
     state::State,
-    task::{Task, TaskId},
+    task::{Task, TaskId, ClosedTask},
 };
 
 const MAX_TASKS_PER_RESPONSE: u8 = 200;
@@ -28,6 +28,12 @@ pub struct GetTasksArgs {
 pub struct GetTasksRes {
     pub tasks_count: usize,
     pub tasks: BTreeMap<TaskId, Task>,
+}
+
+#[derive(Debug, CandidType)]
+pub struct GetClosedTasksRes {
+    pub tasks_count: usize,
+    pub tasks: BTreeMap<TaskId, ClosedTask>,
 }
 
 #[query]
@@ -53,7 +59,7 @@ pub fn get_open_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
 }
 
 #[query]
-pub fn get_closed_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
+pub fn get_closed_tasks(args: GetTasksArgs) -> Result<GetClosedTasksRes, Error> {
     if args.count > MAX_TASKS_PER_RESPONSE as usize {
         return Err(Error::CountToHigh {
             max: MAX_TASKS_PER_RESPONSE as usize,
@@ -68,7 +74,7 @@ pub fn get_closed_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
             .collect()
     });
 
-    Ok(GetTasksRes {
+    Ok(GetClosedTasksRes {
         tasks,
         tasks_count: memory::get_closed_tasks_len() as usize,
     })

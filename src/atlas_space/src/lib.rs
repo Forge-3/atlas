@@ -12,7 +12,7 @@ mod task;
 
 use crate::cycles::WalletReceiveResult;
 use crate::errors::Error;
-use crate::methods::query::{GetTasksArgs, GetTasksRes};
+use crate::methods::query::{GetTasksArgs, GetTasksRes, GetClosedTasksRes};
 use crate::state::{EditSpaceArgs, State};
 use crate::task::{submission::Submission, CreateTaskArgs, TaskId};
 
