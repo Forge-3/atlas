@@ -49,3 +49,20 @@ export function timeAgo(timestamp: string | number): string {
 
   return "just now";
 }
+
+export function formatDuration(seconds: number): string {
+  const days = Math.floor(seconds / (3600 * 24));
+  const hours = Math.floor((seconds % (3600 * 24)) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  const parts = [];
+  if (days) parts.push(`${days}d`);
+  if (hours) parts.push(`${hours}h`);
+  if (minutes) parts.push(`${minutes}m`);
+
+  return parts.length ? parts.join(" ") : "Less than a minute";
+}
+
+export function nowInSeconds(): number {
+  return Math.floor(Date.now() / 1000);
+}

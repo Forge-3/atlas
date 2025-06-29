@@ -28,6 +28,7 @@ import {
 import { getAtlasUser, joinAtlasSpace } from "../../canisters/atlasMain/api.ts";
 import TransferSpaceModal from "../../modals/TransferSpaceModal.tsx";
 import { getErrorWithInfoToast } from "../../utils/errors.ts";
+import { formatDuration, nowInSeconds } from "../../utils/date.ts";
 import LocalBlurOverlay from "../Shared/LocalBlurOverlay.tsx";
 import { runWithLoading } from "../../utils/loading.ts";
 
@@ -36,7 +37,19 @@ interface TasksListProps {
   spaceId: Principal;
 }
 
-const TasksList = ({ tasks, spaceId }: TasksListProps) => {
+const TasksList = ({ tasks = {}, spaceId }: TasksListProps) => {
+  const now = nowInSeconds();
+  const taskEntries = Object.entries(tasks).map(([id, task]) => {
+    const isClosed = "refunded" in task;
+    const isStarting = Number(task.start_time) > Number(now);
+    const type: "expired" | "starting" | "ongoing" = isClosed ? "expired" : isStarting ? "starting" : "ongoing";
+    const startingIn = type === "starting" ? formatDuration(Number(task.start_time) - Number(now)) : undefined;
+
+    return { id, task, type, startingIn };
+  });
+
+  if (taskEntries.length === 0) return <></>;
+
   return (
     <>
       <div className="relative w-full bg-[#1E0F33] mb-1">
@@ -51,20 +64,20 @@ const TasksList = ({ tasks, spaceId }: TasksListProps) => {
           </div>
         </div>
       </div>
+      
       <div className="relative w-full bg-[#1E0F33] rounded-b-xl">
         <div className="flex gap-4 md:mx-3 px-8 py-6 flex-wrap justify-between md:justify-center">
           <LocalBlurOverlay isLoading={!tasks} />
-          {tasks && Object.entries(tasks).map(([id, task]) => {
-            return (
-              <TaskCard
-                key={id}
-                task={task}
-                type={"ongoing"}
-                id={id}
-                spaceId={spaceId}
-              />
-            );
-          })}
+          {tasks && taskEntries.map((entry) => (
+            <TaskCard
+              key={entry.id}
+              id={entry.id}
+              task={entry.task}
+              type={entry.type}
+              spaceId={spaceId}
+              startingIn={entry.type === "starting" ? entry.startingIn : undefined}
+            />
+          ))}
         </div>
       </div>
     </>
@@ -76,7 +89,7 @@ interface SpaceProps {
   description: string;
   avatarImg: string | null;
   backgroundImg: string | null;
-  tasks?: Tasks;
+  tasks: Tasks;
   spaceId: Principal;
   externalLinks: ExternalLinks;
 }
@@ -285,3 +298,4 @@ const Space = ({
 };
 
 export default Space;
+

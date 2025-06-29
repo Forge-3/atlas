@@ -1,10 +1,10 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Task } from "../../../../declarations/atlas_space/atlas_space.did";
 import type { StorableState } from "../../canisters/atlasSpace/types";
+import type { AnyTask } from "../../canisters/atlasSpace/api";
 
 export type Space = {
   state: null | StorableState;
-  tasks: null | { [key: string]: Task };
+  tasks: null | { [key: string]: AnyTask };
 };
 export type Spaces = {
   [key: string]: Space;
@@ -47,7 +47,7 @@ export const spaceSlice = createSlice({
     setTasks: (
       state,
       action: PayloadAction<{
-        tasks: { [key: string]: Task };
+        tasks: { [key: string]: AnyTask };
         spaceId: string;
       }>
     ) => {

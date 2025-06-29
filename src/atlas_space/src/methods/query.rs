@@ -4,13 +4,10 @@ use candid::CandidType;
 use ic_cdk::query;
 use serde::Deserialize;
 
-use crate::{
-    config::Config,
-    errors::Error,
-    memory,
-    state::State,
-    task::{Task, TaskId},
-};
+use crate::tasks::closed_task::ClosedTask;
+use crate::tasks::task::Task;
+use crate::tasks::task_types::TaskId;
+use crate::{config::Config, errors::Error, memory, state::State};
 
 const MAX_TASKS_PER_RESPONSE: u8 = 200;
 
@@ -50,6 +47,12 @@ pub struct GetTasksRes {
     pub tasks: BTreeMap<TaskId, Task>,
 }
 
+#[derive(Debug, CandidType)]
+pub struct GetClosedTasksRes {
+    pub tasks_count: usize,
+    pub tasks: BTreeMap<TaskId, ClosedTask>,
+}
+
 #[query]
 pub fn get_open_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
     if args.count > MAX_TASKS_PER_RESPONSE as usize {
@@ -59,7 +62,7 @@ pub fn get_open_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
         });
     }
 
-    let tasks = memory::with_open_tasks_iter(|tasks| {
+    let tasks: BTreeMap<TaskId, Task> = memory::with_open_tasks_iter(|tasks| {
         tasks
             .skip(args.start)
             .take(args.count.min(MAX_TASKS_PER_RESPONSE as usize))
@@ -73,7 +76,7 @@ pub fn get_open_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
 }
 
 #[query]
-pub fn get_closed_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
+pub fn get_closed_tasks(args: GetTasksArgs) -> Result<GetClosedTasksRes, Error> {
     if args.count > MAX_TASKS_PER_RESPONSE as usize {
         return Err(Error::CountToHigh {
             max: MAX_TASKS_PER_RESPONSE as usize,
@@ -88,7 +91,7 @@ pub fn get_closed_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
             .collect()
     });
 
-    Ok(GetTasksRes {
+    Ok(GetClosedTasksRes {
         tasks,
         tasks_count: memory::get_closed_tasks_len() as usize,
     })

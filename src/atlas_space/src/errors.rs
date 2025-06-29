@@ -2,7 +2,7 @@ use candid::CandidType;
 use serde::Deserialize;
 use thiserror::Error;
 
-use crate::task::TaskId;
+use crate::tasks::task_types::TaskId;
 
 #[derive(Clone, PartialEq, Debug, CandidType, Deserialize, Error)]
 pub enum Error {
@@ -71,6 +71,24 @@ pub enum Error {
 
     #[error("User already rewarded")]
     UserAlreadyRewarded,
+
+    #[error("Caller is not the task creator")]
+    NotTaskCreator,
+
+    #[error("All task rewards have been claimed")]
+    AllRewardsClaimed,
+
+    #[error("Creator has claimed unused rewards")]
+    RewardAlreadyRefunded,
+
+    #[error("Task with TaskId ({0}) not found")]
+    TaskNotFound(TaskId),
+
+    #[error("Task expired")]
+    TaskExpired,
+
+    #[error("Task is not active (start_time is in the future)")]
+    TaskNotActive,
 
     #[error("Failed to parse call response: {0}")]
     FailedToParse(String),

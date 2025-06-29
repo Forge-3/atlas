@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSpaceId } from "../../hooks/space";
 import { useDispatch, useSelector } from "react-redux";
+import type { ClosedTask } from "../../../../declarations/atlas_space/atlas_space.did";
 import { deserialize, type RootState } from "../../store/store";
 import { useEffect } from "react";
 import {
@@ -11,9 +12,11 @@ import {
   useUnAuthAtlasSpaceActor,
 } from "../../hooks/identityKit";
 import {
+  forceCloseTask,
   getAtlasSpace,
   getSpaceTasks,
   withdrawReward,
+  type AnyTask,
 } from "../../canisters/atlasSpace/api";
 import GenericTask from "./tasks/GenericTask";
 import { FaWallet } from "react-icons/fa";
@@ -34,6 +37,7 @@ import { getAtlasUser, joinAtlasSpace } from "../../canisters/atlasMain/api";
 import type { Space } from "../../store/slices/spacesSlice";
 import { FaArrowLeftLong } from "react-icons/fa6";
 import { getErrorWithInfoToast } from "../../utils/errors";
+import { nowInSeconds } from "../../utils/date";
 
 const Task = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -89,6 +93,12 @@ const Task = () => {
     return <></>;
   }
 
+  function isClosedTask(task: AnyTask): task is ClosedTask {
+    return 'refunded' in task;
+  }
+
+  const taskDisabled = currentTask.start_time > BigInt(nowInSeconds()) || isClosedTask(currentTask);
+
   const usersSubmissions = currentTask?.tasks
     ? getUsersSubmissions(currentTask.tasks)
     : new UserSubmissions({});
@@ -140,6 +150,24 @@ const Task = () => {
     });
   };
 
+  const closeTask = async () => {
+    if (!authAtlasSpace || !taskId) return;
+
+    await toast.promise(
+      forceCloseTask({
+        authAtlasSpace,
+        taskId: BigInt(taskId),
+      }),
+      {
+        loading: "Closing task...",
+        success: "Task closed successfully.",
+        error: getErrorWithInfoToast("Failed to close task."),
+      }
+    );
+
+    navigate(getSpacePath(parsedSpacePrincipal));
+  };
+
   return (
     <div className="container mx-auto my-4">
       <div className="w-full px-3">
@@ -157,7 +185,7 @@ const Task = () => {
             {!didUserCanAdministrate && userBlockchainData && !inHub && (
               <Button className="flex-1 md:flex-none" onClick={joinSpace}>Join space</Button>
             )}
-            {didUserCanAdministrate && (
+            {didUserCanAdministrate && !taskDisabled && (
               <Button
                 className="flex-1 md:flex-none"
                 onClick={() =>
@@ -165,6 +193,14 @@ const Task = () => {
                 }
               >
                 Review submission
+              </Button>
+            )}
+            {didUserCanAdministrate && !taskDisabled && (
+              <Button
+                className="flex-1 md:flex-none ml-2 text-white bg-rose-800"
+                onClick={closeTask}
+              >
+                Close task
               </Button>
             )}
           </div>
@@ -206,6 +242,7 @@ const Task = () => {
                       subtaskId={key}
                       unAuthAtlasSpace={unAuthAtlasSpace}
                       isUserInHub={isUserInHub}
+                      disabled={taskDisabled}
                     />
                   ))}
                 </div>
