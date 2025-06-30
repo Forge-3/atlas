@@ -2,7 +2,7 @@ use candid::{CandidType, Principal};
 use serde::Deserialize;
 use thiserror::Error;
 
-use crate::{space::Space, user::Rank};
+use crate::user::Rank;
 
 #[derive(Clone, PartialEq, Debug, CandidType, Deserialize, Error)]
 pub enum Error {
