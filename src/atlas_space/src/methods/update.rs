@@ -204,37 +204,6 @@ pub async fn delete_closed_task(task_id: TaskId) -> Result<(), Error> {
 }
 
 #[update]
-pub async fn withdraw_remains(task_id: TaskId) -> Result<(), Error> {
-    let caller = authenticated_guard()?;
-    let mut task = memory::get_closed_task(&task_id).ok_or(Error::TaskDoNotExists(task_id))?;
-
-    if caller != *task.creator() {
-        parent_or_owner_or_admin_guard().await?;
-    }
-    let subaccount = sha2::Sha256::digest(task_id.u64().to_bytes()).into();
-
-    task.claim_remains(caller, subaccount).await?;
-    memory::mut_closed_task(task_id.clone(), |maybe_task| {
-        let task_ref = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
-        *task_ref = task;
-        Ok(())
-    })??;
-
-    Ok(())
-}
-
-#[update]
-pub async fn force_close_task(task_id: TaskId) -> Result<(), Error> {
-    let caller = authenticated_guard()?;
-    let task = memory::get_open_task(&task_id).ok_or(Error::TaskDoNotExists(task_id))?;
-
-    if caller != *task.creator() {
-        parent_or_owner_or_admin_guard().await?;
-    }
-    memory::close_task(task_id)
-}
-
-#[update]
 pub fn transfer_space(to: Principal) {
     parent_guard().unwrap();
 
