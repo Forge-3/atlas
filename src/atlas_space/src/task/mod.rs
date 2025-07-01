@@ -4,7 +4,6 @@ use candid::{CandidType, Nat, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
-use sha2::Digest;
 use submission::{Submission, SubmissionData, SubmissionState};
 use token_reward::TokenReward;
 
