@@ -4,16 +4,41 @@ use candid::{CandidType, Nat, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
-use sha2::Digest;
 use submission::{Submission, SubmissionData, SubmissionState};
 use token_reward::TokenReward;
+use ic_cdk_timers::TimerId;
+use serde::Serialize;
+use slotmap::KeyData;
+use slotmap::Key;
 
 use crate::errors::Error;
-use crate::memory;
 
 pub mod submission;
 pub mod token_reward;
 pub mod xp_reward;
+pub mod timer_logic;
+
+#[derive(Clone, Debug, Eq, PartialEq, CandidType, Serialize, Deserialize, Decode, Encode)]
+pub struct TimerKeyData(
+    #[n(0)]
+    pub u64,
+);
+
+impl From<TimerId> for TimerKeyData {
+    fn from(timer_id: TimerId) -> Self {
+        let key_data = timer_id.data();
+        TimerKeyData(key_data.as_ffi())
+    }
+}
+
+impl TryFrom<TimerKeyData> for TimerId {
+    type Error = Error;
+
+    fn try_from(data: TimerKeyData) -> Result<Self, Self::Error> {
+        let key_data = KeyData::from_ffi(data.0);
+        Ok(TimerId::from(key_data))
+    }
+}
 
 #[derive(CandidType, Deserialize)]
 pub struct CreateTaskArgs {
@@ -123,10 +148,6 @@ impl TaskType {
                 if !submission.is_text() {
                     return Err(Error::IncorrectSubmission("Text".to_string()));
                 }
-                // match &submission {
-                //     Submission::Text { content } => content.trim().len(),
-                // };
-
                 submissions_map.insert(
                     user,
                     SubmissionData::new(submission, SubmissionState::default()),
@@ -214,6 +235,8 @@ pub struct Task {
     start_time: u64, // in seconds
     #[n(7)]
     end_time: u64, // in seconds
+    #[n(8)]
+    timer_id: Option<TimerKeyData>,
 }
 
 impl Task {
@@ -221,6 +244,7 @@ impl Task {
         creator: Principal,
         create_task_args: CreateTaskArgs,
         subaccount: [u8; 32],
+        timer_id: TimerKeyData,
     ) -> Result<Self, Error> {
         create_task_args
             .token_reward
@@ -240,11 +264,24 @@ impl Task {
             rewarded: Vec::new(),
             start_time: create_task_args.start_time,
             end_time: create_task_args.end_time,
+            timer_id: Some(timer_id),
         })
     }
 
     pub fn creator(&self) -> &Principal {
         &self.creator
+    }
+
+    pub fn timer_id(&self) -> &Option<TimerKeyData> {
+        &self.timer_id
+    }
+
+    pub fn set_timer_id(&mut self, id: TimerId) {
+        self.timer_id = Some(id.into());
+    }
+
+    pub fn end_time(&self) -> u64 {
+        self.end_time
     }
 
     pub fn is_expired(&self) -> bool {
@@ -408,7 +445,6 @@ impl ClosedTask {
             return Ok(());
         }
 
-        let mut accepted_users = std::collections::HashSet::<Principal>::new();
         let first_task_accepted_users: std::collections::HashSet<_> = self.accepted_tasks[0]
             .get_submission_map()
             .iter()
@@ -421,7 +457,7 @@ impl ClosedTask {
             })
             .collect();
 
-        accepted_users = first_task_accepted_users.into_iter().filter(|user| {
+        let accepted_users: std::collections::HashSet::<Principal> = first_task_accepted_users.into_iter().filter(|user| {
             self.accepted_tasks.iter().all(|task| {
                 match task.get_submission(*user) {
                     Ok(sub) => sub.get_state() == &SubmissionState::Accepted,

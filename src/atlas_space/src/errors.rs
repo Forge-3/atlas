@@ -83,4 +83,7 @@ pub enum Error {
 
     #[error("Task with TaskId ({0}) not found")]
     TaskNotFound(TaskId),
+
+    #[error("Task expired")]
+    TaskExpired,
 }

@@ -1,17 +1,15 @@
-use std::collections::BTreeMap;
-
 use crate::{
     errors::Error,
     guard::{parent_or_owner_or_admin_guard, user_is_in_space, authenticated_guard},
     memory,
     state::EditSpaceArgs,
-    task::{submission::Submission, CreateTaskArgs, Task, TaskId},
+    task::{submission::Submission, CreateTaskArgs, Task, TaskId, timer_logic::close_task, timer_logic::close_task_if_expired},
 };
-
-use candid::{CandidType, Principal};
+use ic_cdk_timers::set_timer;
+use std::time::Duration;
+use candid::{Principal};
 use ic_cdk::update;
 use ic_stable_structures::Storable;
-use serde::Deserialize;
 use sha2::Digest;
 
 #[update]
@@ -59,11 +57,20 @@ pub async fn create_task(args: CreateTaskArgs) -> Result<TaskId, Error> {
     let caller = parent_or_owner_or_admin_guard().await?;
     args.validate()?;
     let next_task_id = memory::mut_state(|state| TaskId::new(state.get_next_task_id()));
-
     let subaccount = sha2::Sha256::digest(next_task_id.u64().to_bytes()).into();
+
+    let now_sec = ic_cdk::api::time() / 1_000_000_000;
+    let delay_sec = args.end_time.saturating_sub(now_sec);
+    let timer_id = set_timer(Duration::from_secs(delay_sec), {
+        let id = next_task_id.clone();
+        move || {
+            let _ = close_task(id);
+        }
+    });
+
     memory::insert_open_task(
         next_task_id.clone(),
-        Task::new(caller, args, subaccount).await.unwrap(),
+        Task::new(caller, args, subaccount, timer_id.into()).await.unwrap(),
     )
     .unwrap();
 
@@ -77,6 +84,12 @@ pub async fn submit_subtask_submission(
     submission: Submission,
 ) -> Result<(), Error> {
     let caller = user_is_in_space().await?;
+
+    let expired = close_task_if_expired(task_id.clone())?;
+    if expired {
+        return Err(Error::TaskExpired);
+    }
+
     memory::mut_open_task(task_id.clone(), |maybe_task| {
         let task = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
         task.submit_subtask_submission(caller, subtask_id, submission)?;
@@ -162,5 +175,5 @@ pub async fn force_close_task(task_id: TaskId) -> Result<(), Error> {
     if caller != *task.creator() {
         parent_or_owner_or_admin_guard().await?;
     }
-    memory::close_task(task_id)
+    close_task(task_id)
 }

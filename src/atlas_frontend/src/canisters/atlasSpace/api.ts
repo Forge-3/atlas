@@ -44,6 +44,8 @@ interface CreateNewSpaceTaskArgs {
   rewardPerUsage: bigint;
   tasks: TaskContent[];
   taskTitle: string;
+  start_time: bigint;
+  end_time: bigint;
 }
 
 export const createNewTask = async ({
@@ -52,6 +54,8 @@ export const createNewTask = async ({
   rewardPerUsage,
   tasks,
   taskTitle,
+  start_time,
+  end_time,
 }: CreateNewSpaceTaskArgs) => {
   const call = authAtlasSpaceActor.create_task({
     task_title: taskTitle,
@@ -62,6 +66,8 @@ export const createNewTask = async ({
     },
     task_content: tasks,
     number_of_uses: numberOfUses,
+    start_time: start_time,
+    end_time: end_time,
   });
 
   return await unwrapCall<bigint>({
