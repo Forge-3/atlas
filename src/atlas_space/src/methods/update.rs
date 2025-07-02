@@ -1,6 +1,6 @@
 use crate::{
     errors::Error,
-    guard::{parent_or_owner_or_admin_guard, user_is_in_space},
+    guard::{parent_guard, parent_or_owner_or_admin_guard, user_is_in_space},
     memory,
     state::EditSpaceArgs,
     task::{submission::Submission, CreateTaskArgs, Task, TaskId},
@@ -59,7 +59,7 @@ pub async fn create_task(args: CreateTaskArgs) -> Result<TaskId, Error> {
 
     let subaccount = sha2::Sha256::digest(next_task_id.u64().to_bytes()).into();
     memory::insert_open_task(
-        next_task_id.clone(),
+        next_task_id,
         Task::new(caller, args, subaccount).await.unwrap(),
     )
     .unwrap();
@@ -74,7 +74,7 @@ pub async fn submit_subtask_submission(
     submission: Submission,
 ) -> Result<(), Error> {
     let caller = user_is_in_space().await?;
-    memory::mut_open_task(task_id.clone(), |maybe_task| {
+    memory::mut_open_task(task_id, |maybe_task| {
         let task = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
         task.submit_subtask_submission(caller, subtask_id, submission)?;
 
@@ -91,7 +91,7 @@ pub async fn accept_subtask_submission(
     subtask_id: usize,
 ) -> Result<(), Error> {
     parent_or_owner_or_admin_guard().await?;
-    memory::mut_open_task(task_id.clone(), |maybe_task| {
+    memory::mut_open_task(task_id, |maybe_task| {
         let task = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
         task.accept_subtask_submission(user, subtask_id)?;
         Ok(())
@@ -107,7 +107,7 @@ pub async fn reject_subtask_submission(
     subtask_id: usize,
 ) -> Result<(), Error> {
     parent_or_owner_or_admin_guard().await?;
-    memory::mut_open_task(task_id.clone(), |maybe_task| {
+    memory::mut_open_task(task_id, |maybe_task| {
         let task = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
         task.reject_subtask_submission(user, subtask_id)?;
         Ok(())
@@ -123,10 +123,17 @@ pub async fn withdraw_reward(task_id: TaskId) -> Result<(), Error> {
     let subaccount = sha2::Sha256::digest(task_id.u64().to_bytes()).into();
     old_task.claim_reward(caller, subaccount).await?;
 
-    memory::mut_open_task(task_id.clone(), |maybe_task| {
+    memory::mut_open_task(task_id, |maybe_task| {
         let task = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
         *task = old_task;
         Ok(())
     })??;
     Ok(())
+}
+
+#[update]
+pub fn transfer_space(to: Principal) {
+    parent_guard().unwrap();
+
+    memory::mut_config(|config| config.owner == to);
 }

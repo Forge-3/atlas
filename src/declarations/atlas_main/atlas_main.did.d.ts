@@ -30,8 +30,10 @@ export interface Config {
 export type Error = { 'UserRankNoMatch' : Array<Rank> } |
   { 'FailedToCallSpace' : { 'err' : string, 'principal' : Principal } } |
   { 'FailedToSaveSpace' : string } |
+  { 'UserNotOwner' : null } |
   { 'FailedToUpdateConfig' : string } |
   { 'UserRichSpaceLimit' : { 'found' : bigint, 'expected' : bigint } } |
+  { 'FailedToDecodeArgs' : string } |
   { 'UserRankToHigh' : { 'found' : Rank, 'expected' : Rank } } |
   { 'UserAlreadyHaveExpectedRank' : Rank } |
   { 'UserNotAnOwner' : Principal } |
@@ -78,6 +80,7 @@ export interface SpaceInitArg {
   'space_description' : string,
 }
 export type SpaceType = { 'HUB' : null };
+export interface TransferSpace { 'to' : Principal, 'space_id' : Principal }
 export interface UpdateConfig {
   'spaces_per_space_lead' : [] | [number],
   'ckusdc_ledger' : [] | [CkUsdcLedger_1],
@@ -108,6 +111,8 @@ export interface _SERVICE {
   'join_space' : ActorMethod<[Principal], Result_2>,
   'set_user_admin' : ActorMethod<[Principal], Result_2>,
   'set_user_space_lead' : ActorMethod<[Principal], Result_2>,
+  'transfer_space' : ActorMethod<[TransferSpace], Result_2>,
+  'unlock_space_creation' : ActorMethod<[Principal], Result_2>,
   'upgrade_space' : ActorMethod<[Principal], Result_2>,
   'user_is_admin' : ActorMethod<[Principal], boolean>,
   'user_is_in_hub' : ActorMethod<[Principal], boolean>,

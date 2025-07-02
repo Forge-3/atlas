@@ -21,3 +21,4 @@ dist/
 # environment variables
 .env
 dfx.json
+.astro

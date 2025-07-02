@@ -134,6 +134,7 @@ export const idlFactory = ({ IDL }) => {
         [Result],
         [],
       ),
+    'transfer_space' : IDL.Func([IDL.Principal], [], []),
     'wallet_balance' : IDL.Func([], [IDL.Nat], ['query']),
     'wallet_receive' : IDL.Func([], [WalletReceiveResult], []),
     'withdraw_reward' : IDL.Func([IDL.Nat64], [Result], []),

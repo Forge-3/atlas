@@ -46,3 +46,13 @@ pub async fn user_is_in_space() -> Result<Principal, Error> {
     }
     Err(Error::UserDoesNotBelongToSpace)
 }
+
+#[inline(always)]
+pub fn parent_guard() -> Result<Principal, Error> {
+    let principal = authenticated_guard()?;
+    let config = memory::read_config(|config| config.clone());
+    if principal == config.parent() {
+        return Ok(principal);
+    }
+    Err(Error::NotParent)
+}

@@ -7,19 +7,21 @@ import SpaceBuilder from "../components/Space/SpaceBuilder.tsx";
 import SpacesList from "../components/Space/SpacesList/index.tsx";
 import Task from "../components/Task/index.tsx";
 import {
+  ADMIN_PATH,
   DISCORD_CALLBACK_PATH,
-  HELP,
+  HELP_PATH,
   REVIEW_SUMMATIONS_PATH,
   SPACE_BUILDER_PATH,
   SPACE_EDIT_PATH,
   SPACE_PATH,
   SPACES_PATH,
   TASK_PATH,
-  WALLET,
+  WALLET_PATH,
 } from "./paths.ts";
 import Submissions from "../components/Submissions/index.tsx";
 import Wallet from "../components/Wallet/index.tsx";
 import Help from "../components/Help/index.tsx";
+import Admin from "../components/Admin.tsx";
 
 const Router = () => {
   return (
@@ -32,8 +34,9 @@ const Router = () => {
       <Route path={DISCORD_CALLBACK_PATH} element={<DiscordCallback />} />
       <Route path={TASK_PATH} element={<Task />} />
       <Route path={REVIEW_SUMMATIONS_PATH} element={<Submissions />} />
-      <Route path={WALLET} element={<Wallet />} />
-      <Route path={HELP} element={<Help />} />
+      <Route path={WALLET_PATH} element={<Wallet />} />
+      <Route path={HELP_PATH} element={<Help />} />
+      <Route path={ADMIN_PATH} element={<Admin />} />
     </Routes>
   );
 };

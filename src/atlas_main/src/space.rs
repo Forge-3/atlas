@@ -71,8 +71,8 @@ impl Space {
         if !info.controllers.is_empty() {
             archive_controllers.extend(info.controllers);
         }
-        let init_arg =
-            Encode!(&SpaceArgs::InitArg(Box::new(arg))).expect("Failed to encode init args?!");
+        let init_arg = Encode!(&SpaceArgs::InitArg(Box::new(arg)))
+            .map_err(|err| Error::FailedToDecodeArgs(format!("{:?}", err)))?;
 
         let (principal,) = create_canister(
             CreateCanisterArgument {

@@ -44,9 +44,9 @@ const TransactionHistory = ({ tokenSymbol }: TransactionHistoryProps) => {
     <div className="w-full mt-4">
       <div className="w-full rounded-xl overflow-hidden font-montserrat">
         <div className="inset-0 bg-gradient-to-b from-[#522785] to-transparent px-8 bg-cover bg-center z-0">
-          <div className="font-montserrat text-white text-2xl font-medium py-10">
+          <h2 className="font-montserrat text-white text-2xl font-medium py-10">
             ICP Transaction
-          </div>
+          </h2>
           <div className="overflow-x-auto">
             <table className="min-w-full table-auto border-separate border-spacing-x-3 rounded-t-lg text-center">
               <thead className="text-white">

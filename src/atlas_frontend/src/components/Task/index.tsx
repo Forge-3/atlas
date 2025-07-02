@@ -28,11 +28,7 @@ import {
   UserSubmissions,
 } from "../../canisters/atlasSpace/tasks";
 import toast from "react-hot-toast";
-import {
-  getAtlasUser,
-  
-  joinAtlasSpace,
-} from "../../canisters/atlasMain/api";
+import { getAtlasUser, joinAtlasSpace } from "../../canisters/atlasMain/api";
 
 const Task = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -114,10 +110,7 @@ const Task = () => {
   };
 
   const didUserCanAdministrate =
-    (user &&
-      userBlockchainData?.isSpaceLead() &&
-      userBlockchainData?.ownSpaces(parsedSpacePrincipal)) ??
-    false;
+    userBlockchainData?.canAdministrate(parsedSpacePrincipal) ?? false;
 
   const joinSpace = async () => {
     if (!authAtlasMain || !unAuthAtlasMain || !user) {
@@ -130,7 +123,7 @@ const Task = () => {
       }),
       {
         loading: "Trying to join space...",
-        success: "Succesfully joined to space",
+        success: "Successfully joined to space",
         error: "Failed to join to space",
       }
     );
@@ -144,8 +137,10 @@ const Task = () => {
   return (
     <div className="container mx-auto my-4">
       <div className="w-full px-3">
-        <div className="my-4 flex justify-end">
-          {userBlockchainData && !inHub && <Button onClick={joinSpace}>Join space</Button>}
+        <div className="my-4 flex justify-end gap-2">
+          {!didUserCanAdministrate && userBlockchainData && !inHub && (
+            <Button onClick={joinSpace}>Join space</Button>
+          )}
           {didUserCanAdministrate && (
             <Button
               onClick={() =>

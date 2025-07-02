@@ -15,7 +15,6 @@ import { serify } from "@karmaniverous/serify-deserify";
 import { customSerify } from "../../store/store.js";
 import type { Principal } from "@dfinity/principal";
 import type { ExternalLinks } from "./types.js";
-import { keyframes } from "framer-motion";
 
 interface GetAtlasSpaceArgs {
   unAuthAtlasSpace: ActorSubclass<_SERVICE>;

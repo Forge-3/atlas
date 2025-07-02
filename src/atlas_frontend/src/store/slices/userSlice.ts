@@ -10,13 +10,13 @@ import { customSerify } from "../store.ts";
 import type { UserTransactions } from "../../canisters/ckUsdcIndex/types.ts";
 import type { Principal } from "@dfinity/principal";
 
-export class BlockchainUser implements Omit<CandidUser, 'in_hub'> {
+export class BlockchainUser implements Omit<CandidUser, "in_hub"> {
   public integrations: Integrations;
   public rank: Rank;
   public space_creation_in_progress: boolean;
   public belonging_to_spaces: Space[];
   public owned_spaces: Space[];
-  public in_hub: Space | null
+  public in_hub: Space | null;
 
   constructor(public user: CandidUser) {
     this.integrations = user.integrations;
@@ -24,19 +24,23 @@ export class BlockchainUser implements Omit<CandidUser, 'in_hub'> {
     this.space_creation_in_progress = user.space_creation_in_progress;
     this.belonging_to_spaces = user.belonging_to_spaces;
     this.owned_spaces = user.owned_spaces;
-    this.in_hub = user.in_hub.pop() ?? null
+    this.in_hub = user.in_hub.pop() ?? null;
   }
 
   belongingToAnySpace() {
-    return this.belonging_to_spaces.length > 0
+    return this.belonging_to_spaces.length > 0;
   }
 
   belongingToSpace(space: Principal) {
-    return this.belonging_to_spaces.some(({id}) => id.toString() === space.toString())
+    return this.belonging_to_spaces.some(
+      ({ id }) => id.toString() === space.toString()
+    );
   }
 
   ownSpaces(space: Principal) {
-    return this.owned_spaces.some(({id}) => id.toString() === space.toString())
+    return this.owned_spaces.some(
+      ({ id }) => id.toString() === space.toString()
+    );
   }
 
   getRank() {
@@ -53,6 +57,10 @@ export class BlockchainUser implements Omit<CandidUser, 'in_hub'> {
 
   isSuperAdmin() {
     return this.getRank() === "SuperAdmin";
+  }
+
+  canAdministrate(space: Principal) {
+    return this.isAdmin() || (this.isSpaceLead() && this.ownSpaces(space));
   }
 }
 
@@ -111,14 +119,8 @@ export const userSlice = createSlice({
   },
 });
 
-export const {
-  setUserBlockchainData,
-  setCkUsdcBalance,
-  appendUserTxs,
-} = userSlice.actions;
-export const {
-  selectUserBlockchainData,
-  selectUserCkUsdc,
-  selectUserTxs,
-} = userSlice.selectors;
+export const { setUserBlockchainData, setCkUsdcBalance, appendUserTxs } =
+  userSlice.actions;
+export const { selectUserBlockchainData, selectUserCkUsdc, selectUserTxs } =
+  userSlice.selectors;
 export default userSlice.reducer;

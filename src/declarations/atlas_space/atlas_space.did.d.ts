@@ -124,6 +124,7 @@ export interface _SERVICE {
     [bigint, bigint, Submission],
     Result
   >,
+  'transfer_space' : ActorMethod<[Principal], undefined>,
   'wallet_balance' : ActorMethod<[], bigint>,
   'wallet_receive' : ActorMethod<[], WalletReceiveResult>,
   'withdraw_reward' : ActorMethod<[bigint], Result>,

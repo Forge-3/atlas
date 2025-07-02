@@ -52,11 +52,12 @@ const WalletHeader = () => {
       .label("Withdrawal amount"),
     withdrawalPrincipal: yup
       .string()
+      .max(63)
       .matches(
         /^([a-z0-9]{5}-){10}[a-z0-9]{3}$/,
-        "Enter a valid wallet address (account ID or principal)"
+        "Enter a valid wallet address (principal)"
       )
-      .required("Address is required"),
+      .required("Principal is required"),
   });
 
   const {
@@ -138,6 +139,7 @@ const WalletHeader = () => {
 
               <WalletAddressInputForm
                 register={register}
+                maxLength={63}
                 name="withdrawalPrincipal"
                 placeholder="Enter the principal"
                 className="py-3 px-4 rounded-xl bg-white/20 backdrop-blur-sm border-0"

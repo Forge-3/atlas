@@ -1,6 +1,5 @@
 import { Actor, type ActorSubclass, type Agent } from "@dfinity/agent";
 import {
-  atlas_main,
   canisterId,
   idlFactory,
 } from "../../../../declarations/atlas_main/index.js";

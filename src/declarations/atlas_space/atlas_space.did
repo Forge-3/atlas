@@ -107,6 +107,7 @@ service : (SpaceArgs) -> {
   set_space_logo : (text) -> (Result);
   set_space_name : (text) -> (Result);
   submit_subtask_submission : (nat64, nat64, Submission) -> (Result);
+  transfer_space : (principal) -> ();
   wallet_balance : () -> (nat) query;
   wallet_receive : () -> (WalletReceiveResult);
   withdraw_reward : (nat64) -> (Result);

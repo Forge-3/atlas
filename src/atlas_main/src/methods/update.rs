@@ -1,10 +1,12 @@
 use std::collections::BTreeMap;
 
-use candid::{Encode, Principal};
+use candid::Nat;
+use candid::{CandidType, Encode, Principal};
 use ic_cdk::{
     api::management_canister::main::{CanisterInstallMode, InstallCodeArgument},
     update,
 };
+use serde::Deserialize;
 use shared::{SpaceArgs, SpaceInitArg};
 
 use crate::{
@@ -53,10 +55,12 @@ pub async fn create_new_space(
     external_links: BTreeMap<String, String>,
 ) -> Result<Space, Error> {
     let caller = authenticated_guard()?;
-    let user = memory::user_rank_match(&caller, &[Rank::SpaceLead])?;
+    let user = memory::user_rank_match(&caller, &[Rank::SpaceLead, Rank::Admin, Rank::SuperAdmin])?;
     let config = memory::read_config(|local_config| local_config.clone());
 
-    if user.owned_spaces_count() >= config.spaces_per_space_lead as usize {
+    if user.rank() == &Rank::SpaceLead
+        && user.owned_spaces_count() >= config.spaces_per_space_lead as usize
+    {
         return Err(Error::UserRichSpaceLimit {
             expected: config.spaces_per_space_lead as usize,
             found: user.owned_spaces_count(),
@@ -199,5 +203,69 @@ pub fn join_space(space_id: Principal) -> Result<(), Error> {
         Ok(user)
     })?;
 
+    Ok(())
+}
+
+#[derive(Debug, CandidType, Deserialize)]
+pub struct TransferSpace {
+    space_id: Principal,
+    to: Principal,
+}
+
+#[update]
+pub async fn transfer_space(args: TransferSpace) -> Result<(), Error> {
+    let caller = authenticated_guard()?;
+    memory::user_rank_match(&caller, &[Rank::SpaceLead, Rank::Admin, Rank::SuperAdmin])?;
+    let to_user =
+        memory::user_rank_match(&args.to, &[Rank::SpaceLead, Rank::Admin, Rank::SuperAdmin])?;
+    let config = memory::read_config(|local_config| local_config.clone());
+
+    if to_user.rank() == &Rank::SpaceLead
+        && to_user.owned_spaces_count() >= config.spaces_per_space_lead as usize
+    {
+        return Err(Error::UserRichSpaceLimit {
+            expected: config.spaces_per_space_lead as usize,
+            found: to_user.owned_spaces_count(),
+        });
+    }
+
+    let space_index = memory::with_space_vec_iter(|mut spaces| {
+        spaces.position(|space| space.principal() == args.space_id)
+    })
+    .ok_or(Error::SpaceNotExist)?;
+
+    memory::mut_user(caller, |maybe_user| {
+        let mut user = maybe_user.expect("User do not exist?!");
+        let space_index = user
+            .owned_spaces
+            .iter()
+            .position(|item| Nat::from(*item) == space_index);
+
+        user.owned_spaces
+            .remove(space_index.ok_or(Error::UserNotOwner)?);
+        Ok(user)
+    })?;
+    memory::mut_user(args.to, |maybe_user| {
+        let mut user = maybe_user.expect("User do not exist?!");
+        user.push_space(space_index.try_into().unwrap());
+        Ok(user)
+    })?;
+
+    ic_cdk::call::<(Principal,), ()>(args.space_id, "transfer_space", ((args.to),))
+        .await
+        .expect("Failed to transfer space");
+
+    Ok(())
+}
+
+#[update]
+pub fn unlock_space_creation(user: Principal) -> Result<(), Error> {
+    let caller = authenticated_guard()?;
+    memory::user_rank_match(&caller, &[Rank::SuperAdmin])?;
+    memory::mut_user(user, |maybe_user| {
+        let mut user = maybe_user.ok_or(Error::UserDoNotExist)?;
+        user.set_space_creation(false);
+        Ok(user)
+    })?;
     Ok(())
 }

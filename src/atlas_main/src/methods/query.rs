@@ -132,8 +132,7 @@ pub fn user_is_in_hub(user: Principal) -> bool {
     user.belonging_to_spaces()
         .iter()
         .map(|space_index| memory::get_space(*space_index).expect("Space do not exist?!"))
-        .find(|space| space.space_type() == SpaceType::HUB)
-        .is_some()
+        .any(|space| space.space_type() == SpaceType::HUB)
 }
 
 #[query]
