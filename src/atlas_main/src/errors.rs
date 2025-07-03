@@ -62,4 +62,10 @@ pub enum Error {
 
     #[error("User already is hub member")]
     UserAlreadyIsHubMember,
+
+    #[error("User does not own this space")]
+    UserNotOwner,
+
+    #[error("Failed to decode canister args: {0}")]
+    FailedToDecodeArgs(String),
 }

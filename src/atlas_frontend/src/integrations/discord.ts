@@ -34,7 +34,7 @@ export const getOAuth2URL = (stateData?: string) => {
   );
   url.searchParams.set("response_type", "token");
   url.searchParams.set("scope", "identify");
-  stateData && url.searchParams.set("state", stateData);
+  if (stateData) url.searchParams.set("state", stateData);
 
   return url.toString();
 };
@@ -49,5 +49,5 @@ export const getUserData = async (token: string) => {
     }
   );
 
-  return data
+  return data;
 };

@@ -21,10 +21,8 @@ import {
   useAuthAtlasMainActor,
   useUnAuthAtlasMainActor,
 } from "../../hooks/identityKit.ts";
-import {
-  getAtlasUser,
-  joinAtlasSpace,
-} from "../../canisters/atlasMain/api.ts";
+import { getAtlasUser, joinAtlasSpace } from "../../canisters/atlasMain/api.ts";
+import TransferSpaceModal from "../../modals/TransferSpaceModal.tsx";
 
 interface TasksListProps {
   tasks: Tasks;
@@ -99,6 +97,7 @@ const Space = ({
   );
   const userBlockchainData = useSelector(selectUserBlockchainData);
   const [isCreateTaskModal, setCreateTaskModal] = useState(false);
+  const [isTransferModal, setTransferModal] = useState(false);
   const inHub = userBlockchainData?.in_hub ?? null;
   const parsedSpacePrincipal = useSpaceId({
     spacePrincipal,
@@ -109,15 +108,15 @@ const Space = ({
 
   if (!parsedSpacePrincipal) return <></>;
 
-
   const didUserCanAdministrate =
-    (userBlockchainData &&
-      userBlockchainData.isSpaceLead() &&
-      userBlockchainData.ownSpaces(parsedSpacePrincipal)) ??
-    false;
+    userBlockchainData?.canAdministrate(parsedSpacePrincipal) ?? false;
 
   const toggleTaskModal = () => {
     setCreateTaskModal(!isCreateTaskModal);
+    dispatch(setScreenBlur(!isScreenBlur));
+  };
+  const toggleTransferModal = () => {
+    setTransferModal(!isTransferModal);
     dispatch(setScreenBlur(!isScreenBlur));
   };
 
@@ -132,7 +131,7 @@ const Space = ({
       }),
       {
         loading: "Trying to join space...",
-        success: "Succesfully joined to space",
+        success: "Successfully joined to space",
         error: "Failed to join to space",
       }
     );
@@ -148,7 +147,14 @@ const Space = ({
       <div className="container mx-auto my-4">
         <div className="w-full px-3">
           <div className="my-4 flex justify-end gap-2">
-            {userBlockchainData && !inHub && <Button onClick={joinSpace}>Join space</Button>}
+            {userBlockchainData?.ownSpaces(parsedSpacePrincipal) && (
+              <Button onClick={toggleTransferModal} light={true}>
+                Transfer space
+              </Button>
+            )}
+            {!didUserCanAdministrate && userBlockchainData && !inHub && (
+              <Button onClick={joinSpace}>Join space</Button>
+            )}
             {didUserCanAdministrate && (
               <>
                 <Button
@@ -241,6 +247,7 @@ const Space = ({
         </div>
       </div>
       {isCreateTaskModal && <CreateNewTaskModal callback={toggleTaskModal} />}
+      {isTransferModal && <TransferSpaceModal callback={toggleTransferModal} />}
     </>
   );
 };

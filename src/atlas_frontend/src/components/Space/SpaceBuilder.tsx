@@ -245,7 +245,7 @@ const SpaceBuilder = () => {
         getAtlasUser({
           dispatch,
           userId: user.principal,
-          unAuthAtlasMain: unAuthAtlasMain,
+          unAuthAtlasMain,
         });
       }
       navigate(getSpacePath(space.id));
@@ -280,12 +280,9 @@ const SpaceBuilder = () => {
   };
 
   const didUserCanAdministrate =
-    (user &&
-      parsedSpacePrincipal &&
-      userBlockchainData?.isSpaceLead() &&
-      userBlockchainData?.ownSpaces(parsedSpacePrincipal)) ??
+    (parsedSpacePrincipal &&
+      userBlockchainData?.canAdministrate(parsedSpacePrincipal)) ??
     false;
-
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="container mx-auto my-4">

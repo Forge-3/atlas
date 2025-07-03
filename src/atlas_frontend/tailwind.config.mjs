@@ -16,7 +16,6 @@ export default {
         roboto: ["Roboto", "sans-serif"],
         robotoMono: ["Roboto Mono", "monospace"],
         poppins: ["Poppins", "Roboto", "sans-serif"],
-        poppins: ["Inter", "Roboto", "sans-serif"],
         montserrat: ["Montserrat", "Roboto", "sans-serif"],
       },
       fontSize: {

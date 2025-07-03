@@ -13,7 +13,6 @@ import {
 } from "../../store/slices/userSlice.js";
 import { unwrapCall } from "../delegatedCall.js";
 import { setConfig } from "../../store/slices/appSlice.js";
-import type { _SERVICE as _SERVICE_SPACE } from "../../../../declarations/atlas_space/atlas_space.did.js";
 import { setSpaces } from "../../store/slices/spacesSlice.js";
 import type { ExternalLinks } from "../atlasSpace/types.js";
 import { serify } from "@karmaniverous/serify-deserify";
@@ -38,7 +37,7 @@ export const createNewSpace = async ({
   externalLinks,
 }: CreateNewSpaceArgs) => {
   const externalLinksArray = Object.entries(externalLinks).filter(
-    ([_, value]) => value !== null
+    (links) => links[1] !== null
   ) as [string, string][];
   const call = authAtlasMain.create_new_space(
     name,
@@ -161,5 +160,43 @@ export const joinAtlasSpace = async ({
   await unwrapCall<null>({
     call,
     errMsg: "Failed to join space",
+  });
+};
+
+interface PromoteUserToSpaceLead {
+  authAtlasMain: ActorSubclass<_SERVICE_MAIN>;
+  userId: Principal;
+}
+
+export const promoteUserToSpaceLead = async ({
+  authAtlasMain,
+  userId
+}: PromoteUserToSpaceLead) => {
+  const call = authAtlasMain.set_user_space_lead(userId);
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to promote user to space lead",
+  });
+};
+
+
+interface TransferSpace {
+  authAtlasMain: ActorSubclass<_SERVICE_MAIN>;
+  toUserId: Principal;
+  spaceId: Principal;
+}
+
+export const transferSpaceTo = async ({
+  authAtlasMain,
+  toUserId,
+  spaceId
+}: TransferSpace) => {
+  const call = authAtlasMain.transfer_space({
+    to: toUserId,
+    space_id: spaceId
+  });
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to transfer space",
   });
 };

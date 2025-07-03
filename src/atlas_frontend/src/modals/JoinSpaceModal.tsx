@@ -49,7 +49,7 @@ const JoinSpaceModal = ({
     }),
   {
     loading: "Trying to join space...",
-    success: "Succesfully joined to space",
+    success: "Successfully joined to space",
     error: "Failed to join to space",
   });
     getAtlasUser({

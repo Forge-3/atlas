@@ -9,6 +9,7 @@ interface WalletAddressInputFormProps<TFormValues extends FieldValues> {
   small?: string;
   className?: string;
   placeholder?: string;
+  maxLength?: number;
 }
 
 const WalletAddressInputForm = <TFormValues extends FieldValues>({
@@ -18,7 +19,8 @@ const WalletAddressInputForm = <TFormValues extends FieldValues>({
   small,
   errors,
   className,
-  placeholder
+  placeholder,
+  maxLength
 }: WalletAddressInputFormProps<TFormValues>) => {
   return (
     <div>
@@ -28,6 +30,7 @@ const WalletAddressInputForm = <TFormValues extends FieldValues>({
         type="text"
         autoComplete="off"
         placeholder={placeholder}
+        maxLength={maxLength}
         {...register(name)}
         className={`border-2 p-2 rounded-xl w-full ${className ?? ""} ${
           errors?.[name]?.message ? "!border-2 border-red-500" : ""

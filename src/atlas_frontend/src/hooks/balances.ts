@@ -4,7 +4,6 @@ import { useAuth } from "@nfid/identitykit/react";
 import { getUserBalance } from "../canisters/ckUsdcLedger/api";
 import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import { setCkUsdcBalance } from "../store/slices/userSlice";
 
 interface GetCkUsdcBalance {
   dispatch: Dispatch<UnknownAction>;
