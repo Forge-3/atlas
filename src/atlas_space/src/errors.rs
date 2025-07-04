@@ -86,4 +86,7 @@ pub enum Error {
 
     #[error("Task expired")]
     TaskExpired,
+
+    #[error("Task is not active (start_time is in the future)")]
+    TaskNotActive,
 }

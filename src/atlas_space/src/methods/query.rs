@@ -45,7 +45,7 @@ pub fn get_open_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
         });
     }
 
-    let tasks = memory::with_open_tasks_iter(|tasks| {
+    let tasks: BTreeMap<TaskId, Task> = memory::with_open_tasks_iter(|tasks| {
         tasks
             .skip(args.start)
             .take(args.count.min(MAX_TASKS_PER_RESPONSE as usize))

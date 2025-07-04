@@ -4,7 +4,7 @@ import { useSpaceId } from "../../hooks/space";
 import { useDispatch, useSelector } from "react-redux";
 import { customSerify, type RootState } from "../../store/store";
 import { deserify } from "@karmaniverous/serify-deserify";
-import type { Task as TaskType } from "../../../../declarations/atlas_space/atlas_space.did";
+import type { ClosedTask, Task as OpenTask } from "../../../../declarations/atlas_space/atlas_space.did";
 import { useEffect } from "react";
 import {
   useAuthAtlasMainActor,
@@ -55,7 +55,7 @@ const Task = () => {
   );
   const tasks = space?.tasks
     ? (deserify(space?.tasks, customSerify) as {
-        [key: string]: TaskType;
+        [key: string]: OpenTask | ClosedTask;
       })
     : null;
   const spaceData = space?.state;
@@ -86,6 +86,13 @@ const Task = () => {
   if (!spaceData || !currentTask) {
     return <></>;
   }
+
+  function isClosedTask(task: OpenTask | ClosedTask): task is ClosedTask {
+    return 'refunded' in task;
+  }
+
+  const now = Math.floor(Date.now() / 1000); //seconds
+  const submitDisabled = currentTask.start_time > BigInt(now) || isClosedTask(currentTask);
 
   const usersSubmissions = currentTask?.tasks
     ? getUsersSubmissions(currentTask.tasks)
@@ -193,6 +200,7 @@ const Task = () => {
                       subtaskId={key}
                       unAuthAtlasSpace={unAuthAtlasSpace}
                       isUserInHub={isUserInHub}
+                      disabled={submitDisabled}
                     />
                   ))}
                 </div>

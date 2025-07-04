@@ -297,9 +297,11 @@ const GenericTaskSummation = ({
       <p className="text-wrap break-all">{genericTask.task_content.TitleAndDescription.task_description}</p>
       <div className="mt-4">
         <p className="text-white font-semibold mb-1">Submitted response:</p>
-        <div className="border-2 border-[#9173FF]/20 p-2 rounded-xl w-full mb-4 bg-[#9173FF]/20 text-white">
-          {submission.submissionData.submission.Text.content}
-        </div>
+        {"Text" in submission.submissionData.submission && (
+          <div className="border-2 border-[#9173FF]/20 p-2 rounded-xl w-full mb-4 bg-[#9173FF]/20 text-white">
+            {submission.submissionData.submission.Text.content}
+          </div>
+        )}
       </div>
       <div className="flex justify-end gap-2">
         {submissionState == "WaitingForReview" && singleSubmissionState == "WaitingForReview" && (

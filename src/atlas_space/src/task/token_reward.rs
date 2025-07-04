@@ -58,16 +58,16 @@ impl TokenReward {
 
     pub async fn withdraw_remains(
         &self,
-        caller: Principal,
+        creator: Principal,
         subaccount: [u8; 32],
         unused_count: u64,
     ) -> Result<(), Error> {
         match self {
             TokenReward::CkUsdc { amount } => {
                 let refund_amount = amount.as_ref().clone() * Nat::from(unused_count);
-                withdraw_ckusdc(caller, subaccount, refund_amount.clone()).await?;
+                withdraw_ckusdc(creator, subaccount, refund_amount.clone()).await?;
                 ic_cdk::println!(
-                    "Refunded {refund_amount} ckUSDC unused rewards to creator: {caller}"
+                    "Refunded {refund_amount} ckUSDC unused rewards to creator: {creator}"
                 );
                 Ok(())
             }

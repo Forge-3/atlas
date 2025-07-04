@@ -33,6 +33,8 @@ interface CreateNewTaskFormInput {
   numberOfUses: number;
   rewardPerUsage: number;
   taskTitle: string;
+  startTime: string;
+  endTime: string;
   tasks?: {
     taskType: TaskType;
     title: string;
@@ -80,6 +82,27 @@ const schema = yup.object({
     .min(0.1)
     .required()
     .label("Reward per user"),
+  startTime: yup
+    .string()
+    .required()
+    .label("Start time"),
+  endTime: yup
+    .string()
+    .required()
+    .label("End time")
+    .test(
+        "is-after-start",
+        "End time must be after start time",
+        function (value) {
+          const { startTime } = this.parent;
+          return (
+            new Date(value).getTime() > new Date(startTime).getTime()
+          );
+        }
+    )
+    .test("is-after-now", "End time must be in the future", function (value) {
+      return new Date(value).getTime() > Date.now();
+    }),
   tasks: yup.array().of(taskSchema).min(1),
 });
 
@@ -148,10 +171,15 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     numberOfUses,
     rewardPerUsage,
     tasks,
+    startTime,
+    endTime,
     taskTitle,
   }) => {
     const numberOfUsesBn = BigInt(numberOfUses.toString());
     const rewardPerUsageBn = parseUnits(rewardPerUsage.toString(), DECIMALS);
+
+    const startTimeUnixSec = Math.floor(new Date(startTime).getTime() / 1000);
+    const endTimeUnixSec = Math.floor(new Date(endTime).getTime() / 1000);
 
     if (
       !authAtlasSpaceActor ||
@@ -205,6 +233,8 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
       rewardPerUsage: rewardPerUsageBn,
       tasks: taskContent,
       taskTitle,
+      startTime: BigInt(startTimeUnixSec),
+      endTime: BigInt(endTimeUnixSec),
     });
     const taskId = await toast.promise(createNewTaskCall, {
       loading: "Creating new task...",
@@ -283,6 +313,30 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
               errors={errors}
               className="mb-2"
             />
+
+            <label className="text-gray-600">Start time:</label>
+            <input
+              type="datetime-local"
+              {...register("startTime")}
+              className={`border-2 p-2 rounded-xl w-full ${
+                errors?.startTime?.message ? "border-red-500" : ""
+              }`}
+            />
+            {errors?.startTime && (
+              <span className="text-red-500">{errors.startTime.message}</span>
+            )}
+
+            <label className="text-gray-600">End time:</label>
+            <input
+              type="datetime-local"
+              {...register("endTime")}
+              className={`border-2 p-2 rounded-xl w-full ${
+                errors?.endTime?.message ? "border-red-500" : ""
+              }`}
+            />
+            {errors?.endTime && (
+              <span className="text-red-500">{errors.endTime.message}</span>
+            )}
 
             {fields.map((field, index) => {
               const taskType = watch(`tasks.${index}.taskType`);

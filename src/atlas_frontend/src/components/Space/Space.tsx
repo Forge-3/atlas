@@ -25,18 +25,44 @@ import {
   getAtlasUser,
   joinAtlasSpace,
 } from "../../canisters/atlasMain/api.ts";
+import { formatDuration } from "../../utils/date.ts";
 
 interface TasksListProps {
-  tasks: Tasks;
+  tasks?: Tasks;
   spaceId: Principal;
 }
 
-const TasksList = ({ tasks, spaceId }: TasksListProps) => {
-  if (!tasks || Object.keys(tasks).length === 0) {
-    return <></>;
-  }
+const TasksList = ({ tasks = {}, spaceId }: TasksListProps) => {
+  const nowInSeconds = Math.floor(Date.now() / 1000);
 
-  const tasksEntries = Object.entries(tasks);
+  const allTaskEntries = Object.entries(tasks).map(([id, task]) => {
+    const isClosed = "refunded" in task;
+    if (isClosed) {
+      return {
+        id,
+        task,
+        type: "expired" as const,
+      };
+    }
+
+    const startTime = Number(task.start_time);
+    if (startTime > nowInSeconds) {
+      return {
+        id,
+        task,
+        type: "starting" as const,
+        startingIn: formatDuration(startTime - nowInSeconds),
+      };
+    }
+
+    return {
+      id,
+      task,
+      type: "ongoing" as const,
+    };
+  });
+
+  if (allTaskEntries.length === 0) return <></>;
 
   return (
     <>
@@ -52,19 +78,19 @@ const TasksList = ({ tasks, spaceId }: TasksListProps) => {
           </div>
         </div>
       </div>
+      
       <div className="relative w-full bg-[#1E0F33] rounded-b-xl">
         <div className="flex gap-4 px-8 py-6 flex-wrap justify-start">
-          {tasksEntries.map(([id, task]) => {
-            return (
-              <TaskCard
-                key={id}
-                task={task}
-                type={"ongoing"}
-                id={id}
-                spaceId={spaceId}
-              />
-            );
-          })}
+          {allTaskEntries.map((entry) => (
+            <TaskCard
+              key={entry.id}
+              id={entry.id}
+              task={entry.task}
+              type={entry.type}
+              spaceId={spaceId}
+              startingIn={entry.type === "starting" ? entry.startingIn : undefined}
+            />
+          ))}
         </div>
       </div>
     </>
@@ -108,7 +134,6 @@ const Space = ({
   const unAuthAtlasMain = useUnAuthAtlasMainActor();
 
   if (!parsedSpacePrincipal) return <></>;
-
 
   const didUserCanAdministrate =
     (userBlockchainData &&
@@ -237,7 +262,9 @@ const Space = ({
               </div>
             </div>
           </div>
-          {tasks && <TasksList tasks={tasks} spaceId={spaceId} />}
+          {(tasks) && (
+            <TasksList tasks={tasks} spaceId={spaceId} />
+          )}
         </div>
       </div>
       {isCreateTaskModal && <CreateNewTaskModal callback={toggleTaskModal} />}
@@ -246,3 +273,4 @@ const Space = ({
 };
 
 export default Space;
+

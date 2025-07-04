@@ -13,7 +13,7 @@ import { useSpaceId } from "../../hooks/space.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { customSerify, type RootState } from "../../store/store.ts";
 import { deserify } from "@karmaniverous/serify-deserify";
-import type { Task } from "../../../../declarations/atlas_space/atlas_space.did";
+import type { ClosedTask, Task } from "../../../../declarations/atlas_space/atlas_space.did";
 
 const SpacePage = () => {
   const dispatch = useDispatch();
@@ -35,7 +35,7 @@ const SpacePage = () => {
   );
   const tasks = space?.tasks
     ? (deserify(space?.tasks, customSerify) as {
-        [key: string]: Task;
+        [key: string]: Task | ClosedTask;
       })
     : null;
   const spaceData = space?.state;

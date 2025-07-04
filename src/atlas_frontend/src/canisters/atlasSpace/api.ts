@@ -1,6 +1,8 @@
 import type { ActorSubclass } from "@dfinity/agent";
 import type {
   _SERVICE,
+  ClosedTask,
+  GetClosedTasksRes,
   GetTasksRes,
   Submission,
   Task,
@@ -44,8 +46,8 @@ interface CreateNewSpaceTaskArgs {
   rewardPerUsage: bigint;
   tasks: TaskContent[];
   taskTitle: string;
-  start_time: bigint;
-  end_time: bigint;
+  startTime: bigint;
+  endTime: bigint;
 }
 
 export const createNewTask = async ({
@@ -54,8 +56,8 @@ export const createNewTask = async ({
   rewardPerUsage,
   tasks,
   taskTitle,
-  start_time,
-  end_time,
+  startTime,
+  endTime,
 }: CreateNewSpaceTaskArgs) => {
   const call = authAtlasSpaceActor.create_task({
     task_title: taskTitle,
@@ -66,8 +68,8 @@ export const createNewTask = async ({
     },
     task_content: tasks,
     number_of_uses: numberOfUses,
-    start_time: start_time,
-    end_time: end_time,
+    start_time: startTime,
+    end_time: endTime,
   });
 
   return await unwrapCall<bigint>({
@@ -76,7 +78,7 @@ export const createNewTask = async ({
   });
 };
 
-export type Tasks = { [key: string]: Task };
+export type Tasks = { [key: string]: Task | ClosedTask };
 
 export const getSpaceTasks = async ({
   unAuthAtlasSpace,
@@ -113,7 +115,7 @@ export const getSpaceTasks = async ({
     start += count;
   }
 
-  const storableTasks = tasks.reduce(
+  const storableOpenTasks = tasks.reduce(
     (acc, [id, val]) => ({
       ...acc,
       [id.toString()]: val,
@@ -121,15 +123,58 @@ export const getSpaceTasks = async ({
     {}
   );
 
+  const closedTasks: [bigint, ClosedTask][] = [];
+  let closedTasksCount = 0n;
+  let start_closed = 0n;
+  const count_closed = 200n;
+  const call_closed = unAuthAtlasSpace.get_closed_tasks({
+    start: start_closed,
+    count: count_closed,
+  });
+  const res_closed = await unwrapCall<GetClosedTasksRes>({
+    call: call_closed,
+    errMsg: "Failed to get data from blockchain",
+  });
+
+  closedTasksCount = res_closed.tasks_count;
+  closedTasks.push(...res_closed.tasks);
+  start_closed += count_closed;
+
+  while (closedTasksCount < closedTasks.length) {
+    const call_closed = unAuthAtlasSpace.get_closed_tasks({
+      start: start_closed,
+      count: count_closed,
+    });
+    const res_closed = await unwrapCall<GetClosedTasksRes>({
+      call: call_closed,
+      errMsg: "Failed to get data from blockchain",
+    });
+    closedTasks.push(...res_closed.tasks);
+    start_closed += count_closed;
+  }
+
+  const storableClosedTasks = closedTasks.reduce(
+    (acc, [id, val]) => ({
+      ...acc,
+      [id.toString()]: val,
+    }),
+    {}
+  );
+
+  const mergedTasks = {
+    ...storableOpenTasks,
+    ...storableClosedTasks,
+  } as { [key: string]: Task | ClosedTask };
+
   dispatch(
     setTasks(
       serify(
         {
-          tasks: storableTasks,
+          tasks: mergedTasks,
           spaceId,
         },
         customSerify
-      ) as { tasks: { [key: string]: Task }; spaceId: string }
+      ) as { tasks: { [key: string]: Task | ClosedTask }; spaceId: string }
     )
   );
 };

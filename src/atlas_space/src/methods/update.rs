@@ -3,10 +3,8 @@ use crate::{
     guard::{parent_or_owner_or_admin_guard, user_is_in_space, authenticated_guard},
     memory,
     state::EditSpaceArgs,
-    task::{submission::Submission, CreateTaskArgs, Task, TaskId, timer_logic::close_task, timer_logic::close_task_if_expired},
+    task::{submission::Submission, CreateTaskArgs, Task, TaskId, timer_logic},
 };
-use ic_cdk_timers::set_timer;
-use std::time::Duration;
 use candid::{Principal};
 use ic_cdk::update;
 use ic_stable_structures::Storable;
@@ -59,14 +57,7 @@ pub async fn create_task(args: CreateTaskArgs) -> Result<TaskId, Error> {
     let next_task_id = memory::mut_state(|state| TaskId::new(state.get_next_task_id()));
     let subaccount = sha2::Sha256::digest(next_task_id.u64().to_bytes()).into();
 
-    let now_sec = ic_cdk::api::time() / 1_000_000_000;
-    let delay_sec = args.end_time.saturating_sub(now_sec);
-    let timer_id = set_timer(Duration::from_secs(delay_sec), {
-        let id = next_task_id.clone();
-        move || {
-            let _ = close_task(id);
-        }
-    });
+    let timer_id = timer_logic::schedule_close_task_timer(next_task_id.clone(), args.end_time);
 
     memory::insert_open_task(
         next_task_id.clone(),
@@ -85,7 +76,7 @@ pub async fn submit_subtask_submission(
 ) -> Result<(), Error> {
     let caller = user_is_in_space().await?;
 
-    let expired = close_task_if_expired(task_id.clone())?;
+    let expired = timer_logic::close_task_if_expired(task_id.clone()).await?;
     if expired {
         return Err(Error::TaskExpired);
     }
@@ -135,36 +126,33 @@ pub async fn reject_subtask_submission(
 #[update]
 pub async fn withdraw_reward(task_id: TaskId) -> Result<(), Error> {
     let caller = user_is_in_space().await?;
-    let mut old_task = memory::get_open_task(&task_id).ok_or(Error::TaskDoNotExists(task_id))?;
     let subaccount = sha2::Sha256::digest(task_id.u64().to_bytes()).into();
-    old_task.claim_reward(caller, subaccount).await?;
 
-    memory::mut_open_task(task_id.clone(), |maybe_task| {
-        let task = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
-        *task = old_task;
-        Ok(())
-    })??;
-    Ok(())
-}
+    if let Some(mut task) = memory::get_open_task(&task_id) {
+        task.claim_reward(caller.clone(), subaccount).await?;
 
-#[update]
-pub async fn withdraw_remains(task_id: TaskId) -> Result<(), Error> {
-    let caller = authenticated_guard()?;
-    let mut task = memory::get_closed_task(&task_id).ok_or(Error::TaskDoNotExists(task_id))?;
+        memory::mut_open_task(task_id.clone(), |maybe_task| {
+            let task_mut = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
+            *task_mut = task;
+            Ok(())
+        })??;
 
-    if caller != *task.creator() {
-        parent_or_owner_or_admin_guard().await?;
+        return Ok(());
     }
-    let subaccount = sha2::Sha256::digest(task_id.u64().to_bytes()).into();
 
-    task.claim_remains(caller, subaccount).await?;
-    memory::mut_closed_task(task_id.clone(), |maybe_task| {
-        let task_ref = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
-        *task_ref = task;
-        Ok(())
-    })??;
+    if let Some(mut task) = memory::get_closed_task(&task_id) {
+        task.claim_reward(caller.clone(), subaccount).await?;
 
-    Ok(())
+        memory::mut_closed_task(task_id.clone(), |maybe_task| {
+            let task_mut = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
+            *task_mut = task;
+            Ok(())
+        })??;
+
+        return Ok(());
+    }
+
+    Err(Error::TaskDoNotExists(task_id))
 }
 
 #[update]
@@ -175,5 +163,6 @@ pub async fn force_close_task(task_id: TaskId) -> Result<(), Error> {
     if caller != *task.creator() {
         parent_or_owner_or_admin_guard().await?;
     }
-    close_task(task_id)
+    timer_logic::close_task(task_id).await?;
+    Ok(())
 }

@@ -3,10 +3,23 @@ import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
 export interface CkUsdcLedger { 'fee' : [] | [bigint], 'principal' : Principal }
+export interface ClosedTask {
+  'tasks' : Array<TaskType>,
+  'creator' : Principal,
+  'task_title' : string,
+  'refunded' : boolean,
+  'token_reward' : TokenReward,
+  'end_time' : bigint,
+  'start_time' : bigint,
+  'rewarded' : Array<Principal>,
+  'number_of_uses' : bigint,
+}
 export interface CreateTaskArgs {
   'task_title' : string,
   'token_reward' : TokenReward,
+  'end_time' : bigint,
   'task_content' : Array<TaskContent>,
+  'start_time' : bigint,
   'number_of_uses' : bigint,
 }
 export interface EditSpaceArgs {
@@ -17,27 +30,37 @@ export interface EditSpaceArgs {
   'space_description' : string,
 }
 export type Error = { 'BytecodeUpToDate' : null } |
+  { 'NotTaskCreator' : null } |
   { 'NotParent' : null } |
   { 'UsageLimitExceeded' : null } |
   { 'UserSubmissionNotFound' : null } |
   { 'FailedToUpdateConfig' : string } |
   { 'UserDoesNotBelongToSpace' : null } |
+  { 'TaskNotActive' : null } |
   { 'TaskAlreadyExists' : bigint } |
   { 'FailedToCallMain' : string } |
   { 'ConfigNotSet' : null } |
   { 'UserAlreadyRewarded' : null } |
+  { 'TaskNotFound' : bigint } |
   { 'NotAdminNorOwnerNorParent' : null } |
   { 'UserAlreadySubmitted' : null } |
+  { 'RewardAlreadyRefunded' : null } |
   { 'NotAdmin' : null } |
+  { 'NoUnusedRewards' : null } |
   { 'IncorrectSubmission' : string } |
   { 'CountToHigh' : { 'max' : bigint, 'found' : bigint } } |
   { 'SubtaskDoNotExists' : bigint } |
   { 'NotOwner' : null } |
   { 'FailedToTransfer' : string } |
+  { 'TaskExpired' : null } |
   { 'InvalidTaskContent' : string } |
   { 'TaskDoNotExists' : bigint } |
   { 'AnonymousCaller' : null } |
   { 'SubmissionNotAccepted' : null };
+export interface GetClosedTasksRes {
+  'tasks' : Array<[bigint, ClosedTask]>,
+  'tasks_count' : bigint,
+}
 export interface GetTasksArgs { 'count' : bigint, 'start' : bigint }
 export interface GetTasksRes {
   'tasks' : Array<[bigint, Task]>,
@@ -47,7 +70,9 @@ export type Result = { 'Ok' : null } |
   { 'Err' : Error };
 export type Result_1 = { 'Ok' : bigint } |
   { 'Err' : Error };
-export type Result_2 = { 'Ok' : GetTasksRes } |
+export type Result_2 = { 'Ok' : GetClosedTasksRes } |
+  { 'Err' : Error };
+export type Result_3 = { 'Ok' : GetTasksRes } |
   { 'Err' : Error };
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
   { 'InitArg' : SpaceInitArg };
@@ -71,7 +96,8 @@ export interface State {
   'tasks_count' : bigint,
   'space_description' : string,
 }
-export type Submission = { 'Text' : { 'content' : string } };
+export type Submission = { 'Empty' : null } |
+  { 'Text' : { 'content' : string } };
 export interface SubmissionData {
   'state' : SubmissionState,
   'submission' : Submission,
@@ -80,10 +106,13 @@ export type SubmissionState = { 'Rejected' : null } |
   { 'WaitingForReview' : null } |
   { 'Accepted' : null };
 export interface Task {
+  'timer_id' : [] | [bigint],
   'tasks' : Array<TaskType>,
   'creator' : Principal,
   'task_title' : string,
   'token_reward' : TokenReward,
+  'end_time' : bigint,
+  'start_time' : bigint,
   'rewarded' : Array<Principal>,
   'number_of_uses' : bigint,
 }
@@ -108,9 +137,10 @@ export interface _SERVICE {
   >,
   'create_task' : ActorMethod<[CreateTaskArgs], Result_1>,
   'edit_space' : ActorMethod<[EditSpaceArgs], Result>,
+  'force_close_task' : ActorMethod<[bigint], Result>,
   'get_closed_tasks' : ActorMethod<[GetTasksArgs], Result_2>,
   'get_current_bytecode_version' : ActorMethod<[], bigint>,
-  'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_2>,
+  'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_3>,
   'get_state' : ActorMethod<[], State>,
   'reject_subtask_submission' : ActorMethod<
     [Principal, bigint, bigint],

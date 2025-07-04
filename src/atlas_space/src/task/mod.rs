@@ -288,6 +288,11 @@ impl Task {
         let current_time_seconds = ic_cdk::api::time() / 1_000_000_000;
         current_time_seconds > self.end_time
     }
+    
+    pub fn is_active(&self) -> bool {
+        let now = ic_cdk::api::time() / 1_000_000_000;
+        now >= self.start_time
+    }
 
     pub fn submit_subtask_submission(
         &mut self,
@@ -295,6 +300,10 @@ impl Task {
         subtask_id: usize,
         submission: Submission,
     ) -> Result<(), Error> {
+        if !self.is_active() {
+            return Err(Error::TaskNotActive);
+        }
+
         let subtask = self
             .tasks
             .get_mut(subtask_id)
@@ -378,7 +387,7 @@ pub struct ClosedTask {
     #[n(1)]
     token_reward: TokenReward,
     #[n(2)]
-    accepted_tasks: Vec<TaskType>,
+    tasks: Vec<TaskType>, // only accepted tasks have content
     #[n(3)]
     number_of_uses: u64,
     #[n(4)]
@@ -394,16 +403,12 @@ pub struct ClosedTask {
 }
 
 impl ClosedTask {
-    pub fn creator(&self) -> &Principal {
-        &self.creator
-    }
-
     pub async fn claim_reward(
         &mut self,
         user: Principal,
         subaccount: [u8; 32],
     ) -> Result<(), Error> {
-        let subtask = self.accepted_tasks.iter().all(|task| {
+        let subtask = self.tasks.iter().all(|task| {
             let state = task.get_submission(user).unwrap().get_state();
             state == &SubmissionState::Accepted
         });
@@ -423,13 +428,8 @@ impl ClosedTask {
 
     pub async fn claim_remains(
         &mut self,
-        caller: Principal,
         subaccount: [u8; 32],
     ) -> Result<(), Error> {
-        if caller != self.creator {
-            return Err(Error::NotTaskCreator);
-        }
-
         if self.refunded {
             return Err(Error::RewardAlreadyRefunded);
         }
@@ -439,13 +439,13 @@ impl ClosedTask {
             return Err(Error::NoUnusedRewards);
         }
 
-        if self.accepted_tasks.is_empty() {
-            self.token_reward.withdraw_remains(caller, subaccount, self.number_of_uses).await?;
+        if self.tasks.is_empty() {
+            self.token_reward.withdraw_remains(self.creator, subaccount, self.number_of_uses).await?;
             self.refunded = true;
             return Ok(());
         }
 
-        let first_task_accepted_users: std::collections::HashSet<_> = self.accepted_tasks[0]
+        let first_task_accepted_users: std::collections::HashSet<_> = self.tasks[0]
             .get_submission_map()
             .iter()
             .filter_map(|(user, data)| {
@@ -458,7 +458,7 @@ impl ClosedTask {
             .collect();
 
         let accepted_users: std::collections::HashSet::<Principal> = first_task_accepted_users.into_iter().filter(|user| {
-            self.accepted_tasks.iter().all(|task| {
+            self.tasks.iter().all(|task| {
                 match task.get_submission(*user) {
                     Ok(sub) => sub.get_state() == &SubmissionState::Accepted,
                     Err(_) => false,
@@ -471,7 +471,7 @@ impl ClosedTask {
             return Err(Error::NoUnusedRewards);
         }
 
-        self.token_reward.withdraw_remains(caller, subaccount, unused).await?;
+        self.token_reward.withdraw_remains(self.creator, subaccount, unused).await?;
         self.refunded = true;
         Ok(())
     }
@@ -482,7 +482,7 @@ impl From<Task> for ClosedTask {
         Self {
             creator: task.creator,
             token_reward: task.token_reward,
-            accepted_tasks: task
+            tasks: task
                 .tasks
                 .into_iter()
                 .map(|task_type| task_type.clone_with_accepted_only())
