@@ -51,6 +51,7 @@ type Error = variant {
   UserAlreadySubmitted;
   RewardAlreadyRefunded;
   NotAdmin;
+  NoUnusedRewards;
   IncorrectSubmission : text;
   CountToHigh : record { max : nat64; found : nat64 };
   SubtaskDoNotExists : nat64;

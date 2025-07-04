@@ -37,6 +37,7 @@ export const idlFactory = ({ IDL }) => {
     'UserAlreadySubmitted' : IDL.Null,
     'RewardAlreadyRefunded' : IDL.Null,
     'NotAdmin' : IDL.Null,
+    'NoUnusedRewards' : IDL.Null,
     'IncorrectSubmission' : IDL.Text,
     'CountToHigh' : IDL.Record({ 'max' : IDL.Nat64, 'found' : IDL.Nat64 }),
     'SubtaskDoNotExists' : IDL.Nat64,
