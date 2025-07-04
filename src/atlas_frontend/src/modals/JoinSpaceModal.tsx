@@ -83,7 +83,7 @@ const JoinSpaceModal = ({
         </Button>
         <Button
           className="w-full !bg-[#1E0F33]/30"
-          light={true}
+          variant="light"
           onClick={goToSpaces}
         >
           See other spaces

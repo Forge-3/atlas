@@ -17,10 +17,12 @@ import {
   SPACES_PATH,
   TASK_PATH,
   WALLET_PATH,
+  CREATE_TASK_PATH,
 } from "./paths.ts";
 import Submissions from "../components/Submissions/index.tsx";
 import Wallet from "../components/Wallet/index.tsx";
 import Help from "../components/Help/index.tsx";
+import CreateNewTaskModal from "../modals/CreateNewTaskModal.tsx";
 import Admin from "../components/Admin.tsx";
 
 const Router = () => {
@@ -37,6 +39,7 @@ const Router = () => {
       <Route path={WALLET_PATH} element={<Wallet />} />
       <Route path={HELP_PATH} element={<Help />} />
       <Route path={ADMIN_PATH} element={<Admin />} />
+      <Route path={CREATE_TASK_PATH} element={<CreateNewTaskModal />} />
     </Routes>
   );
 };

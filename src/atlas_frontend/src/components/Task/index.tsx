@@ -252,7 +252,7 @@ const Task = () => {
         <div className="w-full flex flex-col gap-2 md:flex-row md:flex-none md:w-auto md:gap-none my-4 md:justify-between">
           <div className="flex">
             <Button
-              light
+              variant="light"
               className="flex-1 gap-2 md:flex-none"
               onClick={() => navigate(getSpacePath(parsedSpacePrincipal))}
             >
@@ -362,8 +362,8 @@ const Task = () => {
                   ))}
                 </div>
                 <div className="flex mt-3 items-center justify-center">
-                  <div className="mr-3 md:mr-4">
-                    <div className="bg-[#1E0F33] p-2 mx-[1px] md:mx-[0px] w-[16px] h-[16px] md:w-[32px] md:h-[32px] rounded md:rounded-lg relative">
+                  <div className="mr-4">
+                    <div className="bg-[#1E0F33] p-1 w-[32px] h-[32px] rounded-lg relative">
                       {isAccepted && (
                         <img
                           src="/icons/check-in-box.svg"
@@ -372,7 +372,7 @@ const Task = () => {
                       )}
                     </div>
                   </div>
-                  <div className="bg-[#9173FF] rounded-xl p-2 mb-2 md:p-6 sm:base md:text-lg md:font-medium font-poppins w-full flex items-center justify-between">
+                  <div className="bg-[#9173FF] rounded-xl p-2 px-4 mb-2 md:p-3 md:px-4 sm:text-base md:text-lg font-medium font-poppins w-full flex items-center justify-between">
                     <div>Reward</div>
                     <FaWallet color="1E0F33" />
                   </div>

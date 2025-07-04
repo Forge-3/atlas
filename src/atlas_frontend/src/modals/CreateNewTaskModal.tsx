@@ -3,15 +3,11 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm, useFieldArray, type SubmitHandler } from "react-hook-form";
 import Button from "../components/Shared/Button";
 import * as yup from "yup";
-import { FiPlus } from "react-icons/fi";
-import DecimalInputForm from "../components/Shared/DecimalInputForm";
 import { formatUnits, parseUnits } from "ethers";
 import { useDispatch, useSelector } from "react-redux";
 import { DECIMALS } from "../canisters/ckUsdcLedger/constans";
-import GenericTask from "./tasks/GenericTask";
-import NumericInputForm from "../components/Shared/NumericInputForm";
 import { createNewTask, getSpaceTasks } from "../canisters/atlasSpace/api";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   useAuthAtlasSpaceActor,
   useAuthCkUsdcLedgerActor,
@@ -30,6 +26,14 @@ import {
 } from "../store/slices/appSlice";
 import { deserialize, type RootState } from "../store/store";
 import { getErrorWithInfoToast } from "../utils/errors";
+import { getTaskPath } from "../router/paths";
+import type { Space } from "../store/slices/spacesSlice";
+import { RiCloseLargeLine } from "react-icons/ri";
+import { FaPlus } from "react-icons/fa6";
+import { FaCalendar } from "react-icons/fa";
+import NumericInputForm from "../components/Shared/NumericInputForm";
+import DecimalInputForm from "../components/Shared/DecimalInputForm";
+import { runWithLoading } from "../utils/loading";
 import { toLocalISOString } from "../utils/date";
 
 type TaskType = "generic";
@@ -128,9 +132,9 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     tasks: yup.array().of(taskSchema).min(1),
   });
 
+const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   const { spacePrincipal } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const dispatch = useDispatch();
   const isLoading = useSelector((state: RootState) => state.app.isLoading);
   const {
@@ -167,6 +171,13 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   const { user } = useAuth();
   if (!principal) return <></>;
   const spaceId = principal.toString();
+ 
+  const space = useSelector((state: RootState) => {
+    const serializedSpace = state.spaces?.spaces?.[principal.toString()] ?? null;
+    return deserialize<Space>(serializedSpace);
+  });
+
+  const avatarImg = space?.state?.space_logo;
 
   const authAtlasSpaceActor = useAuthAtlasSpaceActor(principal);
   const unAuthCkUsdcActor = useUnAuthCkUsdcLedgerActor();
@@ -178,10 +189,10 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   const ckUsdcFee = blockchainConfig
     ? (blockchainConfig.ckusdc_ledger.fee ?? 0n)
     : 0n;
-
+ 
   const numberOfUses = watch("numberOfUses");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rewardPerUsage = watch("rewardPerUsage" as any);
+  const rewardPerUsage = watch("rewardPerUsage") as any;
 
   const numberOfUsesNormalized = isNaN(numberOfUses) ? 0 : numberOfUses;
   const rewardPerUsageNormalized =
@@ -249,199 +260,267 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
       amount: estimatedCost,
       userPrincipal: user.principal,
     });
-    await toast.promise(getOrSetAllowance, {
-      loading: "Checking available funds...",
-      success: "Funds allowance granted successfully.",
-      error: getErrorWithInfoToast("Failed to allocate funds:"),
-    });
+    await runWithLoading(async () => {
+      await toast.promise(getOrSetAllowance, {
+        loading: "Checking available funds...",
+        success: "Funds allowance granted successfully.",
+        error: getErrorWithInfoToast("Failed to allocate funds:"),
+      });
 
-    const createNewTaskCall = createNewTask({
-      authAtlasSpaceActor,
-      numberOfUses: numberOfUsesBn,
-      rewardPerUsage: rewardPerUsageBn,
-      tasks: taskContent,
-      taskTitle,
-      startTime: BigInt(startTimeUnixSec),
-      endTime: BigInt(endTimeUnixSec),
-    });
-    const taskId = await toast.promise(createNewTaskCall, {
-      loading: "Creating new task...",
-      success: "Task created successfully.",
-      error: getErrorWithInfoToast("Failed to create task:"),
-    });
-    callback();
-    await getSpaceTasks({
-      spaceId,
-      unAuthAtlasSpace: authAtlasSpaceActor,
-      dispatch,
-    });
-    await getUserBalance({
-      unAuthCkUsdc: unAuthCkUsdcActor,
-      userPrincipal: user?.principal,
-      dispatch,
-    });
-    navigate(`${location.pathname}/${taskId}`);
+      const createNewTaskCall = createNewTask({
+        authAtlasSpaceActor,
+        numberOfUses: numberOfUsesBn,
+        rewardPerUsage: rewardPerUsageBn,
+        tasks: taskContent,
+        taskTitle,
+        startTime: BigInt(startTimeUnixSec),
+        endTime: BigInt(endTimeUnixSec),
+      });
+      const taskId = await toast.promise(createNewTaskCall, {
+        loading: "Creating new task...",
+        success: "Task created successfully.",
+        error: getErrorWithInfoToast("Failed to create task:"),
+      });
+      await getSpaceTasks({
+        spaceId,
+        unAuthAtlasSpace: authAtlasSpaceActor,
+        dispatch,
+      });
+      await getUserBalance({
+        unAuthCkUsdc: unAuthCkUsdcActor,
+        userPrincipal: user?.principal,
+        dispatch,
+      });
+      navigate(getTaskPath(principal, taskId.toString()));
+    }, dispatch);
   };
 
-  return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <div
-        className={`fixed inset-0 flex items-center justify-center h-full  ${
-          isLoading ? "z-30 blur-sm" : "z-50"
-        }`}
-        onClick={callback}
-      >
-        <div
-          className="flex flex-col rounded-xl bg-white p-[20px] gap-[10px] sm:w-[40rem] max-h-[80vh] overflow-y-auto"
-          onClick={(e) => {
-            e.stopPropagation();
-          }}
+ return (
+  <form onSubmit={handleSubmit(onSubmit)} className="bg-[#9173ff] overflow-auto min-h-screen flex w-full items-center justify-center p-4 sm:p-8">
+    <div className="bg-[#9173ff] w-full rounded-3xl p-4 sm:p-8 relative flex flex-col">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3">
+        <div className="flex items-center gap-4 mb-4 sm:mb-0">
+          <div className="bg-white flex rounded-3xl w-fit h-fit flex-none">
+            {avatarImg ? (
+              <img
+                src={avatarImg}
+                draggable="false"
+                className="rounded-xl m-[3px] w-12 h-12 sm:w-14 sm:h-14"
+              />
+            ) : (
+              <div className="bg-[#4A0295] rounded-xl m-[3px] w-12 h-12 sm:w-14 sm:h-14"></div>
+            )}
+          </div>
+          <h1 className="text-white text-xl sm:text-2xl">
+            ICP HUB India
+          </h1>
+        </div>
+
+        <Button
+          onClick={() => navigate(-1)}
+          className="text-white font-montserrat bg-white/20 px-3 py-1 rounded text-sm sm:text-base"
         >
-          <h2 className="flex items-center justify-between font-semibold mb-4">
-            Create new tasks
-            <Button
-              onClick={() =>
-                append({
-                  taskType: "generic",
-                  title: "",
-                  description: "",
-                  allowresubmit: false,
-                })
-              }
-              className="flex gap-2"
-            >
-              <FiPlus /> Add subtask
-            </Button>
-          </h2>
-          <div className="border-l-2 pl-2 border-[#9173FF] border-dashed lex items-center justify-between font-semibold gap-2">
-            <p className="text-gray-600">Main task title:</p>
-            <input
-              type="text"
-              min="1"
-              max="256"
-              {...register("taskTitle")}
-              className={`border-2 p-2 rounded-xl w-full ${
-                errors?.taskTitle?.message && "border-red-500"
-              }`}
-            />
-            {errors?.taskTitle?.message && (
-              <span className="text-red-500">
-                {errors?.taskTitle?.message.toString()}
-              </span>
-            )}
-            <NumericInputForm
-              register={register}
-              name={"numberOfUses"}
-              label="Number of task uses:"
-              errors={errors}
-            />
-            <DecimalInputForm
-              register={register}
-              label="XP Reward per usage:"
-              small="1XP == 1ckUSDC"
-              maxDecimalPlaces={DECIMALS}
-              name="rewardPerUsage"
-              errors={errors}
-              className="mb-2"
-            />
+          <RiCloseLargeLine className="mr-2"/> Close
+        </Button>
+      </div>
+      <div className="w-full h-0.5 bg-white/40 mb-3" />
 
-            <label className="text-gray-600">Start time:</label>
-            <input
-              type="datetime-local"
-              {...register("startTime")}
-              className={`border-2 p-2 rounded-xl w-full ${
-                errors?.startTime?.message ? "border-red-500" : ""
-              }`}
-            />
-            {errors?.startTime && (
-              <span className="text-red-500 flex">{errors.startTime.message}</span>
-            )}
+      <h2 className="text-white font-medium font-montserrat text-xl sm:text-2xl mb-4">Create new mission</h2>
 
-            <label className="text-gray-600">End time:</label>
-            <input
-              type="datetime-local"
-              {...register("endTime")}
-              className={`border-2 p-2 rounded-xl w-full ${
-                errors?.endTime?.message ? "border-red-500" : ""
-              }`}
-            />
-            {errors?.endTime && (
-              <span className="text-red-500 flex">{errors.endTime.message}</span>
-            )}
-
-            {fields.map((field, index) => {
-              const taskType = watch(`tasks.${index}.taskType`);
-
-              return (
+      <div className="flex flex-col lg:flex-row gap-6 mb-4 flex-grow">
+        <div className="flex-1">
+          <div className="bg-[#6f55c2] p-2 rounded mb-6">
+            <div className="flex flex-col md:flex-row gap-2.5 px-2.5 py-2.5 justify-between items-start md:items-center text-white text-sm">
+              <div className="flex flex-col md:flex-row gap-2 font-montserrat mb-2 md:mb-0 items-start md:items-center">
+                <div className="flex gap-2 items-center">
+                  <FaCalendar className="w-5 h-4 sm:w-6 sm:h-5"/>
+                  <p className="text-base font-medium whitespace-nowrap">Starts:</p>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <div className="bg-white/10 text-base px-3 py-2 rounded-md">
+                    Jun 10 2025
+                  </div>
+                  <div className="bg-[#4A0295] text-base px-2 py-2 rounded-md">
+                    10:20 AM
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col md:flex-row gap-2 font-montserrat items-start md:items-center">
+                <div className="flex gap-2 items-center">
+                  <p className="text-base font-medium whitespace-nowrap">Ends:</p>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <div className="bg-white/10 text-base px-3 py-2 rounded-md">
+                    Sep 20 2025
+                  </div>
+                  <div className="bg-[#4A0295] text-base px-2 py-2 rounded-md">
+                    10:50 PM
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-[max-content_1fr] md:gap-x-4">
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex flex-col md:flex-row md:items-center mb-2">
+                <p className="text-white font-semibold font-montserrat w-full md:w-36 pl-0 md:pl-4 mb-1 md:mb-0">Mission Title:</p>
+                <input
+                  type="text"
+                  min="1"
+                  max="256"
+                  className="flex-1 rounded p-2 bg-[#7a5fd6] text-white w-full"
+                  {...register("taskTitle")}
+                />
+              </div>
+              {errors.taskTitle && (
+                <p className="text-sm text-red-300 ml-0 md:ml-[163px]">{errors.taskTitle.message?.toString()}</p>
+              )}
+            </div>
+            <label className="text-white font-semibold font-montserrat w-32 md:pl-4 self-start mt-2 md:mt-6">
+              Rewards:
+            </label>
+            <div className="flex flex-col w-full gap-4 bg-[#7a5fd6] p-4 sm:p-6 rounded-2xl mb-6 mt-4 md:mt-0">
+              <div className="flex-1">
+                <NumericInputForm
+                  register={register}
+                  name={"numberOfUses"}
+                  label="Number of task uses:"
+                  errors={errors}
+                />
+              </div>
+              <div className="flex-1">
+                <DecimalInputForm
+                  register={register}
+                  label="XP Reward per usage:"
+                  small="1XP == 1ckUSDC"
+                  maxDecimalPlaces={DECIMALS}
+                  name="rewardPerUsage"
+                  errors={errors}
+                  className="mb-2"
+                />
+                <div className="font-semibold font-montserrat flex text-white items-center justify-end gap-2">
+                  Estimated cost: {formatUnits(estimatedCost, DECIMALS)}
+                  <img src="/icons/ckUSDC.svg" className="w-6" />
+                </div>
+              </div>
+            </div>
+          </div>
+          {fields.length > 0 && (
+            <>
+              {fields.map((field, index) => (
                 <div
                   key={field.id}
-                  className="border p-4 rounded-xl mb-4 bg-gray-50"
+                  className="bg-[#6f55c2] rounded-lg p-4 sm:p-6 mb-6 shadow-lg"
                 >
-                  <div className="flex justify-between items-center mb-2">
-                    <p className="text-lg font-semibold">
-                      Subtask #{index + 1}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => remove(index)}
-                      className="text-red-500 hover:underline"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                  <div className="border-l-2 pl-2 border-[#9173FF] border-dashed">
-                    <p className="text-gray-600">Task type:</p>
-                    <select
-                      {...register(`tasks.${index}.taskType`)}
-                      className="border-2 p-2 rounded-xl w-full"
-                    >
-                      <option value="generic">Generic text task</option>
-                    </select>
-
-                    {taskType === "generic" && (
-                      <GenericTask
-                        register={register}
-                        index={index}
-                        errors={errors}
-                        maxTitleLength={maxSubtitleLength}
-                        maxDescriptionLength={maxDescriptionLength}
-                      />
+                  <h3 className="bg-[#4A0295] text-white text-base sm:text-lg font-montserrat font-medium py-1 px-3 sm:px-4 rounded-md inline-block mb-4">
+                    Task {index + 1}
+                  </h3>
+                  <div className="mb-4">
+                    <label className="block text-white font-montserrat text-base sm:text-lg font-semibold mb-1">
+                      Task Title
+                    </label>
+                    <input
+                      type="text"
+                      {...register(`tasks.${index}.title`)}
+                      className="w-full p-3 rounded-lg bg-[#7a5fd6] text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50"
+                      placeholder="Enter task title"
+                    />
+                    {errors?.tasks?.[index]?.title && (
+                      <p className="text-sm text-red-300 mt-1">
+                        {errors.tasks[index].title?.message?.toString()}
+                      </p>
                     )}
-                    <div className="flex items-center gap-2 mt-4">
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-white font-montserrat text-base sm:text-lg font-semibold mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      {...register(`tasks.${index}.description`)}
+                      className="w-full p-3 rounded-lg bg-[#7a5fd6] text-white h-24 resize-none placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50"
+                      placeholder="Mission description here."
+                      rows={5}
+                    />
+                    {errors?.tasks?.[index]?.description && (
+                      <p className="text-sm text-red-300 mt-1">
+                        {errors.tasks[index].description?.message?.toString()}
+                      </p>
+                    )}
+                  </div>
+                  <div className="mb-6">
+                    <div className="flex items-center justify-start flex-wrap gap-3 mb-2">
+                      <label className="text-white text-base sm:text-lg font-montserrat font-semibold flex-shrink-0 mr-2">
+                        Add-ons
+                      </label>
+                      <button
+                        type="button"
+                        className="bg-white/20 text-white px-3 py-1 sm:px-4 sm:py-2 font-montserrat rounded-full font-medium border border-white text-sm sm:text-base"
+                      >
+                        Generic Task
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-6 justify-between">
+                    <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
                         id={`allowresubmit-${index}`}
                         {...register(`tasks.${index}.allowresubmit`)}
                         className="form-checkbox h-5 w-5 text-[#9173FF] rounded"
                       />
-                      <label
-                        htmlFor={`allowresubmit-${index}`}
-                        className="text-gray-600 font-semibold"
-                      >
+                      <label htmlFor={`allowresubmit-${index}`} className="text-white font-montserrat text-sm sm:text-lg">
                         Allow re-submission for this subtask if rejected
                       </label>
-                      {errors?.tasks?.[index]?.allowresubmit?.message && (
-                        <span className="text-red-500">
-                          {errors.tasks[index].allowresubmit.message.toString()}
-                        </span>
-                      )}
                     </div>
+                    <Button
+                      onClick={() => remove(index)}
+                      className="text-red-300 text-sm sm:text-base mt-2 sm:mt-0"
+                    >
+                      Remove
+                    </Button>
                   </div>
+                  {errors?.tasks?.[index]?.allowresubmit?.message && (
+                    <span className="text-red-500 text-sm mt-1 block">
+                      {errors.tasks[index].allowresubmit.message.toString()}
+                    </span>
+                  )}
                 </div>
-              );
-            })}
-          </div>
-          <div className="flex justify-between">
-            <div className="justify-between font-semibold flex items-center justify-center gap-2">
-              Estimated cost: {formatUnits(estimatedCost, DECIMALS)}
-              <img src="/icons/ckUSDC.svg" className="w-6" />
-            </div>
-            <Button>Create task!</Button>
-          </div>
+              ))}
+            </>
+          )}
         </div>
       </div>
-    </form>
-  );
+      <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-4 mt-6">
+        <Button
+          className="text-white bg-white/20 px-3 py-1 rounded font-semibold text-sm sm:text-base w-full sm:w-auto mb-2 sm:mb-0"
+          onClick={() =>
+            append({
+              taskType: "generic",
+              title: "",
+              description: "",
+              allowresubmit: false,
+            })
+          }
+        >
+          Task <FaPlus className="ml-2"/>
+        </Button>
+        <Button
+          variant="saveDraft"
+          className="font-montserrat px-3 py-1 font-semibold text-sm sm:text-base w-full sm:w-auto mb-2 sm:mb-0"
+          onClick={() => toast("Draft saving not yet implemented")}
+        >
+          Save draft
+        </Button>
+        <Button
+          variant="publish"
+          className="font-montserrat px-3 py-1 font-semibold text-sm sm:text-base w-full sm:w-auto"
+        >
+          Publish
+        </Button>
+      </div>
+    </div>
+  </form>
+);
 };
-
+}
 export default CreateNewTaskModal;

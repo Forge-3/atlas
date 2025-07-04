@@ -1,5 +1,5 @@
 
-import { setLoading } from "../store/slices/appSlice";
+import { setLoading, setScreenBlur } from "../store/slices/appSlice";
 import type { AppDispatch } from "../store/store";
 
 export async function runWithLoading(

@@ -97,7 +97,7 @@ const Submissions = () => {
         <div className="w-full flex flex-col gap-2 md:flex-row md:flex-none md:w-auto md:gap-none my-4 md:justify-between">
           <div className="flex">
             <Button
-              light
+              variant="light"
               className="flex-1 gap-2"
               onClick={() => navigate(getTaskPath(principal, taskId))}
             >

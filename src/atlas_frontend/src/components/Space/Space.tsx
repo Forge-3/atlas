@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { FiFilter, FiStar } from "react-icons/fi";
 import Button from "../Shared/Button.tsx";
 import TaskCard from "./TaskCard/index.tsx";
-import CreateNewTaskModal from "../../modals/CreateNewTaskModal.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { deserialize, type RootState } from "../../store/store.ts";
 import { setScreenBlur } from "../../store/slices/appSlice.ts";
@@ -19,7 +18,7 @@ import { useSpaceId } from "../../hooks/space.ts";
 import { FaDiscord, FaLinkedinIn, FaTelegramPlane } from "react-icons/fa";
 import { FaArrowLeftLong, FaXTwitter } from "react-icons/fa6";
 import type { ExternalLinks } from "../../canisters/atlasSpace/types.ts";
-import { getSpaceEditPath, SPACES_PATH } from "../../router/paths.ts";
+import { getSpaceEditPath, SPACES_PATH, getCreateTaskPath } from "../../router/paths.ts";
 import toast from "react-hot-toast";
 import {
   useAuthAtlasMainActor,
@@ -124,7 +123,6 @@ const Space = ({
   const userInfo = userBlockchainData
     ? new BlockchainUser(userBlockchainData)
     : null;
-  const [isCreateTaskModal, setCreateTaskModal] = useState(false);
   const [isTransferModal, setTransferModal] = useState(false);
   const inHub = userBlockchainData?.in_hub ?? null;
   const parsedSpacePrincipal = useSpaceId({
@@ -139,10 +137,6 @@ const Space = ({
   const didUserCanAdministrate =
     userInfo?.canAdministrate(parsedSpacePrincipal) ?? false;
 
-  const toggleTaskModal = () => {
-    setCreateTaskModal(!isCreateTaskModal);
-    dispatch(setScreenBlur(!isScreenBlur));
-  };
   const toggleTransferModal = () => {
     setTransferModal(!isTransferModal);
     dispatch(setScreenBlur(!isScreenBlur));
@@ -180,7 +174,7 @@ const Space = ({
           <div className="w-full flex flex-col gap-2 md:flex-row md:flex-none md:w-auto md:gap-none my-4 ">
             <div className="flex flex-1 gap-2 justify-stretch md:justify-between">
               <Button
-                light
+                variant="light"
                 className="flex-1 gap-2 md:flex-none "
                 onClick={() => navigate(SPACES_PATH)}
               >
@@ -188,7 +182,7 @@ const Space = ({
               </Button>
               {userInfo?.ownSpaces(parsedSpacePrincipal) ? (
                 <Button
-                  light
+                  variant="light"
                   className="flex-1 md:flex-none md:justify-end md:gap-2"
                   onClick={toggleTransferModal}
                 >
@@ -205,24 +199,17 @@ const Space = ({
                   <Button className="flex-1 md:flex-none" onClick={joinSpace}>
                     Join space
                   </Button>
-                ) : (
-                  didUserCanAdministrate && (
-                    <Button
-                      light
-                      className="flex-1 md:flex-none"
-                      onClick={() =>
-                        navigate(getSpaceEditPath(parsedSpacePrincipal))
-                      }
-                    >
-                      Edit space
-                    </Button>
-                  )
-                )}
-                {didUserCanAdministrate && (
+                ) : didUserCanAdministrate && (
                   <Button
+                    variant="light"
                     className="flex-1 md:flex-none"
-                    onClick={toggleTaskModal}
+                    onClick={() => navigate(getSpaceEditPath(parsedSpacePrincipal))}
                   >
+                    Edit space
+                  </Button>
+                ) }
+                {didUserCanAdministrate && (
+                  <Button className="flex-1 md:flex-none" onClick={() => navigate(getCreateTaskPath(parsedSpacePrincipal))}>
                     Create new task
                   </Button>
                 )}
@@ -309,7 +296,7 @@ const Space = ({
           {<TasksList tasks={tasks} spaceId={spaceId} />}
         </div>
       </div>
-      {isCreateTaskModal && <CreateNewTaskModal callback={toggleTaskModal} />}
+      
       {isTransferModal && <TransferSpaceModal callback={toggleTransferModal} />}
     </>
   );
