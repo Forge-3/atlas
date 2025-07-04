@@ -1,11 +1,11 @@
 import React from "react";
 
-interface AmbassadorCardProps {
-  ambassadorsCount: number;
+interface ChampionCardProps {
+  ChampionsCount: number;
   country: string;
 }
 
-function AmbassadorCard({ ambassadorsCount, country }: AmbassadorCardProps) {
+function ChampionCard({ ChampionsCount, country }: ChampionCardProps) {
   return (
     <div
       className="flex w-full flex-col items-center border-2 border-white border-solid gap-4 font-montserrat"
@@ -25,8 +25,8 @@ function AmbassadorCard({ ambassadorsCount, country }: AmbassadorCardProps) {
         />
       </div>
       <div>
-        <div className="text-3xl font-semibold">{ambassadorsCount}</div>
-        <div className="text-xs font-medium">Ambassador</div>
+        <div className="text-3xl font-semibold">{ChampionsCount}</div>
+        <div className="text-xs font-medium">Champion</div>
       </div>
       <div className="px-2 py-3 font-medium border-t-2 border-white self-stretch rounded-xl font-semibold">
         Join
@@ -38,4 +38,4 @@ function AmbassadorCard({ ambassadorsCount, country }: AmbassadorCardProps) {
   );
 }
 
-export default AmbassadorCard;
+export default ChampionCard;

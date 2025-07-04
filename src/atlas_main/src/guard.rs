@@ -8,7 +8,7 @@ use crate::{
 
 #[inline(always)]
 pub fn authenticated_guard() -> Result<Principal, Error> {
-    let principal = ic_cdk::caller();
+    let principal = ic_cdk::api::msg_caller();
     if principal == Principal::anonymous() {
         return Err(Error::AnonymousCaller);
     }

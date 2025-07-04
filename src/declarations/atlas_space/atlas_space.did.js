@@ -37,6 +37,7 @@ export const idlFactory = ({ IDL }) => {
     'SubtaskDoNotExists' : IDL.Nat64,
     'NotOwner' : IDL.Null,
     'FailedToTransfer' : IDL.Text,
+    'FailedToParse' : IDL.Text,
     'InvalidTaskContent' : IDL.Text,
     'TaskDoNotExists' : IDL.Nat64,
     'AnonymousCaller' : IDL.Null,

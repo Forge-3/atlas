@@ -34,6 +34,7 @@ export type Error = { 'BytecodeUpToDate' : null } |
   { 'SubtaskDoNotExists' : bigint } |
   { 'NotOwner' : null } |
   { 'FailedToTransfer' : string } |
+  { 'FailedToParse' : string } |
   { 'InvalidTaskContent' : string } |
   { 'TaskDoNotExists' : bigint } |
   { 'AnonymousCaller' : null } |

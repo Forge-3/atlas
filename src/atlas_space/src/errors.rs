@@ -71,4 +71,7 @@ pub enum Error {
 
     #[error("User already rewarded")]
     UserAlreadyRewarded,
+
+    #[error("Failed to parse call response: {0}")]
+    FailedToParse(String),
 }

@@ -68,4 +68,10 @@ pub enum Error {
 
     #[error("Failed to decode canister args: {0}")]
     FailedToDecodeArgs(String),
+
+    #[error("Failed to parse call response: {0}")]
+    FailedToParse(String),
+
+    #[error("Not enough cycles")]
+    NotEnoughCycles { expected: u128, owned: u128 },
 }

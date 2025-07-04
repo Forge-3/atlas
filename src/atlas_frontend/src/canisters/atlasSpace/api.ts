@@ -10,9 +10,6 @@ import { unwrapCall } from "../delegatedCall.js";
 import { setSpace, setTasks } from "../../store/slices/spacesSlice.js";
 import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import { storableState } from "./storable.js";
-import { serify } from "@karmaniverous/serify-deserify";
-import { customSerify } from "../../store/store.js";
 import type { Principal } from "@dfinity/principal";
 import type { ExternalLinks } from "./types.js";
 
@@ -28,11 +25,23 @@ export const getAtlasSpace = async ({
   dispatch,
 }: GetAtlasSpaceArgs) => {
   const state = await unAuthAtlasSpace.get_state();
+  const externalLinksObj = Object.fromEntries(state.external_links);
 
   dispatch(
     setSpace({
-      state: storableState(state),
       spaceId,
+      state: {
+        ...state,
+        space_symbol: state.space_symbol.pop() ?? null,
+        space_background: state.space_background.pop() ?? null,
+        space_logo: state.space_logo.pop() ?? null,
+        external_links: {
+          x: externalLinksObj?.x ?? null,
+          telegram: externalLinksObj?.telegram ?? null,
+          discord: externalLinksObj?.discord ?? null,
+          linkedIn: externalLinksObj?.linkedIn ?? null,
+        },
+      },
     })
   );
 };
@@ -76,7 +85,6 @@ export const getSpaceTasks = async ({
   spaceId,
   dispatch,
 }: GetAtlasSpaceArgs) => {
-  const tasks: [bigint, Task][] = [];
   let tasksCount = 0n;
   let start = 0n;
   const count = 200n;
@@ -89,8 +97,14 @@ export const getSpaceTasks = async ({
     errMsg: "Failed to get data from blockchain",
   });
 
+  const tasks = Object.fromEntries(res.tasks);
+  dispatch(
+    setTasks({
+      tasks,
+      spaceId,
+    })
+  );
   tasksCount = res.tasks_count;
-  tasks.push(...res.tasks);
   start += count;
 
   while (tasksCount < tasks.length) {
@@ -102,29 +116,16 @@ export const getSpaceTasks = async ({
       call,
       errMsg: "Failed to get data from blockchain",
     });
-    tasks.push(...res.tasks);
+
+    const tasks = Object.fromEntries(res.tasks);
+    dispatch(
+      setTasks({
+        tasks,
+        spaceId,
+      })
+    );
     start += count;
   }
-
-  const storableTasks = tasks.reduce(
-    (acc, [id, val]) => ({
-      ...acc,
-      [id.toString()]: val,
-    }),
-    {}
-  );
-
-  dispatch(
-    setTasks(
-      serify(
-        {
-          tasks: storableTasks,
-          spaceId,
-        },
-        customSerify
-      ) as { tasks: { [key: string]: Task }; spaceId: string }
-    )
-  );
 };
 
 interface SubmitSubtaskSubmissionArgs {

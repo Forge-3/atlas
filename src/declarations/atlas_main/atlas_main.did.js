@@ -69,6 +69,8 @@ export const idlFactory = ({ IDL }) => {
     'UserDoNotExist' : IDL.Null,
     'FailedToUpdateCanisterSettings' : IDL.Text,
     'UserAlreadyIsHubMember' : IDL.Null,
+    'FailedToParse' : IDL.Text,
+    'NotEnoughCycles' : IDL.Record({ 'owned' : IDL.Nat, 'expected' : IDL.Nat }),
     'AnonymousCaller' : IDL.Null,
   });
   const Result = IDL.Variant({ 'Ok' : Space, 'Err' : Error });

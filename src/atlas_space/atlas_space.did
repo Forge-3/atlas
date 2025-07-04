@@ -31,6 +31,7 @@ type Error = variant {
   SubtaskDoNotExists : nat64;
   NotOwner;
   FailedToTransfer : text;
+  FailedToParse : text;
   InvalidTaskContent : text;
   TaskDoNotExists : nat64;
   AnonymousCaller;

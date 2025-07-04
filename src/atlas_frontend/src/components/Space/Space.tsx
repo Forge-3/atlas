@@ -4,18 +4,22 @@ import Button from "../Shared/Button.tsx";
 import TaskCard from "./TaskCard/index.tsx";
 import CreateNewTaskModal from "../../modals/CreateNewTaskModal.tsx";
 import { useDispatch, useSelector } from "react-redux";
-import type { RootState } from "../../store/store.ts";
+import { deserialize, type RootState } from "../../store/store.ts";
 import { setScreenBlur } from "../../store/slices/appSlice.ts";
 import { useAuth } from "@nfid/identitykit/react";
-import { selectUserBlockchainData } from "../../store/slices/userSlice.ts";
+import {
+  BlockchainUser,
+  selectUserBlockchainData,
+  type StorableUser,
+} from "../../store/slices/userSlice.ts";
 import type { Tasks } from "../../canisters/atlasSpace/api.ts";
 import type { Principal } from "@dfinity/principal";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSpaceId } from "../../hooks/space.ts";
 import { FaDiscord, FaLinkedinIn, FaTelegramPlane } from "react-icons/fa";
-import { FaXTwitter } from "react-icons/fa6";
+import { FaArrowLeftLong, FaXTwitter } from "react-icons/fa6";
 import type { ExternalLinks } from "../../canisters/atlasSpace/types.ts";
-import { getSpaceEditPath } from "../../router/paths.ts";
+import { getSpaceEditPath, SPACES_PATH } from "../../router/paths.ts";
 import toast from "react-hot-toast";
 import {
   useAuthAtlasMainActor,
@@ -95,7 +99,12 @@ const Space = ({
   const isScreenBlur = useSelector(
     (state: RootState) => state.app.isScreenBlur
   );
-  const userBlockchainData = useSelector(selectUserBlockchainData);
+  const userBlockchainData = deserialize<StorableUser>(
+    useSelector(selectUserBlockchainData)
+  );
+  const userInfo = userBlockchainData
+    ? new BlockchainUser(userBlockchainData)
+    : null;
   const [isCreateTaskModal, setCreateTaskModal] = useState(false);
   const [isTransferModal, setTransferModal] = useState(false);
   const inHub = userBlockchainData?.in_hub ?? null;
@@ -109,7 +118,7 @@ const Space = ({
   if (!parsedSpacePrincipal) return <></>;
 
   const didUserCanAdministrate =
-    userBlockchainData?.canAdministrate(parsedSpacePrincipal) ?? false;
+    userInfo?.canAdministrate(parsedSpacePrincipal) ?? false;
 
   const toggleTaskModal = () => {
     setCreateTaskModal(!isCreateTaskModal);
@@ -135,7 +144,7 @@ const Space = ({
         error: "Failed to join to space",
       }
     );
-    getAtlasUser({
+    await getAtlasUser({
       unAuthAtlasMain,
       dispatch,
       userId: user.principal,
@@ -146,30 +155,40 @@ const Space = ({
     <>
       <div className="container mx-auto my-4">
         <div className="w-full px-3">
-          <div className="my-4 flex justify-end gap-2">
-            {userBlockchainData?.ownSpaces(parsedSpacePrincipal) && (
-              <Button onClick={toggleTransferModal} light={true}>
-                Transfer space
+          <div className="flex justify-between my-4">
+            <div className="flex justify-start gap-2">
+              <Button
+                light
+                className="flex gap-2"
+                onClick={() => navigate(SPACES_PATH)}
+              >
+                <FaArrowLeftLong /> Back
               </Button>
-            )}
-            {!didUserCanAdministrate && userBlockchainData && !inHub && (
-              <Button onClick={joinSpace}>Join space</Button>
-            )}
-            {didUserCanAdministrate && (
-              <>
-                <Button
-                  light
-                  onClick={() =>
-                    navigate(getSpaceEditPath(parsedSpacePrincipal))
-                  }
-                >
-                  Edit space
+            </div>
+            <div className="flex justify-end gap-2">
+              {userInfo?.ownSpaces(parsedSpacePrincipal) && (
+                <Button onClick={toggleTransferModal} light={true}>
+                  Transfer space
                 </Button>
-                <Button onClick={toggleTaskModal}>Create new task</Button>
-              </>
-            )}
+              )}
+              {!didUserCanAdministrate && userBlockchainData && !inHub && (
+                <Button onClick={joinSpace}>Join space</Button>
+              )}
+              {didUserCanAdministrate && (
+                <>
+                  <Button
+                    light
+                    onClick={() =>
+                      navigate(getSpaceEditPath(parsedSpacePrincipal))
+                    }
+                  >
+                    Edit space
+                  </Button>
+                  <Button onClick={toggleTaskModal}>Create new task</Button>
+                </>
+              )}
+            </div>
           </div>
-
           <div className="relative w-full rounded-t-xl bg-[#1E0F33] mb-1">
             <div className="p-8">
               <div

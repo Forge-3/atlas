@@ -66,14 +66,14 @@ const SpacesList = () => {
         {spacesEntries.map(
           ([key, value]) =>
             value?.state && (
-              <a key={key} href={getSpacePath(Principal.from(key))}>
+              <span key={key} onClick={() => navigate(getSpacePath(Principal.from(key)))}>
                 <SpaceItem
                   name={value.state.space_name}
                   description={value.state.space_description}
                   backgroundImg={value.state.space_background}
                   avatarImg={value.state.space_logo}
                 />
-              </a>
+              </span>
             )
         )}
       </div>

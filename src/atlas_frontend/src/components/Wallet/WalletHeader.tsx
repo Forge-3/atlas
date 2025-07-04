@@ -25,6 +25,7 @@ import {
 } from "../../canisters/ckUsdcLedger/api";
 import { Principal } from "@dfinity/principal";
 import toast from "react-hot-toast";
+import { deserialize } from "../../store/store";
 
 const WalletHeader = () => {
   const navigate = useNavigate();
@@ -75,7 +76,7 @@ const WalletHeader = () => {
   getCkUsdcBalance({
     dispatch,
   });
-  const userCkUsdc = useSelector(selectUserCkUsdc);
+  const userCkUsdc = deserialize<bigint>(useSelector(selectUserCkUsdc));
   const parsedUserCkUsdc =
     userCkUsdc !== null ? formatUnits(userCkUsdc, DECIMALS) : null;
 

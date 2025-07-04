@@ -1,11 +1,15 @@
 import React from "react";
 import { BsTwitterX } from "react-icons/bs";
+import { useNavigate } from "react-router-dom";
+import { HELP_PATH } from "../router/paths";
 
 const Footer = () => {
+    const navigate = useNavigate();
+    
   return (
     <div className="flex flex-col items-center self-stretch px-20 pt-10 pb-12 mt-0 w-full text-lg font-medium leading-tight text-center text-violet-500 bg-[#1E0F33] max-md:px-5 max-md:max-w-full">
       <div className="px-20 py-5 max-w-full rounded-3xl text-[#9173FF] bg-[#150826] bg-opacity-50 max-md:px-5 w-full flex gap-6 justify-between">
-        <a href="/help">Terms of Use</a>
+        <a onClick={() => navigate(HELP_PATH)}>Terms of Use</a>
         <a href="https://x.com/ICPHUBS" target="_blank" rel="noreferrer" className="flex items-center justify-center">
           <BsTwitterX className="w-6 h-6" />
         </a>

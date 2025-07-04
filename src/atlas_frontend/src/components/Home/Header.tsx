@@ -25,13 +25,13 @@ const Header = () => {
           <span className="font-bold text-[3rem] leading-[3.5rem]">
             <h2>
               Join <br />
-              Ambassador <br />
+              Champion <br />
               Program
             </h2>
           </span>
           <div className="mt-8">
             <p className="font-[380] text-3xl">
-              Atlas is a community of ambassadors promoting
+              Atlas is a community of Champions promoting
             </p>
             <h3 className="text-2xl font-semibold">ICP HUBS NETWORK</h3>
           </div>

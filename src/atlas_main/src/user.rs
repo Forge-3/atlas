@@ -19,8 +19,12 @@ impl Storable for Integrations {
     }
 
     fn from_bytes(bytes: Cow<[u8]>) -> Self {
-        minicbor::decode(bytes.as_ref())
-            .unwrap_or_else(|e| panic!("failed to decode Integrations bytes {}: {e}", hex::encode(bytes)))
+        minicbor::decode(bytes.as_ref()).unwrap_or_else(|e| {
+            panic!(
+                "failed to decode Integrations bytes {}: {e}",
+                hex::encode(bytes)
+            )
+        })
     }
 
     const BOUND: Bound = Bound::Unbounded;
