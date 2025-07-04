@@ -4,6 +4,7 @@ export const SPACES_PATH = "/space";
 export const SPACE_PATH = SPACES_PATH + "/:spacePrincipal";
 export const TASK_PATH = SPACE_PATH + "/:taskId";
 export const REVIEW_SUMMATIONS_PATH = TASK_PATH + "/summations";
+export const CREATE_TASK_PATH = SPACE_PATH + "/create-task";
 
 export const SPACE_BUILDER_PATH = SPACES_PATH + "/builder";
 export const SPACE_EDIT_PATH = SPACE_BUILDER_PATH + "/:spacePrincipal";
@@ -28,3 +29,6 @@ export const getSubmissionsPath = (principal: Principal, taskId: string) =>
     ":taskId",
     taskId
   );
+
+  export const getCreateTaskPath = (spacePrincipal: Principal) =>
+  CREATE_TASK_PATH.replace(":spacePrincipal", spacePrincipal.toText());

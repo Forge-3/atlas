@@ -5,10 +5,11 @@ import AstronautIcon from "./AstronautIcon"
 
 const ScreenLoadingOverlay = () => {
   const isLoading = useSelector((state: RootState) => state.app.isLoading);
-  if (!isLoading) return null;
+  const isInitialUserLoading = useSelector((state: RootState) => state.app.isInitialUserLoading);
+  if (!isLoading && !isInitialUserLoading) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-25 sm:backdrop-blur-sm backdrop-blur-none z-40">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/25 backdrop-blur-2xl z-40">
       <AstronautIcon />
     </div>
   );

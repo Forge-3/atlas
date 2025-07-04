@@ -246,7 +246,7 @@ const Admin = () => {
                             ];
                           }}
                         />
-                        <Bar dataKey="value" fill="#9173FF" />
+                        <Bar dataKey="value" fill="var(--color-primary)" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -257,17 +257,19 @@ const Admin = () => {
           <GradientBox>
             <div className="px-8 font-montserrat text-white pt-8">
               <div className="flex gap-2 flex-col">
-                <h3 className="text-xl font-medium">Set space leader</h3>
+                <h3 className="text-xl font-medium ">Set space leader</h3>
                 <p>Promote user to space lead</p>
                 <WalletAddressInputForm
                   register={register}
                   name="principal"
                   placeholder="Enter the principal"
-                  className="py-3 px-4 rounded-xl bg-white/20 backdrop-blur-sm border-0"
+                  className="py-3 px-4 rounded-xl bg-white/20 backdrop-blur-sm border-0 outline-none focus:outline-none"
                   errors={errors}
                 />
                 <div className="flex justify-end">
-                  <Button>Promote user</Button>
+                  <Button
+                  className="px-4"
+                  >Promote user</Button>
                 </div>
               </div>
             </div>

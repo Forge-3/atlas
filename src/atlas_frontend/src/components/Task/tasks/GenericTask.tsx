@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useState } from "react";
 import type {
   _SERVICE,
@@ -9,18 +9,26 @@ import { useForm, type SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import {
-  getRejectionInfo,
   getSpaceTasks,
   submitSubtaskSubmission,
 } from "../../../canisters/atlasSpace/api";
 import toast from "react-hot-toast";
 import type { Principal } from "@dfinity/principal";
-import { useAuthAtlasSpaceActor } from "../../../hooks/identityKit";
 import { useAuth } from "@nfid/identitykit/react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import type { ActorSubclass } from "@dfinity/agent";
 import { getErrorWithInfoToast } from "../../../utils/errors";
 import { runWithLoading } from "../../../utils/loading";
+import { deserialize } from "../../../store/store";
+import {
+  BlockchainUser,
+  selectUserBlockchainData,
+  type StorableUser,
+} from "../../../store/slices/userSlice";
+import ReviewSubmission from "../../Submissions/ReviewSubmission";
+import { FaCaretRight } from "react-icons/fa6";
+import { shortPrincipal } from "../../../utils/icp";
+import { FiCopy } from "react-icons/fi";
 
 interface GenericTaskProps {
   genericTask: TaskType["GenericTask"];
@@ -30,6 +38,8 @@ interface GenericTaskProps {
   unAuthAtlasSpace: ActorSubclass<_SERVICE> | null;
   isUserInHub: boolean;
   disabled?: boolean;
+  authAtlasSpace: ActorSubclass<_SERVICE> | null;
+  isAdmin?: boolean;
 }
 
 interface GenericTaskFormInput {
@@ -56,18 +66,33 @@ const GenericTask = ({
   unAuthAtlasSpace,
   isUserInHub,
   disabled = false,
+  authAtlasSpace,
+  isAdmin = false,
 }: GenericTaskProps) => {
   const dispatch = useDispatch();
   const { user } = useAuth();
   const [openSubmission, setSubmission] = useState(false);
-  const { register, handleSubmit} = useForm({
+  const { register, handleSubmit, formState:{errors}} = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
       taskSubmission: "",
     },
   });
+  const [openReview, SetReview] = useState(false);
   const { connect } = useAuth();
-  const authAtlasSpace = useAuthAtlasSpaceActor(spacePrincipal);
+  
+  const userBlockchainData = deserialize<StorableUser>(
+    useSelector(selectUserBlockchainData)
+  );
+  const userInfo = userBlockchainData
+    ? new BlockchainUser(userBlockchainData)
+    : null;
+  const isUserAdmin = isAdmin || (userInfo?.canAdministrate(spacePrincipal) ?? false);
+
+  const copyPrincipal = (user: string) => {
+    navigator.clipboard.writeText(user);
+    toast.success("Copied full principal");
+  };
 
   const handleSubmitResponse: SubmitHandler<GenericTaskFormInput> = async ({
     taskSubmission,
@@ -101,6 +126,7 @@ const GenericTask = ({
         ([principal]) => principal.toString() === user.principal.toString()
       ) ?? [])
     : [];
+  const allSubmissions = genericTask.submission;
 
   const currentSubmissionState = submissionData?.state
   ? Object.keys(submissionData?.state)[0]
@@ -116,75 +142,173 @@ const GenericTask = ({
   const validStates = ["Rejected", "WaitingForReview", "Accepted"] as const;
   type SubmissionState = typeof validStates[number];
 
+  const STATUS_LABELS: Record<typeof rawState, string> = {
+    WaitingForReview: "Waiting for review",
+    Accepted: "Accepted",
+    Rejected: "Rejected",
+  };
+
+  const prettyStatus = STATUS_LABELS[rawState] ?? rawState;
+
   const submissionState = validStates.includes(rawState as SubmissionState)
     ? (rawState as SubmissionState)
     : null;
+  
+  const badgeCls = (s?: string) =>
+  ({
+    Accepted: "bg-green-500/20 text-green-300 border border-green-500/30",
+    Rejected: "bg-red-500/20 text-red-300 border border-red-500/30",
+    WaitingForReview: "bg-primary/20 border border-white/10",
+  } as Record<string, string>)[s ?? ""];
 
-  const { reasonText, showRejectionReason } = getRejectionInfo(
-    submissionData ?? null,
-    submissionState
-  )
+  const userState = Object.keys(submissionData?.state ?? {})[0];
+
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  const handleInput = () => {
+    if (ref.current) {
+      ref.current.style.height = "auto";
+      ref.current.style.height = ref.current.scrollHeight + "px";
+    }
+  };
+
+  useEffect(() => {
+    handleInput(); 
+  }, []);
 
    return (
-    <div className="flex mt-2">
-      <div className="flex flex-col mr-4">
-        <div className="bg-[#1E0F33] p-1 w-[32px] h-[32px] rounded-lg relative">
+    <div className="flex mt-8">
+      <div className="flex flex-col mr-2 md:mr-8">
+        <div className="bg-black/20 flex justify-center items-center w-[26px] h-[26px] sm:w-[32px] sm:h-[32px] rounded-lg relative">
           {submissionState === "WaitingForReview" && (
-            <img src="/icons/check-in-box.svg" className="w-6 h-6 relative"/>
+            <img src="/icons/check-in-box.svg" className="w-5 h-5 sm:w-6 sm:h-6 relative"/>
           )}
           {submissionState === "Accepted" && (
-            <img src="/icons/check-in-box.svg" className="w-6 h-6 relative"/>
+            <img src="/icons/check-in-box.svg" className="w-5 h-5 sm:w-6 sm:h-6 relative"/>
           )}
         </div>
-        <div className="bg-[#1E0F33] flex-1 w-1 rounded-full mx-auto mt-2"></div>
       </div>
-      <div className="bg-[#1E0F33] rounded-xl p-3 md:p-6 w-full">
+      <div className="flex flex-col bg-black/20 rounded-lg p-3 md:p-6 w-full">
         <div className="mb-4">
-          <h4 className="text-xl font-medium font-poppins text-white mb-1 text-wrap break-all">
-            {"TitleAndDescription" in genericTask.task_content 
-              ? genericTask.task_content.TitleAndDescription.task_title
-              : "N/A"}
-          </h4>
-          <p className="text-zinc-400 text-wrap break-all">
+          <div className="flex items-baseline gap-2">
+            <h3 className="flex-1 text-[20px] md:text-h3 font-medium font-montserrat text-light break-all">
+              {"TitleAndDescription" in genericTask.task_content 
+                ? genericTask.task_content.TitleAndDescription.task_title
+                : "N/A"}
+            </h3>
+            {user && !isUserAdmin && submissionData && (
+              <span className={`shrink-0 ml-2 text-[12px] sm:text-base ${badgeCls(userState)} px-3 py-2 rounded-lg text-white`}>
+                {prettyStatus}
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-[14px] md:text-base text-light/80 font-montserrat break-all">
             {"TitleAndDescription" in genericTask.task_content 
               ? genericTask.task_content.TitleAndDescription.task_description
               : "N/A"}
           </p>
         </div>
-        {showRejectionReason && (
-            <div className="mt-2 p-3 rounded-lg border border-red-500 bg-red-900 bg-opacity-20 text-red-300">
-              <p className="font-semibold text-red-200 mb-1">Rejected reason:</p>
-              <p className="break-words">
-                {reasonText}
-              </p>
-            </div>
-          )}
 
         {canSubmit && openSubmission && !disabled && (
           <form onSubmit={handleSubmit(handleSubmitResponse)}>
             <div>
-              <p className="text-xs md:text-base text-white font-semibold mb-1">Submit response:</p>
-              <textarea
+              <p className="flex flex-col w-full text-xs md:text-base text-white font-semibold mb-1">Submit response:</p>
+                <textarea
                 {...register("taskSubmission")}
-                className="border-2 border-[#9173FF]/20 p-2 h-32 md:h-20 md:p-4 rounded-xl w-full mb-2 bg-[#9173FF]/20 text-white"
-              ></textarea>
+                className="border-2 border-primary/20 outline-none focus:outline-none resize-none overflow-hidden p-2 md:p-4 rounded-xl w-full max mb-2 bg-primary/20 text-white"
+                ref={ref}
+                onInput={handleInput}
+              />
+              {errors?.taskSubmission && (
+                <p className="text-sm text-red-300 font-montserrat font-medium mt-1">
+                  {errors.taskSubmission?.message?.toString()}
+                </p>
+              )}
             </div>
             <div className="flex justify-end">
-              <Button className="text-[14px] px-2 py-1 rounded-xl">Submit</Button>
+              <Button variant="vivid" className="text-[12px] md:text-base font-medium px-2 rounded-md mb-4">Submit</Button>
             </div>
           </form>
         )}
         {canSubmit  && !openSubmission && !disabled && (
-          <div className="flex py-2">
-            <Button onClick={() => setSubmission(true)} className="text-[14px] px-2 py-1 rounded-xl">
+          <div className="flex md:py-2">
+            <Button onClick={() => setSubmission(true)} variant="vivid" className="text-[12px] md:text-base font-medium px-2 rounded-md">
               {submissionState === "Rejected" ? "Re-submit message" : "Submit message"}
-              
             </Button>
           </div>
         )}
         {!user && (
           <div className="flex">
             <Button onClick={() => connect()}>Connect</Button>
+          </div>
+        )}
+        {user && !isUserAdmin && submissionData && (
+          Object.keys(submissionData.state)[0] === "Rejected" &&
+          submissionData.rejection_reason[0] &&
+          submissionData.rejection_reason[0].trim().length > 0 ? (
+            <div className="border-t border-white/20">
+              <div className="mt-2 p-3 text-sm rounded border border-red-500 bg-red-800/30 text-red-300">
+                <p className="font-semibold text-white mb-1">Reject Reason:</p>
+                <p className="break-words">
+                  {submissionData.rejection_reason[0]}
+                </p>
+              </div>
+            </div>
+          ) : null
+        )}
+        {isUserAdmin && allSubmissions.length > 0 && authAtlasSpace && unAuthAtlasSpace && (
+          <div className="pt-4 border-t border-white/20">
+            <button className="flex text-[12px] sm:text-base text-white font-semibold mb-2"
+            onClick={() => SetReview(!openReview)}
+            >
+              <FaCaretRight className={`${openReview && `rotate-90`} mt-[5px] mr-1`}/> Review Submissions ({allSubmissions.length})
+            </button>
+            {openReview && (
+            <div className="space-y-4">
+              {allSubmissions.map(([principal, submissionData]) => {
+                const rowState = Object.keys(submissionData.state ?? {})[0];
+                return (
+                <div key={principal.toString()} className="border border-white/10 rounded-lg p-3">
+                  <div className="flex flex-row justify-between mb-2">
+                    <span className="flex gap-2 py-1 text-white text-[12px] sm:text-base font-medium text-center"
+                    onClick={() => copyPrincipal(principal.toString())}
+                    >
+                      User: {shortPrincipal(principal.toString())} <FiCopy className="my-1"/></span>
+                    <span className={`text-xs sm:text-base font-medium w-fit ${badgeCls(rowState)} px-2 py-1 text-white rounded`}>
+                      {rowState}
+                    </span>
+                  </div>
+                  <ReviewSubmission
+                    submission={{
+                      submissionData: submissionData,
+                      taskType: "GenericTask"
+                    }}
+                    authAtlasSpace={authAtlasSpace}
+                    taskId={taskId}
+                    subtaskId={subtaskId.toString()}
+                    unAuthAtlasSpace={unAuthAtlasSpace}
+                    spaceId={spacePrincipal.toString()}
+                    userPrincipal={principal.toString()}
+                    onReviewComplete={() => {
+                      getSpaceTasks({
+                        spaceId: spacePrincipal.toString(),
+                        unAuthAtlasSpace,
+                        dispatch,
+                      });
+                    }}
+                  />
+                </div>
+              );
+            })}
+            </div>
+            )}
+          </div>
+        )}
+        
+        {isUserAdmin && allSubmissions.length === 0 && (
+          <div className="pt-4 border-t border-white/20">
+            <h4 className="text-white font-semibold mb-2">Review Submissions</h4>
+            <p className="text-white/70">No submissions yet for this subtask.</p>
           </div>
         )}
       </div>
