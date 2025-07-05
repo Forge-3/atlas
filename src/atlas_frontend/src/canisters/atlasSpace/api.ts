@@ -2,6 +2,7 @@ import type { ActorSubclass } from "@dfinity/agent";
 import type {
   _SERVICE,
   GetTasksRes,
+  State,
   Submission,
   Task,
   TaskContent,
@@ -24,7 +25,18 @@ export const getAtlasSpace = async ({
   spaceId,
   dispatch,
 }: GetAtlasSpaceArgs) => {
-  const state = await unAuthAtlasSpace.get_state();
+  let state: State;
+  let version: bigint;
+
+  try {
+    ({ state, version } = await unAuthAtlasSpace.get_space_info());
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_) {
+    [state, version] = await Promise.all([
+      unAuthAtlasSpace.get_state(),
+      unAuthAtlasSpace.get_current_bytecode_version(),
+    ]);
+  }
   const externalLinksObj = Object.fromEntries(state.external_links);
 
   dispatch(
@@ -32,6 +44,7 @@ export const getAtlasSpace = async ({
       spaceId,
       state: {
         ...state,
+        version,
         space_symbol: state.space_symbol.pop() ?? null,
         space_background: state.space_background.pop() ?? null,
         space_logo: state.space_logo.pop() ?? null,

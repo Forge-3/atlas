@@ -40,10 +40,10 @@ pub async fn deposit_ckusdc(
     Call::bounded_wait(ckusdc_ledger.principal, "icrc2_transfer_from")
         .with_args(&(transfer_args,))
         .await
-        .map_err(|err| Error::FailedToTransfer(format!("Failed to call ledger: {:?}", err)))?
+        .map_err(|err| Error::FailedToTransfer(err.to_string()))?
         .candid::<Result<Nat, TransferFromError>>()
         .map_err(|err| Error::FailedToParse(err.to_string()))?
-        .map_err(|err| Error::FailedToTransfer(format!("Ledger transfer error {:?}", err)))?;
+        .map_err(|err| Error::FailedToTransfer(err.to_string()))?;
 
     Ok(())
 }
@@ -67,10 +67,10 @@ pub async fn withdraw_ckusdc(
     Call::bounded_wait(ckusdc_ledger.principal, "icrc1_transfer")
         .with_args(&(transfer_args,))
         .await
-        .map_err(|err| Error::FailedToTransfer(format!("Failed to call ledger: {:?}", err)))?
+        .map_err(|err| Error::FailedToTransfer(err.to_string()))?
         .candid::<Result<Nat, TransferFromError>>()
         .map_err(|err| Error::FailedToParse(err.to_string()))?
-        .map_err(|err| Error::FailedToTransfer(format!("Ledger transfer error {:?}", err)))?;
+        .map_err(|err| Error::FailedToTransfer(err.to_string()))?;
 
     Ok(())
 }

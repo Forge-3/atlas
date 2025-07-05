@@ -10,7 +10,7 @@ use shared::{SpaceArgs, SpaceInitArg};
 
 use crate::{
     errors::Error,
-    guard::{admin_or_space_lead_guard, authenticated_guard},
+    guard::authenticated_guard,
     memory,
     space::{self, Space, SpaceType},
     user::{Rank, User},
@@ -113,7 +113,9 @@ pub async fn create_new_space(
 
 #[update]
 pub async fn upgrade_space(space_id: Principal) -> Result<(), Error> {
-    let (_, user) = admin_or_space_lead_guard()?;
+    let caller = authenticated_guard()?;
+    let user = memory::user_rank_match(&caller, &[Rank::Admin, Rank::SuperAdmin, Rank::SpaceLead])?;
+
     if user.rank() == &Rank::SpaceLead {
         let owned_spaces: Vec<_> = user
             .owned_spaces()
@@ -252,7 +254,7 @@ pub async fn transfer_space(args: TransferSpace) -> Result<(), Error> {
     })?;
 
     Call::bounded_wait(args.space_id, "transfer_space")
-        .with_arg(&(args.to))
+        .with_arg(args.to)
         .await
         .expect("Failed to transfer space")
         .candid::<()>()

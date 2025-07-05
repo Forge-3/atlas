@@ -49,6 +49,7 @@ type SpaceArgs = variant {
   UpgradeArg : record { version : nat64 };
   InitArg : SpaceInitArg;
 };
+type SpaceInfo = record { version : nat64; state : State };
 type SpaceInitArg = record {
   external_links : vec record { text; text };
   owner : principal;
@@ -101,6 +102,7 @@ service : (SpaceArgs) -> {
   get_closed_tasks : (GetTasksArgs) -> (Result_2) query;
   get_current_bytecode_version : () -> (nat64) query;
   get_open_tasks : (GetTasksArgs) -> (Result_2) query;
+  get_space_info : () -> (SpaceInfo) query;
   get_state : () -> (State) query;
   reject_subtask_submission : (principal, nat64, nat64) -> (Result);
   set_space_background : (text) -> (Result);

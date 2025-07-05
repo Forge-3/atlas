@@ -6,17 +6,17 @@ import {
   useUnAuthAtlasMainActor,
 } from "../../../hooks/identityKit";
 import { getAllSpaces } from "../../../canisters/atlasMain/api";
-import type { RootState } from "../../../store/store";
+import { deserialize, type RootState } from "../../../store/store";
 import { Principal } from "@dfinity/principal";
 import { getAtlasSpace } from "../../../canisters/atlasSpace/api";
 import SpaceItem from "./SpaceItem";
 import { useNavigate } from "react-router-dom";
-import { getSpacePath } from "../../../router/paths";
+import type { Spaces } from "../../../store/slices/spacesSlice";
 
 const SpacesList = () => {
   const dispatch = useDispatch();
   const unAuthAtlasMain = useUnAuthAtlasMainActor();
-  const spaces = useSelector((state: RootState) => state.spaces.spaces);
+  const spaces = deserialize<Spaces>(useSelector((state: RootState) => state.spaces.spaces));
   const [fetchedSpacesData, setFetchedSpacesData] = useState(false);
   const [fetchingInProgress, setFetchingInProgress] = useState(true);
   const agent = useUnAuthAgent();
@@ -38,17 +38,14 @@ const SpacesList = () => {
   useEffect(() => {
     if (!spaces || fetchedSpacesData || !agent) return;
     Object.keys(spaces).map(async (spaceId) => {
-      const spacePrincipal = Principal.from(spaceId)
+      const spacePrincipal = Principal.from(spaceId);
       getUnAuthAtlasSpaceActor(agent, spacePrincipal);
-      const unAuthAtlasSpace = getUnAuthAtlasSpaceActor(
-        agent,
-        spacePrincipal
-      );
+      const unAuthAtlasSpace = getUnAuthAtlasSpaceActor(agent, spacePrincipal);
       if (!unAuthAtlasSpace) return;
       await getAtlasSpace({
         spaceId,
         unAuthAtlasSpace,
-        dispatch
+        dispatch,
       });
     });
     setFetchedSpacesData(true);
@@ -66,14 +63,15 @@ const SpacesList = () => {
         {spacesEntries.map(
           ([key, value]) =>
             value?.state && (
-              <span key={key} onClick={() => navigate(getSpacePath(Principal.from(key)))}>
-                <SpaceItem
-                  name={value.state.space_name}
-                  description={value.state.space_description}
-                  backgroundImg={value.state.space_background}
-                  avatarImg={value.state.space_logo}
-                />
-              </span>
+              <SpaceItem
+                key={key}
+                spacePrincipal={Principal.from(key)}
+                name={value.state.space_name}
+                description={value.state.space_description}
+                backgroundImg={value.state.space_background}
+                avatarImg={value.state.space_logo}
+
+              />
             )
         )}
       </div>
@@ -81,7 +79,9 @@ const SpacesList = () => {
   } else {
     return (
       <div className="flex items-center justify-center">
-        <h1 className="text-white font-montserrat font-medium text-2xl mt-16">No spaces found</h1>
+        <h1 className="text-white font-montserrat font-medium text-2xl mt-16">
+          No spaces found
+        </h1>
       </div>
     );
   }

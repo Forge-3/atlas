@@ -1,8 +1,9 @@
+import type { Principal } from "@dfinity/principal";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { type Config } from "../../../../declarations/atlas_main/atlas_main.did.js"
 
-export interface StorableConfig {
-  spaces_per_space_lead: number;
-  ckusdc_ledger: { fee: bigint | null; principal: string };
+export interface StorableConfig extends Omit<Config, "ckusdc_ledger"> {
+  ckusdc_ledger: { fee: bigint | null; principal: Principal };
 }
 
 interface AppState {

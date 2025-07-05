@@ -38,6 +38,7 @@ import UserIcon from "./UserIcon.tsx";
 import WalletIcon from "../../icons/wallet.svg?react";
 import { FaPlus } from "react-icons/fa";
 import { getCkUsdcBalance } from "../../hooks/balances.ts";
+import type { StorableConfig } from "../../store/slices/appSlice.ts";
 
 const ConnectButton = (props: ConnectWalletButtonProps) => (
   <Button
@@ -67,9 +68,9 @@ const DropdownMenuComponent = ({
   const userInfo = userBlockchainData
     ? new BlockchainUser(userBlockchainData)
     : null;
-  const appConfig = useSelector(
+  const appConfig = deserialize<StorableConfig>(useSelector(
     (state: RootState) => state.app.blockchainConfig
-  );
+  ));
 
   const copyAccount = () => {
     copy(connectedAccount);

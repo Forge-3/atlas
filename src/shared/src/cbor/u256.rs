@@ -19,7 +19,7 @@ pub fn decode<Ctx>(d: &mut Decoder<'_>, _ctx: &mut Ctx) -> Result<u256, Error> {
     let tag = d.tag()?;
     let iana_tag: IanaTag = tag
         .try_into()
-        .map_err(|err| Error::message(format!("failed to map Tag into IanaTag: {}", err)))?;
+        .map_err(|err| Error::message(format!("failed to map Tag into IanaTag: {err}")))?;
     if iana_tag != IanaTag::PosBignum {
         return Err(Error::message(
             "failed to parse u256: expected a PosBignum tag",

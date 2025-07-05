@@ -70,13 +70,13 @@ impl Space {
             num_requested_changes: None,
         })
         .await
-        .map_err(|err| Error::FailedToGetCanisterInfo(format!("{:?}", err)))?;
+        .map_err(|err| Error::FailedToGetCanisterInfo(err.to_string()))?;
 
         if !info.controllers.is_empty() {
             archive_controllers.extend(info.controllers);
         }
         let init_arg = Encode!(&SpaceArgs::InitArg(Box::new(arg)))
-            .map_err(|err| Error::FailedToDecodeArgs(format!("{:?}", err)))?;
+            .map_err(|err| Error::FailedToDecodeArgs(err.to_string()))?;
 
         let owned = ic_cdk::api::canister_cycle_balance();
         let expected = SPACE_DEFAULT_CYCLES + SPACE_DEFAULT_CYCLES / 2;
@@ -101,7 +101,7 @@ impl Space {
             SPACE_DEFAULT_CYCLES - cost_create_canister(),
         )
         .await
-        .map_err(|err| Error::FailedToInitializeCanister(format!("{:?}", err)))?;
+        .map_err(|err| Error::FailedToInitializeCanister(err.to_string()))?;
 
         install_code(&InstallCodeArgs {
             mode: CanisterInstallMode::Install,
@@ -110,7 +110,7 @@ impl Space {
             arg: init_arg,
         })
         .await
-        .map_err(|err| Error::FailedToInstallWASM(format!("{:?}", err)))?;
+        .map_err(|err| Error::FailedToInstallWASM(err.to_string()))?;
 
         Ok(Space::new(space_canister.canister_id, space_type))
     }

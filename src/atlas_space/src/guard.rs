@@ -22,7 +22,7 @@ pub async fn parent_or_owner_or_admin_guard() -> Result<Principal, Error> {
     let is_admin = Call::bounded_wait(config.parent(), "user_is_admin")
         .with_args(&(principal,))
         .await
-        .map_err(|err| Error::FailedToCallMain(format!("Failed to parent canister: {:?}", err)))?
+        .map_err(|err| Error::FailedToCallMain(err.to_string()))?
         .candid::<bool>()
         .map_err(|err| Error::FailedToParse(err.to_string()))?;
 
@@ -39,7 +39,7 @@ pub async fn user_is_in_space() -> Result<Principal, Error> {
     let is_in_space = Call::bounded_wait(parent, "user_is_in_space")
         .with_args(&(principal, ic_cdk::api::canister_self()))
         .await
-        .map_err(|err| Error::FailedToCallMain(format!("Failed to parent canister: {:?}", err)))?
+        .map_err(|err| Error::FailedToCallMain(err.to_string()))?
         .candid::<bool>()
         .map_err(|err| Error::FailedToParse(err.to_string()))?;
 

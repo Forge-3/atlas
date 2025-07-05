@@ -1,4 +1,5 @@
 #!/bin/bash
+./dev-scripts/dev.sh
 
 PRINCIPAL_ID=$1
 

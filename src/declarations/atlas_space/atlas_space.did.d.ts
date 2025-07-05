@@ -52,6 +52,7 @@ export type Result_2 = { 'Ok' : GetTasksRes } |
   { 'Err' : Error };
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
   { 'InitArg' : SpaceInitArg };
+export interface SpaceInfo { 'version' : bigint, 'state' : State }
 export interface SpaceInitArg {
   'external_links' : Array<[string, string]>,
   'owner' : Principal,
@@ -112,6 +113,7 @@ export interface _SERVICE {
   'get_closed_tasks' : ActorMethod<[GetTasksArgs], Result_2>,
   'get_current_bytecode_version' : ActorMethod<[], bigint>,
   'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_2>,
+  'get_space_info' : ActorMethod<[], SpaceInfo>,
   'get_state' : ActorMethod<[], State>,
   'reject_subtask_submission' : ActorMethod<
     [Principal, bigint, bigint],
