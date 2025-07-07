@@ -92,9 +92,18 @@ type Task = record {
   number_of_uses : nat64;
 };
 type TaskContent = variant {
+  DiscordTask : record {
+    task_description : text;
+    task_title : text;
+    guild_id : nat64;
+  };
   TitleAndDescription : record { task_description : text; task_title : text };
 };
 type TaskType = variant {
+  DiscordTask : record {
+    task_content : TaskContent;
+    submission : vec record { principal; SubmissionData };
+  };
   GenericTask : record {
     task_content : TaskContent;
     submission : vec record { principal; SubmissionData };

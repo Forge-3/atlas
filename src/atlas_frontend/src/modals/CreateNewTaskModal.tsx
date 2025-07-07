@@ -27,9 +27,11 @@ import { useAuth } from "@nfid/identitykit/react";
 import { selectBlockchainConfig, type StorableConfig } from "../store/slices/appSlice";
 import { deserialize } from "../store/store";
 import { getErrorWithInfoToast } from "../utils/errors";
+import DiscordTask from "./tasks/DiscordTask";
+import type { TaskContent } from "../../../declarations/atlas_space/atlas_space.did";
 
-type TaskType = "generic";
-const allowedTaskTypes = ["generic"] as const;
+type TaskType = "generic" | "discord";
+const allowedTaskTypes = ["generic" , "discord"] as const;
 
 interface CreateNewTaskFormInput {
   numberOfUses: number;
@@ -39,6 +41,7 @@ interface CreateNewTaskFormInput {
     taskType: TaskType;
     title: string;
     description: string;
+    guildId: number;
   }[];
 }
 const maxSubtitleLength = 50;
@@ -60,6 +63,11 @@ const taskSchema = yup.object({
     .min(2)
     .required()
     .label("Task description"),
+  guildId: yup
+    .number()
+    .typeError("Guild ID must be a number")
+    .required()
+    .label("Guild ID")
 });
 
 const schema = yup.object({
@@ -167,17 +175,26 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     }
 
     const taskContent = tasks
-      ?.map((task) => {
+    ?.map((task) => {
         if (task.taskType === "generic") {
-          return {
-            TitleAndDescription: {
-              task_description: task.description,
-              task_title: task.title,
-            },
-          };
+            return {
+                TitleAndDescription: {
+                    task_description: task.description,
+                    task_title: task.title,
+                },
+            } as TaskContent;
+        } else if (task.taskType === "discord") {
+            return {
+                DiscordTask: {
+                    task_title: task.title,
+                    task_description: task.description,
+                    guild_id: BigInt(task.guildId),
+                },
+            } as TaskContent;
         }
-      })
-      .filter((item) => item !== undefined);
+        return undefined;
+    })
+    .filter((item): item is TaskContent => item !== undefined);
 
     if (!taskContent || taskContent.length === 0) {
       toast.error("Invalid subtasks: the minimum number of subtasks is one.");
@@ -247,6 +264,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                   taskType: "generic",
                   title: "",
                   description: "",
+                  guildId: 0,
                 })
               }
               className="flex gap-2"
@@ -313,6 +331,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                       className="border-2 p-2 rounded-xl w-full"
                     >
                       <option value="generic">Generic text task</option>
+                      <option value="discord">Discord task</option>
                     </select>
 
                     {taskType === "generic" && (
@@ -324,6 +343,16 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                         maxDescriptionLength={maxDescriptionLength}
                       />
                     )}
+                    {taskType === "discord" && (
+                      <DiscordTask
+                        register={register}
+                        index={index}
+                        errors={errors}
+                        maxTitleLength={maxSubtitleLength}
+                        maxDescriptionLength={maxDescriptionLength}
+                        guildId={0}
+                      />
+                )}
                   </div>
                 </div>
               );

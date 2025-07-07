@@ -4,8 +4,9 @@ import type {
 } from "../../../../declarations/atlas_space/atlas_space.did";
 import type { UserSubmissionsData } from "./types";
 
-export const getUsersSubmissions = (tasks: TaskType[]) => {
-  const data = tasks.reduce((acc, task, index) => {
+export const getUsersSubmissions = (tasks: { [key: string]: TaskType }) => { // tasks jest obiektem, nie tablicą
+  const data = Object.entries(tasks).reduce((acc, [subtaskIdStr, task]) => { // Iterujemy po Object.entries
+    // Sprawdzamy, który wariant TaskType to jest
     if ("GenericTask" in task) {
       const genericTask = task.GenericTask;
       genericTask.submission.forEach(([principal, submissionData]) => {
@@ -13,14 +14,25 @@ export const getUsersSubmissions = (tasks: TaskType[]) => {
         if (!acc[principalText]) {
           acc[principalText] = {};
         }
-        if (!acc[principalText][`${index}`]) {
-          acc[principalText][`${index}`] = {
-            submissionData,
-            taskType: "GenericTask",
-          };
-        }
+        acc[principalText][subtaskIdStr] = { // Używamy subtaskIdStr jako klucza
+          submissionData,
+          taskType: "GenericTask" as keyof TaskType,
+        };
       });
-      return acc;
+    } else if ("DiscordTask" in task) { // <-- KLUCZOWA ZMIANA: Obsługa DiscordTask
+      const discordTask = task.DiscordTask;
+      discordTask.submission.forEach(([principal, submissionData]) => {
+        const principalText = principal.toText();
+        if (!acc[principalText]) {
+          acc[principalText] = {};
+        }
+        acc[principalText][subtaskIdStr] = { // Używamy subtaskIdStr jako klucza
+          submissionData,
+          taskType: "DiscordTask" as keyof TaskType, // Dodaj typ zadania
+        };
+      });
+    } else {
+      console.warn(`[getUsersSubmissions] Unknown task type for subtaskId ${subtaskIdStr}:`, task);
     }
     return acc;
   }, {} as UserSubmissionsData);

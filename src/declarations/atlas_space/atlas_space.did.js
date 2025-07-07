@@ -48,6 +48,11 @@ export const idlFactory = ({ IDL }) => {
     'CkUsdc' : IDL.Record({ 'amount' : IDL.Nat }),
   });
   const TaskContent = IDL.Variant({
+    'DiscordTask' : IDL.Record({
+      'task_description' : IDL.Text,
+      'task_title' : IDL.Text,
+      'guild_id' : IDL.Nat64,
+    }),
     'TitleAndDescription' : IDL.Record({
       'task_description' : IDL.Text,
       'task_title' : IDL.Text,
@@ -81,6 +86,10 @@ export const idlFactory = ({ IDL }) => {
     'submission' : Submission,
   });
   const TaskType = IDL.Variant({
+    'DiscordTask' : IDL.Record({
+      'task_content' : TaskContent,
+      'submission' : IDL.Vec(IDL.Tuple(IDL.Principal, SubmissionData)),
+    }),
     'GenericTask' : IDL.Record({
       'task_content' : TaskContent,
       'submission' : IDL.Vec(IDL.Tuple(IDL.Principal, SubmissionData)),

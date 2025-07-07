@@ -1,60 +1,52 @@
-import React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import type {
   _SERVICE,
   TaskType,
 } from "../../../../../declarations/atlas_space/atlas_space.did";
-import Button from "../../Shared/Button";
+import type { Principal } from "@dfinity/principal";
+import type { ActorSubclass } from "@dfinity/agent";
+import { useDispatch } from "react-redux";
+import * as yup from "yup";
+import { useAuth } from "@nfid/identitykit/react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import * as yup from "yup";
-import {
-  getSpaceTasks,
-  submitSubtaskSubmission,
-} from "../../../canisters/atlasSpace/api";
 import toast from "react-hot-toast";
-import type { Principal } from "@dfinity/principal";
+import { submitSubtaskSubmission, getSpaceTasks } from "../../../canisters/atlasSpace/api";
 import { useAuthAtlasSpaceActor } from "../../../hooks/identityKit";
-import { useAuth } from "@nfid/identitykit/react";
-import { useDispatch } from "react-redux";
-import type { ActorSubclass } from "@dfinity/agent";
-import { getErrorWithInfoToast } from "../../../utils/errors";
+import Button from "../../Shared/Button";
 
-type GenericTaskType = Extract<TaskType, { GenericTask: unknown }>['GenericTask'];
+type DiscordTaskType = Extract<TaskType, { DiscordTask: unknown }>['DiscordTask'];
 
-interface GenericTaskProps {
-  genericTask: GenericTaskType;
+interface DiscordTaskProps {
+  discordTask: DiscordTaskType;
   spacePrincipal: Principal;
   taskId: string;
   subtaskId: number;
   unAuthAtlasSpace: ActorSubclass<_SERVICE> | null;
-  isUserInHub: boolean
+  isUserInHub: boolean;
 }
-
-interface GenericTaskFormInput {
+interface DiscordTaskFormInput {
   taskSubmission: string;
 }
-
-const maxDescriptionLength = 500;
 
 const schema = yup.object({
   taskSubmission: yup
     .string()
-    .max(maxDescriptionLength)
+    .max(500)
     .trim()
     .min(2)
     .required()
     .label("Task submission"),
 });
 
-const GenericTask = ({
-  genericTask,
+const DiscordTask = ({
+  discordTask,
   spacePrincipal,
   taskId,
   subtaskId,
   unAuthAtlasSpace,
-  isUserInHub
-}: GenericTaskProps) => {
+  isUserInHub,
+}: DiscordTaskProps) => {
   const dispatch = useDispatch();
   const { user } = useAuth();
   const [openSubmission, setSubmission] = useState(false);
@@ -67,12 +59,12 @@ const GenericTask = ({
   const { connect } = useAuth();
   const authAtlasSpace = useAuthAtlasSpaceActor(spacePrincipal);
 
-  const onSubmit: SubmitHandler<GenericTaskFormInput> = async ({
+  const onSubmit: SubmitHandler<DiscordTaskFormInput> = async ({
     taskSubmission,
   }) => {
     console.log("onSubmit triggered!");
     console.log("authAtlasSpace:", authAtlasSpace);
-    console.log("unAuthAtlasSpace:", unAuthAtlasSpace)
+    console.log("unAuthAtlasSpace:", unAuthAtlasSpace);
     if (!authAtlasSpace || !unAuthAtlasSpace) return;
     const call = submitSubtaskSubmission({
       authAtlasSpace,
@@ -83,7 +75,7 @@ const GenericTask = ({
     await toast.promise(call, {
       loading: "Submitting response...",
       success: "Submitted response",
-      error: getErrorWithInfoToast("Failed to submit response."),
+      error: "Failed to submit response",
     });
 
     setSubmission(false);
@@ -95,7 +87,7 @@ const GenericTask = ({
   };
 
   const userSubmission = user?.principal
-    ? (genericTask.submission.find(
+    ? (discordTask.submission.find(
         ([principal]) => principal.toString() === user.principal.toString()
       ) ?? null)
     : null;
@@ -104,11 +96,12 @@ const GenericTask = ({
     ? Object.keys(userSubmission?.[1].state)[0]
     : null;
 
-    console.log("GenericTask", user, userSubmission, openSubmission, isUserInHub);
+    console.log("DiscordTask", user, userSubmission, openSubmission, isUserInHub);
+
   return (
     <div className="flex mt-2">
       <div className="flex flex-col mr-4">
-        <div className="bg-[#1E0F33] p-1  w-[32px] h-[32px] rounded-lg relative">
+        <div className="bg-[#1E0F33] p-1 w-[32px] h-[32px] rounded-lg relative">
           {submissionState === "WaitingForReview" && (
             <img src="/icons/check-in-box.svg" className="w-6 h-6 relative" />
           )}
@@ -120,18 +113,17 @@ const GenericTask = ({
       </div>
       <div className="bg-[#1E0F33] rounded-xl p-6 w-full">
         <div className="mb-4">
-          { 'TitleAndDescription' in genericTask.task_content && (
-            <>
+            { 'DiscordTask' in discordTask.task_content && (
+             <>
               <h4 className="text-xl font-medium font-poppins text-white mb-1 text-wrap break-all">
-                {genericTask.task_content.TitleAndDescription.task_title}
+                {discordTask.task_content.DiscordTask.task_title}
               </h4>
               <p className="text-zinc-400 text-wrap break-all">
-                {genericTask.task_content.TitleAndDescription.task_description}
+                {discordTask.task_content.DiscordTask.task_description}
               </p>
-            </>
-          )}
+             </>
+            )}
         </div>
-
         {user && !userSubmission && openSubmission && (
           <form onSubmit={handleSubmit(onSubmit)}>
             <div>
@@ -161,4 +153,4 @@ const GenericTask = ({
   );
 };
 
-export default GenericTask;
+export default DiscordTask;

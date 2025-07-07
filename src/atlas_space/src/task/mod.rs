@@ -46,6 +46,15 @@ pub enum TaskContent {
         #[n(1)]
         task_description: String,
     },
+    #[n(1)]
+    DiscordTask {
+        #[n(0)]
+        task_title: String,
+        #[n(1)]
+        task_description: String,
+        #[n(2)]
+        guild_id: u64,
+    },
 }
 
 impl TaskContent {
@@ -67,6 +76,26 @@ impl TaskContent {
                 }
                 Ok(())
             }
+            TaskContent::DiscordTask {
+                task_title,
+                task_description,
+                guild_id,
+            } => {
+                if task_title.trim().len() > 50 {
+                    return Err(Error::InvalidTaskContent(
+                        "Subtask title is too long (max length: 50)".into(),
+                    ));
+                }
+                if task_description.trim().len() > 500 {
+                    return Err(Error::InvalidTaskContent(
+                        "Subtask description is too long (max length: 500)".into(),
+                    ));
+                }
+                if guild_id.to_string().trim().is_empty() {
+                    return Err(Error::InvalidTaskContent("Guild ID cannot be empty".into()));
+                }
+                Ok(())
+            }
         }
     }
 }
@@ -84,6 +113,18 @@ impl From<&TaskContent> for TaskType {
                 },
                 submission: Default::default(),
             },
+            TaskContent::DiscordTask {
+                task_title,
+                task_description,
+                guild_id,
+            } => Self::DiscordTask {
+                task_content: TaskContent::DiscordTask {
+                    task_title: task_title.clone(),
+                    task_description: task_description.clone(),
+                    guild_id: guild_id.clone(),
+                },
+                submission: Default::default(),
+            },
         }
     }
 }
@@ -97,12 +138,23 @@ pub enum TaskType {
         #[cbor(n(1), with = "shared::cbor::principal::b_tree_map")]
         submission: BTreeMap<Principal, SubmissionData>,
     },
+    #[n(1)]
+    DiscordTask {
+        #[n(0)]
+        task_content: TaskContent,
+        #[cbor(n(1), with = "shared::cbor::principal::b_tree_map")]
+        submission: BTreeMap<Principal, SubmissionData>,
+    },
 }
 
 impl TaskType {
     pub fn submit(&mut self, user: Principal, submission: Submission) -> Result<(), Error> {
         match self {
             TaskType::GenericTask {
+                task_content: _,
+                submission: submissions_map,
+            }
+            | TaskType::DiscordTask {
                 task_content: _,
                 submission: submissions_map,
             } => {
@@ -129,6 +181,10 @@ impl TaskType {
             TaskType::GenericTask {
                 task_content: _,
                 submission: submissions_map,
+            }
+            | TaskType::DiscordTask {
+                task_content: _,
+                submission: submissions_map,
             } => {
                 let submission = submissions_map
                     .get_mut(&user)
@@ -142,6 +198,10 @@ impl TaskType {
     pub fn reject(&mut self, user: Principal) -> Result<(), Error> {
         match self {
             TaskType::GenericTask {
+                task_content: _,
+                submission: submissions_map,
+            }
+            | TaskType::DiscordTask {
                 task_content: _,
                 submission: submissions_map,
             } => {
@@ -158,6 +218,10 @@ impl TaskType {
     pub fn get_submission(&self, user: Principal) -> Result<&SubmissionData, Error> {
         match self {
             TaskType::GenericTask {
+                task_content: _,
+                submission: submissions_map,
+            }
+            | TaskType::DiscordTask {
                 task_content: _,
                 submission: submissions_map,
             } => Ok(submissions_map
