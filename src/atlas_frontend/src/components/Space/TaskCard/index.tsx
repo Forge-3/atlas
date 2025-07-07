@@ -15,14 +15,30 @@ interface TaskCardProps {
   spaceId: Principal
 }
 
-const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
+const getAcceptedSubmissions = (task: Task) => {
+  const last = task.tasks.at(-1);
+  if (!last) {
+    return 0;
+  }
+  const submissions =
+    "GenericTask" in last
+      ? last.GenericTask.submission
+      : "DiscordTask" in last
+      ? last.DiscordTask.submission
+      : [];
+  return submissions.filter(([, submission]) => "Accepted" in submission.state)
+  .length;
+};
+
+const TaskCard = ({ startingIn, task, id, type, spaceId }: TaskCardProps) => {
   const navigate = useNavigate();
 
-  const reward = formatUnits(task.token_reward.CkUsdc.amount, DECIMALS)
-  const lastTask = task.tasks.at(-1)?.GenericTask.submission.filter(([, submission]) => 'Accepted' in submission.state)
+  const reward = formatUnits(task.token_reward.CkUsdc.amount, DECIMALS);
+
+  const acceptedCount = getAcceptedSubmissions(task);
 
   return (
-    <div className="w-full md:w-[20rem]">
+    <div className="w-[20rem]">
     <a className="rounded-xl bg-gradient-to-b from-[#9173FF] to-transparent to-[150%] flex flex-col" onClick={() => navigate(getTaskPath(spaceId, id))}>
       <div
         className={`h-40 p-4 rounded-t-xl ${
@@ -42,7 +58,9 @@ const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
           />
           <InfoBox type="steps" steps={task.tasks.length} />
           {/* //TODO: fix count of submission */}
-          <InfoBox type="uses" uses={`${lastTask?.length}/${task.number_of_uses}`} />
+          <InfoBox
+            type="uses"
+            uses={`${acceptedCount}/${task.number_of_uses}`} />
         </div>
       </div>
     </a>
@@ -51,3 +69,4 @@ const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
 };
 
 export default TaskCard;
+

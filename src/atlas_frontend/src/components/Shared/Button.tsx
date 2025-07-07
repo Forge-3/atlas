@@ -8,17 +8,20 @@ interface ButtonProps {
   arrow?: boolean;
   smallText?: string
   light?: boolean
+  disabled?: boolean;
 }
 
-const Button = ({children, onClick, className, light}: ButtonProps) => {
+const Button = ({children, onClick, className, light, disabled}: ButtonProps) => {
   return (
-    <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={onClick}
-        className={`cursor-pointer flex justify-center rounded-xl px-2 py-2 items-center md:text-base font-medium bg-[#9173FF]  md:px-6 md:py-2 md:rounded-2xl text-white ${light ? "bg-[#9173FF]/20" : "bg-[#9173FF]"} ${className ?? ""}`}>
-      
-        
+    <motion.div whileHover={!disabled ? { scale: 1.01 } : {}} whileTap={!disabled ? { scale: 0.99 } : {}}>
+      <button
+        onClick={onClick}
+        disabled={disabled}
+        className={`cursor-pointer flex justify-center items-center font-medium bg-[#9173FF] px-6 py-2 rounded-xl text-white ${light ? "bg-[#9173FF]/20" : "bg-[#9173FF]"} ${className ?? ""} disabled:opacity-50 disabled:cursor-not-allowed`}
+      >
         {children}
-      
-    </motion.button>
+      </button>
+    </motion.div>
   );
 };
 

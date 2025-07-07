@@ -15,13 +15,28 @@ import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { Principal } from "@dfinity/principal";
 import type { ExternalLinks } from "./types.js";
+import { getUserGuilds } from "../../components/Integrations/discord/userGuilds.js";
+import { validateDiscordInvite as validateInvite } from "../../components/Integrations/discord/inviteLink.js";
+import type { DiscordGuild, DiscordInviteApiResponse } from "../../components/Integrations/discord/types.js";
+import { string } from "yup";
 
-interface CreateSubtaskArg {
-  task_type: string;
+interface GenericSubtaskArg {
+  task_type: "generic";
   title: string;
   description: string;
   allow_resubmit: boolean;
 }
+
+interface DiscordSubtaskArg {
+  task_type: "discord";
+  title: string;
+  description: string;
+  allow_resubmit: boolean;
+  guild_id: string;
+  invite_link: string;
+}
+
+type CreateSubtaskArg = GenericSubtaskArg | DiscordSubtaskArg;
 
 interface GetAtlasSpaceArgs {
   unAuthAtlasSpace: ActorSubclass<_SERVICE>;
@@ -83,13 +98,27 @@ export const createNewTask = async ({
   tasks,
   taskTitle,
 }: CreateNewSpaceTaskArgs) => {
-  const transformedTasks: TaskContent[] = tasks.map((arg) => ({
-    TitleAndDescription: {
-      task_title: arg.title,
-      task_description: arg.description,
-      allow_resubmit: arg.allow_resubmit,
-    },
-  }));
+  const transformedTasks: TaskContent[] = tasks.map((arg) => {
+    if (arg.task_type === "discord") {
+      return {
+        DiscordTask: {
+          task_title: arg.title,
+          task_description: arg.description,
+          guild_id: arg.guild_id,
+          invite_link: arg.invite_link,
+          allow_resubmit: arg.allow_resubmit,
+        },
+      };
+    } else {
+      return {
+        TitleAndDescription: {
+          task_title: arg.title,
+          task_description: arg.description,
+          allow_resubmit: arg.allow_resubmit,
+        },
+      };
+    }
+  });
 
   const call = authAtlasSpaceActor.create_task({
     task_title: taskTitle,
@@ -300,4 +329,17 @@ export const editSpace = async ({
     call,
     errMsg: "Failed to edit space",
   });
+};
+
+export const getDiscordGuilds = async (
+  accessToken: string
+): Promise<DiscordGuild[]> => {
+  return await getUserGuilds(accessToken);
+};
+
+export const validateDiscordInvite = async (
+  inviteCode: string,
+  expectedGuildId: string
+): Promise<DiscordInviteApiResponse> => {
+  return await validateInvite(inviteCode, expectedGuildId);
 };

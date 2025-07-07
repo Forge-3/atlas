@@ -1,5 +1,5 @@
 
-import { setScreenBlur } from "../store/slices/appSlice";
+import { setLoading, setScreenBlur } from "../store/slices/appSlice";
 import type { AppDispatch } from "../store/store";
 
 export async function runWithLoading(
@@ -7,11 +7,11 @@ export async function runWithLoading(
   dispatch: AppDispatch,
   finallyCallback?: () => void
 ): Promise<void> {
-  dispatch(setScreenBlur(true));
+  dispatch(setLoading(true));
   try {
     await fn();
   } finally {
     finallyCallback && finallyCallback()
-    dispatch(setScreenBlur(false));
+    dispatch(setLoading(false));
   }
 }

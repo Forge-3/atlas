@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm, useFieldArray, type SubmitHandler } from "react-hook-form";
 import Button from "../components/Shared/Button";
@@ -30,9 +30,12 @@ import {
 } from "../store/slices/appSlice";
 import { deserialize, type RootState } from "../store/store";
 import { getErrorWithInfoToast } from "../utils/errors";
+import DiscordTask from "./tasks/DiscordTask";
 
-type TaskType = "generic";
-const allowedTaskTypes = ["generic"] as const;
+export enum TaskType {
+  Generic = "generic",
+  Discord = "discord",
+}
 
 interface CreateNewTaskFormInput {
   numberOfUses: number;
@@ -42,6 +45,8 @@ interface CreateNewTaskFormInput {
     taskType: TaskType;
     title: string;
     description: string;
+    guildId?: string;
+    inviteLink?: string;
     allowresubmit: boolean;
   }[];
 }
@@ -50,7 +55,7 @@ const maxTitleLength = 50;
 const maxDescriptionLength = 500;
 
 const taskSchema = yup.object({
-  taskType: yup.mixed<TaskType>().oneOf(allowedTaskTypes).required(),
+  taskType: yup.mixed<TaskType>().oneOf(Object.values(TaskType)).required(),
   title: yup
     .string()
     .trim()
@@ -64,6 +69,27 @@ const taskSchema = yup.object({
     .min(2)
     .required()
     .label("Task description"),
+  guildId: yup
+    .string()
+    .when("taskType", {
+      is: (value: TaskType) => value === TaskType.Discord,
+      then: (schema: yup.StringSchema) =>
+        schema
+          .typeError("Guild ID must be a valid string")
+          .required("Guild ID is required for Discord tasks"),
+    })
+    .label("Guild ID"),
+  inviteLink: yup
+    .string()
+    .when("taskType", {
+      is: (value: TaskType) => value === TaskType.Discord,
+      then: (schema: yup.StringSchema) =>
+        schema
+          .trim()
+          .matches(/^(https?:\/\/)?(www\.)?discord\.(gg|com\/invite)\/[a-zA-Z0-9-]+$/, "Invalid invite link format")
+          .required("Invite link is required for Discord tasks"),
+    })
+    .label("Invite Link"),
   allowresubmit: yup.boolean().required(),
 });
 
@@ -99,6 +125,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
+  const [isInviteValid, setInviteValid] = useState(false);
   const isLoading = useSelector(
     (state: RootState) => state.app.isLoading
   );
@@ -110,12 +137,13 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
+    mode: "onChange",
     defaultValues: {
       numberOfUses: 1,
       rewardPerUsage: 0.1,
       tasks: [
         {
-          taskType: "generic",
+          taskType: TaskType.Generic,
           title: "",
           description: "",
           allowresubmit: false,
@@ -183,14 +211,23 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     }
 
     const taskContent = tasks
-      ?.map((task) => {
+    ?.map((task) => {
         if (task.taskType === "generic") {
           return {
-            task_type: "generic",
+            task_type: "generic" as const,
             title: task.title,
             description: task.description,
             allow_resubmit: task.allowresubmit,
           };
+        } else if (task.taskType === "discord") {
+          return {
+            task_type: "discord" as const,
+            title: task.title,
+            description: task.description,
+            invite_link: task.inviteLink!,
+            guild_id: task.guildId!,
+            allow_resubmit: task.allowresubmit,
+          }
         }
       })
       .filter((item) => item !== undefined);
@@ -262,7 +299,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
             <Button
               onClick={() =>
                 append({
-                  taskType: "generic",
+                  taskType: TaskType.Generic,
                   title: "",
                   description: "",
                   allowresubmit: false,
@@ -331,6 +368,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                       className="border-2 p-2 rounded-xl w-full"
                     >
                       <option value="generic">Generic text task</option>
+                      <option value="discord">Discord task</option>
                     </select>
 
                     {taskType === "generic" && (
@@ -342,40 +380,59 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                         maxDescriptionLength={maxDescriptionLength}
                       />
                     )}
-                    <div className="flex items-center gap-2 mt-4">
-                      <input
-                        type="checkbox"
-                        id={`allowresubmit-${index}`}
-                        {...register(`tasks.${index}.allowresubmit`)}
-                        className="form-checkbox h-5 w-5 text-[#9173FF] rounded"
+                    {taskType === "discord" && (
+                      <DiscordTask
+                        register={register}
+                        index={index}
+                        errors={errors}
+                        maxTitleLength={maxSubtitleLength}
+                        maxDescriptionLength={maxDescriptionLength}
+                        spacePrincipal={principal}
+                        setInviteValid={setInviteValid}
                       />
-                      <label
-                        htmlFor={`allowresubmit-${index}`}
-                        className="text-gray-600 font-semibold"
-                      >
-                        Allow re-submission for this subtask if rejected
-                      </label>
-                      {errors?.tasks?.[index]?.allowresubmit?.message && (
-                        <span className="text-red-500">
-                          {errors.tasks[index].allowresubmit.message.toString()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                )}
+                <div className="flex items-center gap-2 mt-4">
+                  <input
+                    type="checkbox"
+                    id={`allowresubmit-${index}`}
+                    {...register(`tasks.${index}.allowresubmit`)}
+                    className="form-checkbox h-5 w-5 text-[#9173FF] rounded"
+                  />
+                  <label
+                    htmlFor={`allowresubmit-${index}`}
+                    className="text-gray-600 font-semibold"
+                  >
+                    Allow re-submission for this subtask if rejected
+                  </label>
+                  {errors?.tasks?.[index]?.allowresubmit?.message && (
+                    <span className="text-red-500">
+                      {errors.tasks[index].allowresubmit.message.toString()}
+                    </span>
+                  )}
                 </div>
-              );
-            })}
-          </div>
-          <div className="flex justify-between">
-            <div className="justify-between font-semibold flex items-center justify-center gap-2">
-              Estimated cost: {formatUnits(estimatedCost, DECIMALS)}
-              <img src="/icons/ckUSDC.svg" className="w-6" />
+              </div>
             </div>
-            <Button>Create task!</Button>
+            );
+          })}
+        </div>
+        <div className="flex justify-between">
+          <div className="justify-between font-semibold flex items-center justify-center gap-2">
+            Estimated cost: {formatUnits(estimatedCost, DECIMALS)}
+            <img src="/icons/ckUSDC.svg" className="w-6" />
           </div>
+          <Button
+            disabled={
+              watch("tasks")?.some(
+                (task) => task.taskType === TaskType.Discord
+              ) && !isInviteValid
+            }
+          >
+            Create task!
+          </Button>
         </div>
       </div>
-    </form>
+    </div>
+  </form>
   );
 };
 

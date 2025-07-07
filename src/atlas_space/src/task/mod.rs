@@ -13,6 +13,25 @@ pub mod submission;
 pub mod token_reward;
 pub mod xp_reward;
 
+#[derive(Debug, serde::Deserialize, serde::Serialize, candid::CandidType, Clone)]
+pub struct DiscordGuild {
+    pub id: String,
+    pub name: String,
+    pub icon: Option<String>,
+}
+
+#[derive(CandidType, Deserialize, Debug, Clone)]
+pub struct DiscordGuildInfo {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(CandidType, Deserialize, Debug, Clone)]
+pub struct DiscordInviteApiResponse {
+    pub guild: Option<DiscordGuildInfo>,
+    pub expires_at: Option<String>,
+}
+
 #[derive(CandidType, Deserialize)]
 pub struct CreateTaskArgs {
     pub task_title: String,
@@ -48,6 +67,19 @@ pub enum TaskContent {
         #[n(2)]
         allow_resubmit: bool,
     },
+    #[n(1)]
+    DiscordTask {
+        #[n(0)]
+        task_title: String,
+        #[n(1)]
+        task_description: String,
+        #[n(2)]
+        guild_id: String,
+        #[n(3)]
+        invite_link: String,
+        #[n(4)]
+        allow_resubmit: bool,
+    },
 }
 
 impl TaskContent {
@@ -70,12 +102,40 @@ impl TaskContent {
                 }
                 Ok(())
             }
+            TaskContent::DiscordTask {
+                task_title,
+                task_description,
+                guild_id,
+                invite_link,
+                allow_resubmit: _,
+            } => {
+                if task_title.trim().len() > 50 {
+                    return Err(Error::InvalidTaskContent(
+                        "Subtask title is too long (max length: 50)".into(),
+                    ));
+                }
+                if task_description.trim().len() > 500 {
+                    return Err(Error::InvalidTaskContent(
+                        "Subtask description is too long (max length: 500)".into(),
+                    ));
+                }
+                if guild_id.trim().is_empty() {
+                    return Err(Error::InvalidTaskContent("Guild ID cannot be empty".into()));
+                }
+                if invite_link.trim().is_empty() {
+                    return Err(Error::InvalidTaskContent(
+                        "Discord invite link cannot be empty".into(),
+                    ));
+                }
+                Ok(())
+            }
         }
     }
 
     pub fn allow_resubmit(&self) -> bool {
         match self {
             TaskContent::TitleAndDescription { allow_resubmit, .. } => *allow_resubmit,
+            TaskContent::DiscordTask { allow_resubmit, .. } => *allow_resubmit,
         }
     }
 }
@@ -95,6 +155,22 @@ impl From<&TaskContent> for TaskType {
                 },
                 submission: Default::default(),
             },
+            TaskContent::DiscordTask {
+                task_title,
+                task_description,
+                guild_id,
+                invite_link,
+                allow_resubmit,
+            } => Self::DiscordTask {
+                task_content: TaskContent::DiscordTask {
+                    task_title: task_title.clone(),
+                    task_description: task_description.clone(),
+                    guild_id: guild_id.clone(),
+                    invite_link: invite_link.clone(),
+                    allow_resubmit: *allow_resubmit,
+                },
+                submission: Default::default(),
+            },
         }
     }
 }
@@ -108,6 +184,13 @@ pub enum TaskType {
         #[cbor(n(1), with = "shared::cbor::principal::b_tree_map")]
         submission: BTreeMap<Principal, SubmissionData>,
     },
+    #[n(1)]
+    DiscordTask {
+        #[n(0)]
+        task_content: TaskContent,
+        #[cbor(n(1), with = "shared::cbor::principal::b_tree_map")]
+        submission: BTreeMap<Principal, SubmissionData>,
+    },
 }
 
 impl TaskType {
@@ -115,6 +198,10 @@ impl TaskType {
         let allow_resubmit = self.get_allow_resubmit();
         match self {
             TaskType::GenericTask {
+                task_content: _,
+                submission: submissions_map,
+            }
+            | TaskType::DiscordTask {
                 task_content: _,
                 submission: submissions_map,
             } => {
@@ -147,6 +234,10 @@ impl TaskType {
             TaskType::GenericTask {
                 task_content: _,
                 submission: submissions_map,
+            }
+            | TaskType::DiscordTask {
+                task_content: _,
+                submission: submissions_map,
             } => {
                 let submission = submissions_map
                     .get_mut(&user)
@@ -160,6 +251,10 @@ impl TaskType {
     pub fn reject(&mut self, user: Principal, reason: Option<String>) -> Result<(), Error> {
         match self {
             TaskType::GenericTask {
+                task_content: _,
+                submission: submissions_map,
+            }
+            | TaskType::DiscordTask {
                 task_content: _,
                 submission: submissions_map,
             } => {
@@ -179,6 +274,10 @@ impl TaskType {
             TaskType::GenericTask {
                 task_content: _,
                 submission: submissions_map,
+            }
+            | TaskType::DiscordTask {
+                task_content: _,
+                submission: submissions_map,
             } => Ok(submissions_map
                 .get(&user)
                 .ok_or(Error::UserSubmissionNotFound)?),
@@ -187,6 +286,7 @@ impl TaskType {
     pub fn get_allow_resubmit(&self) -> bool {
         match self {
             TaskType::GenericTask { task_content, .. } => task_content.allow_resubmit(),
+            TaskType::DiscordTask { task_content, .. } => task_content.allow_resubmit(),
         }
     }
 }
