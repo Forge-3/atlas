@@ -16,7 +16,7 @@ interface TaskCardProps {
   time: number
 }
 
-const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
+const TaskCard = ({ startingIn, task, id, type, spaceId }: TaskCardProps) => {
   const navigate = useNavigate();
 
   const reward = formatUnits(task.token_reward.CkUsdc.amount, DECIMALS)
@@ -61,3 +61,4 @@ const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
 };
 
 export default TaskCard;
+

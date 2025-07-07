@@ -23,9 +23,8 @@ export const getUsersSubmissions = (tasks: { [key: string]: TaskType }) => {
     });
     return acc;
   }, {} as UserSubmissionsData);
-
   return new UserSubmissions(data);
-};
+}
 
 export class UserSubmissions {
   constructor(public userSubmissionsData: UserSubmissionsData) {}

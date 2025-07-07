@@ -4,7 +4,11 @@ resolver = "2"
 
 [workspace.dependencies]
 candid = "0.10"
+<<<<<<< HEAD
 ic-cdk = "0.18.7"
+=======
+ic-cdk = "0.18.5"
+>>>>>>> a2c37db (Add Discord Integration)
 ic-management-canister-types = "0.3.1"
 serde = "1.0.219"
 serde_json = "1.0.140"
