@@ -45,10 +45,10 @@ const TransactionHistory = ({ tokenSymbol }: TransactionHistoryProps) => {
 
   const transactions = formatTransactions(userTxs).reverse();
   return (
-    <div className="w-full mt-4">
+    <div className="w-full mt-2 sm:mt-4">
       <div className="w-full rounded-xl overflow-hidden font-montserrat">
-        <div className="inset-0 bg-gradient-to-b from-[#522785] to-transparent px-8 bg-cover bg-center z-0">
-          <h2 className="font-montserrat text-white text-2xl font-medium py-10">
+        <div className="inset-0 bg-gradient-to-b from-[#522785] to-transparent px-2 md:px-8 bg-cover bg-center z-0">
+          <h2 className="font-montserrat text-white text-2xl font-medium p-6 md:py-10">
             ICP Transaction
           </h2>
           <div className="overflow-x-auto">
@@ -63,24 +63,27 @@ const TransactionHistory = ({ tokenSymbol }: TransactionHistoryProps) => {
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((tx, index) => (
-                  <tr key={index}>
-                    <td className="px-4 py-2 bg-[#9173FF]/5 text-white/60 text-sm text-nowrap">
-                      {tx.from === "N/A"
-                        ? "N/A"
-                        : user?.principal.toString() === tx.from
-                          ? "You"
-                          : shortPrincipal(tx.from)}
-                    </td>
-                    <td className="px-4 py-2 bg-[#9173FF]/5 text-white/60 text-sm text-nowrap">
-                      {tx.to === "N/A"
-                        ? "N/A"
-                        : user?.principal.toString() === tx.to
-                          ? "You"
-                          : shortPrincipal(tx.to)}
-                    </td>
-                    <td className="px-4 py-2 bg-[#9173FF]/5 text-white capitalize text-sm">
-                      <div className={`px-2 py-[2px] rounded-full ${
+              {transactions.map((tx, index) => (
+                <tr
+                  key={index}
+                  className={`${index % 2 === 0 ? 'bg-[#9173FF]/5' : 'bg-[#9173FF]/15'}`}
+                >
+                  <td className="px-4 py-2 text-white/60 text-sm text-nowrap">
+                    {tx.from === "N/A"
+                      ? "N/A"
+                      : user?.principal.toString() === tx.from
+                        ? "You"
+                        : shortPrincipal(tx.from)}
+                  </td>
+                  <td className="px-4 py-2 text-white/60 text-sm text-nowrap">
+                    {tx.to === "N/A"
+                      ? "N/A"
+                      : user?.principal.toString() === tx.to
+                        ? "You"
+                        : shortPrincipal(tx.to)}
+                  </td>
+                  <td className="px-4 py-2 text-white capitalize text-sm">
+                    <div className={`px-2 py-[2px] rounded-full ${
                       tx.kind === "approve" ? "bg-[#9173FF]" : ""
                     } ${
                       tx.kind === "transfer" ? "bg-[#FFFFFF]/50" : ""
@@ -89,24 +92,24 @@ const TransactionHistory = ({ tokenSymbol }: TransactionHistoryProps) => {
                     } ${
                       tx.kind === "burn" ? "bg-[#1E0F33]" : ""
                     }`}>
-                        {tx.kind}
-                      </div>
-                    </td>
-                    <td className="px-4 py-2 bg-[#9173FF]/5 text-white text-right font-medium">
-                      {formatUnits(tx.amount, DECIMALS)}{" "}
-                      <span className="text-[#9173FF]">{tokenSymbol}</span>
-                    </td>
-                    <td className="px-4 py-2 bg-[#9173FF]/5 text-white">
-                      <span className="font-medium text-sm">
-                        {formatUtcDate(tx.timestamp)}
-                      </span>
-                      <span className="ml-2 text-xs text-white/60 text-nowrap">
-                        {timeAgo(tx.timestamp)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+                      {tx.kind}
+                    </div>
+                  </td>
+                  <td className="px-4 py-2 text-white text-right font-medium">
+                    {formatUnits(tx.amount, DECIMALS)}{" "}
+                    <span className="text-[#9173FF]">{tokenSymbol}</span>
+                  </td>
+                  <td className="px-4 py-2 text-white">
+                    <span className="font-medium text-sm">
+                      {formatUtcDate(tx.timestamp)}
+                    </span>
+                    <span className="ml-2 text-xs text-white/60 text-nowrap">
+                      {timeAgo(tx.timestamp)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
             </table>
           </div>
         </div>

@@ -15,7 +15,7 @@ const HubCards = () => {
   ];
 
   return (
-    <div className="flex flex-wrap justify-center gap-x-12 gap-y-10 w-full mt-7 sm:mt-12 text-xs leading-none text-center text-white">
+    <div className="flex flex-wrap justify-center gap-x-9 sm:gap-x-12 gap-y-8 w-full mt-7 sm:mt-12 text-xs leading-none text-center text-white">
       {data.map((hubData, idx) => (
         <div
           key={idx}

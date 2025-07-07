@@ -100,10 +100,10 @@ const GenericTask = ({
     : null;
   return (
     <div className="flex mt-4">
-      <div className="flex flex-col mr-2 sm:mr-4">
-        <div className="bg-[#1E0F33] p-1 w-[20px] h-[20px] sm:w-[32px] sm:h-[32px] rounded sm:rounded-lg relative">
+      <div className="flex flex-col mr-2 md:mr-4">
+        <div className="bg-[#1E0F33] p-1 w-[20px] h-[20px] md:w-[32px] md:h-[32px] rounded md:rounded-lg relative">
           {submissionState === "WaitingForReview" && (
-            <img src="/icons/check-in-box.svg" className="w-6 h-3.5 sm:h-6 relative" />
+            <img src="/icons/check-in-box.svg" className="w-6 h-3.5 md:h-6 relative" />
           )}
           {submissionState === "Accepted" && (
             <img src="/icons/check-in-box.svg" className="w-6 h-6 relative" />
@@ -111,12 +111,12 @@ const GenericTask = ({
         </div>
         <div className="bg-[#1E0F33] flex-1 w-1 rounded-full mx-auto mt-2"></div>
       </div>
-      <div className="bg-[#1E0F33] rounded-xl p-3 sm:p-6 w-full">
+      <div className="bg-[#1E0F33] rounded-xl p-3 md:p-6 w-full">
         <div className="mb-4">
-          <h4 className="text-base sm:text-3xl font-medium font-poppins text-white mb-1 text-wrap break-all">
+          <h4 className="text-base md:text-3xl font-medium font-poppins text-white mb-1 text-wrap break-all">
             {genericTask.task_content.TitleAndDescription.task_title}
           </h4>
-          <p className="text-sm sm:text-xl text-zinc-400 text-wrap break-all">
+          <p className="text-sm md:text-xl text-zinc-400 text-wrap break-all">
             {genericTask.task_content.TitleAndDescription.task_description}
           </p>
         </div>
@@ -124,20 +124,20 @@ const GenericTask = ({
         {user && !userSubmission && openSubmission && (
           <form onSubmit={handleSubmit(onSubmit)}>
             <div>
-              <p className="text-xs sm:text-base text-white font-semibold mb-1">Submit response:</p>
+              <p className="text-xs md:text-base text-white font-semibold mb-1">Submit response:</p>
               <textarea
                 {...register("taskSubmission")}
-                className="border-2 border-[#9173FF]/20 p-2 h-32 sm:h-20 sm:p-4 rounded-xl w-full mb-2 bg-[#9173FF]/20 text-white"
+                className="border-2 border-[#9173FF]/20 p-2 h-32 md:h-20 md:p-4 rounded-xl w-full mb-2 bg-[#9173FF]/20 text-white"
               ></textarea>
             </div>
             <div className="flex justify-end">
-              <Button>Submit</Button>
+              <Button className="text-[14px] px-2 py-1 rounded-xl">Submit</Button>
             </div>
           </form>
         )}
         {user && !userSubmission && !openSubmission && isUserInHub && (
           <div className="flex">
-            <Button onClick={() => setSubmission(true)}>Submit message</Button>
+            <Button onClick={() => setSubmission(true)} className="text-[14px] px-2 py-1 rounded-xl">Submit message</Button>
           </div>
         )}
         {!user && (

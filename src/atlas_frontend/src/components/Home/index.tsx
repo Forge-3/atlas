@@ -30,7 +30,7 @@ const Home = () => {
       <Header />
       <GradientBox>
         <div className="font-medium text-2xl sm:text-3xl lg:text-4xl flex justify-center items-center sm:mt-10 px-4 text-center">
-          <h2 className="text-white text-3xl sm:text-4xl mt-5 sm:mt-10">
+          <h2 className="text-white text-2xl sm:text-4xl mt-5 sm:mt-10">
             ICP HUB is{" "}
             <span className="text-[#9173FF]">Everywhere for Everyone</span>
           </h2>
@@ -42,7 +42,7 @@ const Home = () => {
           <ConnectWallet
             connectButtonComponent={({ onClick }) => (
               <Button onClick={onClick} arrow={true} className="mt-8">
-                <div className=" flex items-center justify-center gap-2">
+                <div className=" flex items-center justify-center gap-2 text-[14px] px-2 py-1 rounded-xl">
                   <IoArrowForwardCircleOutline size={30}/>
                <div>
                 Join your local hub
