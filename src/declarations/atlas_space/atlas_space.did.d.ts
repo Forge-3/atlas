@@ -88,12 +88,25 @@ export interface Task {
   'number_of_uses' : bigint,
 }
 export type TaskContent = {
+    'DiscordTask' : {
+      'task_description' : string,
+      'task_title' : string,
+      'guild_id' : bigint,
+    }
+  } |
+  {
     'TitleAndDescription' : {
       'task_description' : string,
       'task_title' : string,
     }
   };
 export type TaskType = {
+    'DiscordTask' : {
+      'task_content' : TaskContent,
+      'submission' : Array<[Principal, SubmissionData]>,
+    }
+  } |
+  {
     'GenericTask' : {
       'task_content' : TaskContent,
       'submission' : Array<[Principal, SubmissionData]>,

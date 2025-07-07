@@ -31,6 +31,7 @@ const LastStep = () => {
   const postDiscordLogin = async (accessToken: string) => {
     let userData: null | UserData = null;
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       userData = await getUserData(accessToken);
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_err) {

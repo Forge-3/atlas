@@ -13,10 +13,10 @@ mod task;
 use crate::cycles::WalletReceiveResult;
 use crate::errors::Error;
 use crate::methods::query::{GetTasksArgs, GetTasksRes};
-use crate::state::{State, EditSpaceArgs};
+use crate::state::{EditSpaceArgs, State};
 use crate::task::{submission::Submission, CreateTaskArgs, TaskId};
 
-use candid::{Principal, Nat};
+use candid::{Nat, Principal};
 use shared::SpaceArgs;
 
 ic_cdk::export_candid!();

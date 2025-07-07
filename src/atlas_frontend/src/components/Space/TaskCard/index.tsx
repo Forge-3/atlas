@@ -19,7 +19,17 @@ const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
   const navigate = useNavigate();
 
   const reward = formatUnits(task.token_reward.CkUsdc.amount, DECIMALS)
-  const lastTask = task.tasks.at(-1)?.GenericTask.submission.filter(([, submission]) => 'Accepted' in submission.state)
+  
+  const lastTask = (() => {
+  const last = task.tasks.at(-1);
+  const submissions =
+    last && 'GenericTask' in last
+      ? last.GenericTask.submission
+      : last && 'DiscordTask' in last
+      ? last.DiscordTask.submission
+      : [];
+  return submissions.filter(([, submission]) => 'Accepted' in submission.state);
+})();
 
   return (
     <div className="w-[20rem]">

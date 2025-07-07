@@ -1,7 +1,11 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    errors::Error, guard::{parent_or_owner_or_admin_guard, user_is_in_space}, memory, state::EditSpaceArgs, task::{submission::Submission, CreateTaskArgs, Task, TaskId}
+    errors::Error,
+    guard::{parent_or_owner_or_admin_guard, user_is_in_space},
+    memory,
+    state::EditSpaceArgs,
+    task::{submission::Submission, CreateTaskArgs, Task, TaskId},
 };
 
 use candid::{CandidType, Principal};

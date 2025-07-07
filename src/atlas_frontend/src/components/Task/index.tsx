@@ -19,6 +19,7 @@ import {
   UserSubmissions,
 } from "../../canisters/atlasSpace/tasks";
 import toast from "react-hot-toast";
+import DiscordTask from "./tasks/DiscordTask";
 
 const Task = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -73,7 +74,11 @@ const Task = () => {
   }
 
   const usersSubmissions = currentTask?.tasks
-    ? getUsersSubmissions(currentTask.tasks)
+    ? getUsersSubmissions(
+        Object.fromEntries(
+          currentTask.tasks.map((task, idx) => [idx.toString(), task])
+        )
+      )
     : new UserSubmissions({});
 
   if (!user?.principal) return <></>;
@@ -134,17 +139,34 @@ const Task = () => {
                   {currentTask.task_title}
                 </h2>
                 <div className="mt-6">
-                  {currentTask.tasks.map((task, key) => (
-                    <GenericTask
-                      key={key}
-                      genericTask={task.GenericTask}
-                      spacePrincipal={principal}
-                      taskId={taskId}
-                      subtaskId={key}
-                      unAuthAtlasSpace={unAuthAtlasSpace}
-                      isUserInHub={isUserInHub}
-                    />
-                  ))}
+                  {Object.entries(currentTask.tasks).map((task, key) => {
+                    if ('GenericTask' in task[1]) {
+                      return (
+                        <GenericTask
+                          key={key}
+                          genericTask={task[1].GenericTask}
+                          spacePrincipal={principal}
+                          taskId={taskId}
+                          subtaskId={key}
+                          unAuthAtlasSpace={unAuthAtlasSpace}
+                          isUserInHub={isUserInHub}
+                        />
+                      );
+                    }
+                    else if ('DiscordTask' in task[1]) {
+                      return (
+                        <DiscordTask
+                          key={key}
+                          discordTask={task[1].DiscordTask}
+                          spacePrincipal={principal}
+                          taskId={taskId}
+                          subtaskId={key}
+                          unAuthAtlasSpace={unAuthAtlasSpace} 
+                          isUserInHub={isUserInHub}                        />
+                      );
+                    }
+                    return null;
+                  })}
                 </div>
                 <div className="flex mt-3 items-center justify-center">
                   <div className="mr-4">
