@@ -67,7 +67,7 @@ const Submissions = () => {
   }, [dispatch, unAuthAtlasSpace, tasks, spaceId]);
 
   const currentTask = taskId && tasks ? tasks[taskId] : null;
-  const tasksCount = currentTask?.tasks?.length ?? 0;
+  const tasksCount = currentTask?.tasks.length ?? 0;
   const usersSubmissions = currentTask?.tasks
     ? getUsersSubmissions(currentTask.tasks)
     : new UserSubmissions({});

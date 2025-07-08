@@ -78,93 +78,77 @@ export const createNewTask = async ({
   });
 };
 
-export type Tasks = { [key: string]: Task | ClosedTask };
+export type AnyTask = Task | ClosedTask;
+export type Tasks = { [key: string]: AnyTask };
+
+const fetchTasks = async <T>({
+  fetchFn,
+  unwrapMessage,
+  start: initialStart = 0n,
+  count = 200n,
+}: {
+  fetchFn: (start: bigint, count: bigint) => Promise<
+    { Ok: { tasks_count: bigint; tasks: [bigint, T][] } } | { Err: unknown }
+  >;
+  unwrapMessage: string;
+  start?: bigint;
+  count?: bigint;
+}): Promise<{ [key: string]: T }> => {
+  const result: [bigint, T][] = [];
+  let totalCount = 0n;
+  let start = initialStart;
+
+  const call = fetchFn(start, count);
+  const res = await unwrapCall<{ tasks_count: bigint; tasks: [bigint, T][] }>({
+    call,
+    errMsg: unwrapMessage,
+  });
+
+  totalCount = res.tasks_count;
+  result.push(...res.tasks);
+  start += count;
+
+  while (totalCount > result.length) {
+    const call = fetchFn(start, count);
+    const res = await unwrapCall<{ tasks_count: bigint; tasks: [bigint, T][] }>({
+      call,
+      errMsg: unwrapMessage,
+    });
+    result.push(...res.tasks);
+    start += count;
+  }
+
+  return result.reduce(
+    (acc, [id, val]) => ({
+      ...acc,
+      [id.toString()]: val,
+    }),
+    {} as { [key: string]: T }
+  );
+};
 
 export const getSpaceTasks = async ({
   unAuthAtlasSpace,
   spaceId,
   dispatch,
 }: GetAtlasSpaceArgs) => {
-  const tasks: [bigint, Task][] = [];
-  let tasksCount = 0n;
-  let start = 0n;
-  const count = 200n;
-  const call = unAuthAtlasSpace.get_open_tasks({
-    start,
-    count,
-  });
-  const res = await unwrapCall<GetTasksRes>({
-    call,
-    errMsg: "Failed to get data from blockchain",
-  });
-
-  tasksCount = res.tasks_count;
-  tasks.push(...res.tasks);
-  start += count;
-
-  while (tasksCount < tasks.length) {
-    const call = unAuthAtlasSpace.get_open_tasks({
-      start,
-      count,
-    });
-    const res = await unwrapCall<GetTasksRes>({
-      call,
-      errMsg: "Failed to get data from blockchain",
-    });
-    tasks.push(...res.tasks);
-    start += count;
-  }
-
-  const storableOpenTasks = tasks.reduce(
-    (acc, [id, val]) => ({
-      ...acc,
-      [id.toString()]: val,
+  const [openTasks, closedTasks] = await Promise.all([
+    fetchTasks<Task>({
+      fetchFn: (start, count) =>
+        unAuthAtlasSpace.get_open_tasks({ start, count }),
+      unwrapMessage: "Failed to fetch open tasks",
     }),
-    {}
-  );
-
-  const closedTasks: [bigint, ClosedTask][] = [];
-  let closedTasksCount = 0n;
-  let start_closed = 0n;
-  const count_closed = 200n;
-  const call_closed = unAuthAtlasSpace.get_closed_tasks({
-    start: start_closed,
-    count: count_closed,
-  });
-  const res_closed = await unwrapCall<GetClosedTasksRes>({
-    call: call_closed,
-    errMsg: "Failed to get data from blockchain",
-  });
-
-  closedTasksCount = res_closed.tasks_count;
-  closedTasks.push(...res_closed.tasks);
-  start_closed += count_closed;
-
-  while (closedTasksCount < closedTasks.length) {
-    const call_closed = unAuthAtlasSpace.get_closed_tasks({
-      start: start_closed,
-      count: count_closed,
-    });
-    const res_closed = await unwrapCall<GetClosedTasksRes>({
-      call: call_closed,
-      errMsg: "Failed to get data from blockchain",
-    });
-    closedTasks.push(...res_closed.tasks);
-    start_closed += count_closed;
-  }
-
-  const storableClosedTasks = closedTasks.reduce(
-    (acc, [id, val]) => ({
-      ...acc,
-      [id.toString()]: val,
+    fetchTasks<ClosedTask>({
+      fetchFn: (start, count) =>
+        unAuthAtlasSpace.get_closed_tasks({ start, count }),
+      unwrapMessage: "Failed to fetch closed tasks",
     }),
-    {}
-  );
+  ]);
 
   const mergedTasks = {
-    ...storableOpenTasks,
-    ...storableClosedTasks,
-  } as { [key: string]: Task | ClosedTask };
+    ...openTasks,
+    ...closedTasks,
+  } as { [key: string]: AnyTask };
 
   dispatch(
     setTasks(
@@ -174,7 +158,7 @@ export const getSpaceTasks = async ({
           spaceId,
         },
         customSerify
-      ) as { tasks: { [key: string]: Task | ClosedTask }; spaceId: string }
+      ) as { tasks: { [key: string]: AnyTask }; spaceId: string }
     )
   );
 };

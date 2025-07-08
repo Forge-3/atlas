@@ -1,17 +1,17 @@
 import React from "react";
 import InfoBox from "./InfoBox.tsx";
-import type { ClosedTask, Task } from "../../../../../declarations/atlas_space/atlas_space.did";
 import { useNavigate } from "react-router-dom";
 import { formatUnits } from "ethers";
 import { DECIMALS } from "../../../canisters/ckUsdcLedger/constans.ts";
 import type { Principal } from "@dfinity/principal";
 import { getTaskPath } from "../../../router/paths.ts";
+import type { AnyTask } from "../../../canisters/atlasSpace/api.ts";
 
 interface TaskCardProps {
   type: "ongoing" | "starting" | "expired";
   startingIn?: string;
   id: string,
-  task: Task | ClosedTask;
+  task: AnyTask,
   spaceId: Principal
 }
 

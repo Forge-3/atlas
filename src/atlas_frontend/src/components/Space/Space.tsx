@@ -28,7 +28,7 @@ import {
 import { formatDuration } from "../../utils/date.ts";
 
 interface TasksListProps {
-  tasks?: Tasks;
+  tasks: Tasks;
   spaceId: Principal;
 }
 
@@ -37,29 +37,11 @@ const TasksList = ({ tasks = {}, spaceId }: TasksListProps) => {
 
   const allTaskEntries = Object.entries(tasks).map(([id, task]) => {
     const isClosed = "refunded" in task;
-    if (isClosed) {
-      return {
-        id,
-        task,
-        type: "expired" as const,
-      };
-    }
+    const isStarting = Number(task.start_time) > Number(nowInSeconds);
+    const type: "expired" | "starting" | "ongoing" = isClosed ? "expired" : isStarting ? "starting" : "ongoing";
+    const startingIn = type === "starting" ? formatDuration(Number(task.start_time) - Number(nowInSeconds)) : undefined;
 
-    const startTime = Number(task.start_time);
-    if (startTime > nowInSeconds) {
-      return {
-        id,
-        task,
-        type: "starting" as const,
-        startingIn: formatDuration(startTime - nowInSeconds),
-      };
-    }
-
-    return {
-      id,
-      task,
-      type: "ongoing" as const,
-    };
+    return { id, task, type, startingIn };
   });
 
   if (allTaskEntries.length === 0) return <></>;
@@ -102,7 +84,7 @@ interface SpaceProps {
   description: string;
   avatarImg: string | null;
   backgroundImg: string | null;
-  tasks?: Tasks;
+  tasks: Tasks;
   spaceId: Principal;
   externalLinks: ExternalLinks;
 }
@@ -262,9 +244,7 @@ const Space = ({
               </div>
             </div>
           </div>
-          {(tasks) && (
-            <TasksList tasks={tasks} spaceId={spaceId} />
-          )}
+          <TasksList tasks={tasks} spaceId={spaceId} />
         </div>
       </div>
       {isCreateTaskModal && <CreateNewTaskModal callback={toggleTaskModal} />}
