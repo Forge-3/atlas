@@ -30,6 +30,7 @@ import { Principal } from "@dfinity/principal";
 import { deserialize, type RootState } from "../../store/store.ts";
 import { editSpace, getAtlasSpace } from "../../canisters/atlasSpace/api.ts";
 import type { Space } from "../../store/slices/spacesSlice.ts";
+import { runWithLoading } from "../../utils/loading.ts";
 import { getErrorWithInfoToast } from "../../utils/errors.ts";
 
 const MAX_FILE_SIZE = 5_000_000;
@@ -198,73 +199,74 @@ const SpaceBuilder = () => {
   const avatarImg = watch("avatarImg");
   const backgroundImg = watch("backgroundImg");
 
-  const onSubmit: SubmitHandler<SpaceBuilderFormInput> = async (data) => {
+  const handleCreateOrEditSpace: SubmitHandler<SpaceBuilderFormInput> = async (data) => {
     if (!authAtlasMain) {
       return;
     }
 
-    const name = data.spaceName.trim();
-    const description = data.spaceDescription.trim();
-    const externalLinks = {
-      x: data.spaceX ?? null,
-      telegram: data.spaceTelegram ?? null,
-      discord: data.spaceDiscord ?? null,
-      linkedIn: data.spaceLinkedIn ?? null,
-    };
+    await runWithLoading(async () => {
+      const name = data.spaceName.trim();
+      const description = data.spaceDescription.trim();
+      const externalLinks = {
+        x: data.spaceX ?? null,
+        telegram: data.spaceTelegram ?? null,
+        discord: data.spaceDiscord ?? null,
+        linkedIn: data.spaceLinkedIn ?? null,
+      };
 
-    if (parsedSpacePrincipal) {
-      if (!authAtlasSpace || !unAuthAtlasSpace) return;
-      const editSpaceCall = editSpace({
-        authAtlasSpace,
-        name,
-        description,
-        logo: data.avatarImg ?? null,
-        background: data.backgroundImg ?? null,
-        externalLinks,
-      });
-      await toast.promise(editSpaceCall, {
-        loading: "Updating space data...",
-        success: "Space updated successfully",
-        error: getErrorWithInfoToast("Failed to update space."),
-      });
-      await getAtlasSpace({
-        spaceId: parsedSpacePrincipal.toString(),
-        unAuthAtlasSpace,
-        dispatch,
-      });
-
-      if (user?.principal && unAuthAtlasMain) {
-        getAtlasUser({
-          dispatch,
-          userId: user.principal,
-          unAuthAtlasMain: unAuthAtlasMain,
+      if (parsedSpacePrincipal) {
+        if (!authAtlasSpace || !unAuthAtlasSpace) return;
+        const editSpaceCall = editSpace({
+          authAtlasSpace,
+          name,
+          description,
+          logo: data.avatarImg ?? null,
+          background: data.backgroundImg ?? null,
+          externalLinks,
         });
-      }
-      navigate(getSpacePath(parsedSpacePrincipal));
-    } else {
-      const createSpaceCall = createNewSpace({
-        authAtlasMain,
-        name,
-        description,
-        symbol: null,
-        logo: data.avatarImg ?? null,
-        background: data.backgroundImg ?? null,
-        externalLinks,
-      });
-      const space = await toast.promise(createSpaceCall, {
-        loading: "Creating new space...",
-        success: "Space created successfully",
-        error: getErrorWithInfoToast("Failed to create space."),
-      });
-      if (user?.principal && unAuthAtlasMain) {
-        getAtlasUser({
-          dispatch,
-          userId: user.principal,
-          unAuthAtlasMain,
+        await toast.promise(editSpaceCall, {
+          loading: "Updating space data...",
+          success: "Space updated successfully.",
+          error: getErrorWithInfoToast("Failed to update space."),
         });
+        await getAtlasSpace({
+          spaceId: parsedSpacePrincipal.toString(),
+          unAuthAtlasSpace,
+          dispatch,
+        });
+        if (user?.principal && unAuthAtlasMain) {
+          getAtlasUser({
+            dispatch,
+            userId: user.principal,
+            unAuthAtlasMain: unAuthAtlasMain,
+          });
+        }
+        window.location.href = getSpacePath(parsedSpacePrincipal);
+      } else {
+        const createSpaceCall = createNewSpace({
+          authAtlasMain,
+          name,
+          description,
+          symbol: null,
+          logo: data.avatarImg ?? null,
+          background: data.backgroundImg ?? null,
+          externalLinks,
+        });
+        const space = await toast.promise(createSpaceCall, {
+          loading: "Creating new space...",
+          success: "Space created successfully.",
+          error: getErrorWithInfoToast("Failed to create space."),
+        });
+        if (user?.principal && unAuthAtlasMain) {
+          getAtlasUser({
+            dispatch,
+            userId: user.principal,
+            unAuthAtlasMain,
+          });
+        }
+        navigate(getSpacePath(space.id));
       }
-      navigate(getSpacePath(space.id));
-    }
+    }, dispatch);
   };
 
   const handleDrop = async (
@@ -298,8 +300,8 @@ const SpaceBuilder = () => {
     (parsedSpacePrincipal && userInfo?.canAdministrate(parsedSpacePrincipal)) ??
     false;
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <div className="container mx-auto my-4 px-4 sm:px-6 md:px-8">
+    <form onSubmit={handleSubmit(handleCreateOrEditSpace)}>
+      <div className="container mx-auto my-4">
         <div className="w-full px-3">
           <div className="my-4 flex justify-end px-0 sm:px-3">
             {parsedSpacePrincipal ? (

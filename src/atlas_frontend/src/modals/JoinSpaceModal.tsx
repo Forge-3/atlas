@@ -50,8 +50,8 @@ const JoinSpaceModal = ({
     }),
   {
     loading: "Trying to join space...",
-    success: "Successfully joined to space",
-    error: getErrorWithInfoToast("Failed to join to space"),
+    success: "Successfully joined to space.",
+    error: getErrorWithInfoToast("Failed to join to space."),
   });
     getAtlasUser({
       unAuthAtlasMain,
@@ -66,7 +66,7 @@ const JoinSpaceModal = ({
       onClick={callback}
     >
       <div
-        className="flex flex-col rounded-xl bg-white p-[20px] gap-[10px] w-[20rem] sm:w-[40rem] md:w-[40rem]"
+        className="flex flex-col rounded-xl bg-white p-[20px] gap-[10px] w-[40rem]"
         onClick={(e) => {
           e.stopPropagation();
         }}

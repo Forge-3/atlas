@@ -28,19 +28,15 @@ import {
 import { getAtlasUser, joinAtlasSpace } from "../../canisters/atlasMain/api.ts";
 import TransferSpaceModal from "../../modals/TransferSpaceModal.tsx";
 import { getErrorWithInfoToast } from "../../utils/errors.ts";
+import LocalBlurOverlay from "../Shared/LocalBlurOverlay.tsx";
+import { runWithLoading } from "../../utils/loading.ts";
 
 interface TasksListProps {
-  tasks: Tasks;
+  tasks?: Tasks;
   spaceId: Principal;
 }
 
 const TasksList = ({ tasks, spaceId }: TasksListProps) => {
-  if (!tasks || Object.keys(tasks).length === 0) {
-    return <></>;
-  }
-
-  const tasksEntries = Object.entries(tasks);
-
   return (
     <>
       <div className="relative w-full bg-[#1E0F33] mb-1">
@@ -57,7 +53,8 @@ const TasksList = ({ tasks, spaceId }: TasksListProps) => {
       </div>
       <div className="relative w-full bg-[#1E0F33] rounded-b-xl">
         <div className="flex gap-4 md:mx-3 px-8 py-6 flex-wrap justify-between md:justify-center">
-          {tasksEntries.map(([id, task]) => {
+          <LocalBlurOverlay isLoading={!tasks} />
+          {tasks && Object.entries(tasks).map(([id, task]) => {
             return (
               <TaskCard
                 key={id}
@@ -134,25 +131,28 @@ const Space = ({
     if (!authAtlasMain || !unAuthAtlasMain || !user) {
       return;
     }
-    await toast.promise(
-      joinAtlasSpace({
-        authAtlasMain,
-        space: parsedSpacePrincipal,
-      }),
-      {
-        loading: "Trying to join space...",
-        success: "Successfully joined to space",
-        error: getErrorWithInfoToast("Failed to join to space."),
-      }
-    );
-    await getAtlasUser({
-      unAuthAtlasMain,
-      dispatch,
-      userId: user.principal,
-    });
+    
+    await runWithLoading(async () => {
+      await toast.promise(
+        joinAtlasSpace({
+          authAtlasMain,
+          space: parsedSpacePrincipal,
+        }),
+        {
+          loading: "Trying to join space...",
+          success: "Successfully joined to space.",
+          error: getErrorWithInfoToast("Failed to join to space."),
+        }
+      );
+      getAtlasUser({
+        unAuthAtlasMain,
+        dispatch,
+        userId: user.principal,
+      });
+    }, dispatch);
   };
-
-return (
+  
+  return (
     <>
       <div className="container mx-auto my-4">
         <div className="w-full px-3">
@@ -275,7 +275,7 @@ return (
               </div>
             </div>
           </div>
-          {tasks && <TasksList tasks={tasks} spaceId={spaceId} />}
+          {<TasksList tasks={tasks} spaceId={spaceId} />}
         </div>
       </div>
       {isCreateTaskModal && <CreateNewTaskModal callback={toggleTaskModal} />}

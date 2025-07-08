@@ -24,8 +24,11 @@ import {
   setUserSpaceAllowanceIfNeeded,
 } from "../canisters/ckUsdcLedger/api";
 import { useAuth } from "@nfid/identitykit/react";
-import { selectBlockchainConfig, type StorableConfig } from "../store/slices/appSlice";
-import { deserialize } from "../store/store";
+import {
+  selectBlockchainConfig,
+  type StorableConfig,
+} from "../store/slices/appSlice";
+import { deserialize, type RootState } from "../store/store";
 import { getErrorWithInfoToast } from "../utils/errors";
 
 type TaskType = "generic";
@@ -61,7 +64,7 @@ const taskSchema = yup.object({
     .min(2)
     .required()
     .label("Task description"),
-    allowresubmit: yup.boolean().required(),
+  allowresubmit: yup.boolean().required(),
 });
 
 const schema = yup.object({
@@ -96,7 +99,9 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
-
+  const isLoading = useSelector(
+    (state: RootState) => state.app.isLoading
+  );
   const {
     register,
     handleSubmit,
@@ -108,7 +113,14 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     defaultValues: {
       numberOfUses: 1,
       rewardPerUsage: 0.1,
-      tasks: [{ taskType: "generic", title: "", description: "", allowresubmit: false }],
+      tasks: [
+        {
+          taskType: "generic",
+          title: "",
+          description: "",
+          allowresubmit: false,
+        },
+      ],
     },
   });
   const { fields, append, remove } = useFieldArray({
@@ -127,7 +139,9 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   const unAuthCkUsdcActor = useUnAuthCkUsdcLedgerActor();
   const authCkUsdcActor = useAuthCkUsdcLedgerActor();
 
-  const blockchainConfig = deserialize<StorableConfig>(useSelector(selectBlockchainConfig));
+  const blockchainConfig = deserialize<StorableConfig>(
+    useSelector(selectBlockchainConfig)
+  );
   const ckUsdcFee = blockchainConfig
     ? (blockchainConfig.ckusdc_ledger.fee ?? 0n)
     : 0n;
@@ -199,7 +213,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     });
     await toast.promise(getOrSetAllowance, {
       loading: "Checking available funds...",
-      success: "Funds allowance granted successfully",
+      success: "Funds allowance granted successfully.",
       error: getErrorWithInfoToast("Failed to allocate funds:"),
     });
 
@@ -212,7 +226,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     });
     const taskId = await toast.promise(createNewTaskCall, {
       loading: "Creating new task...",
-      success: "Task created successfully",
+      success: "Task created successfully.",
       error: getErrorWithInfoToast("Failed to create task:"),
     });
     callback();
@@ -232,7 +246,9 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center h-full"
+        className={`fixed inset-0 flex items-center justify-center h-full  ${
+          isLoading ? "z-30 blur-sm" : "z-50"
+        }`}
         onClick={callback}
       >
         <div
@@ -333,7 +349,10 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                         {...register(`tasks.${index}.allowresubmit`)}
                         className="form-checkbox h-5 w-5 text-[#9173FF] rounded"
                       />
-                      <label htmlFor={`allowresubmit-${index}`} className="text-gray-600 font-semibold">
+                      <label
+                        htmlFor={`allowresubmit-${index}`}
+                        className="text-gray-600 font-semibold"
+                      >
                         Allow re-submission for this subtask if rejected
                       </label>
                       {errors?.tasks?.[index]?.allowresubmit?.message && (

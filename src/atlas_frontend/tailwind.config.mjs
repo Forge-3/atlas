@@ -34,6 +34,15 @@ export default {
         h3: 400,
         p: 300,
       },
+      keyframes: {
+        rotateSway: {
+          "0%, 100%": { transform: "rotate(-20deg)" },
+          "50%": { transform: "rotate(10deg)" },
+        },
+      },
+      animation: {
+        "rotate-sway": "rotateSway 4s ease-in-out infinite",
+      },
     },
   },
   plugins: [],

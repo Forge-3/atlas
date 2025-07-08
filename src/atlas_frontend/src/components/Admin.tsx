@@ -30,6 +30,7 @@ import type { Spaces } from "../store/slices/spacesSlice";
 import { copy } from "../utils/shared";
 import { FiCopy } from "react-icons/fi";
 import { getErrorWithInfoToast } from "../utils/errors";
+import { runWithLoading } from "../utils/loading";
 
 interface AdminFormInput {
   principal: string;
@@ -99,19 +100,21 @@ const Admin = () => {
     resolver: yupResolver(schema),
   });
 
-  const onSubmit: SubmitHandler<AdminFormInput> = async ({ principal }) => {
+  const handlePromoteUser: SubmitHandler<AdminFormInput> = async ({ principal }) => {
     const userId = Principal.from(principal);
-
     if (!authAtlasMain) return;
-    const call = promoteUserToSpaceLead({
-      authAtlasMain,
-      userId,
-    });
-    await toast.promise(call, {
-      loading: "Promoting user to space lead...",
-      success: "Successfully promoted user",
-      error: getErrorWithInfoToast("Failed promote user."),
-    });
+
+    await runWithLoading(async () => {
+      const call = promoteUserToSpaceLead({
+        authAtlasMain,
+        userId,
+      });
+      await toast.promise(call, {
+        loading: "Promoting user to space lead...",
+        success: "Successfully promoted user.",
+        error: getErrorWithInfoToast("Failed promote user."),
+      });
+    }, dispatch);
   };
 
   const upgradeSpecificSpace = async (spacePrincipal: Principal) => {
@@ -124,7 +127,7 @@ const Admin = () => {
 
     await toast.promise(call, {
       loading: "Upgrading space...",
-      success: "Successfully upgraded space",
+      success: "Successfully upgraded space.",
       error: getErrorWithInfoToast("Failed to upgrade space."),
     });
     const unAuthAtlasSpace = getUnAuthAtlasSpaceActor(agent, spacePrincipal);
@@ -147,7 +150,7 @@ const Admin = () => {
         </h2>
         <form
           className="flex flex-col gap-3 text-white"
-          onSubmit={handleSubmit(onSubmit)}
+          onSubmit={handleSubmit(handlePromoteUser)}
         >
           <GradientBox>
             <div className="px-8 font-montserrat text-white pt-8">

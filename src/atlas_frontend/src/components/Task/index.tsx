@@ -129,7 +129,7 @@ const Task = () => {
       }),
       {
         loading: "Trying to join space...",
-        success: "Successfully joined to space",
+        success: "Successfully joined to space.",
         error: getErrorWithInfoToast("Failed to join to space."),
       }
     );

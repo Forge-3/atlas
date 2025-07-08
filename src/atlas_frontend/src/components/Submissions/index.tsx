@@ -34,6 +34,7 @@ import { FaArrowLeftLong } from "react-icons/fa6";
 import { getTaskPath } from "../../router/paths";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import toast from "react-hot-toast";
+import { runWithLoading } from "../../utils/loading";
 
 const Submissions = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -301,54 +302,62 @@ const GenericTaskSummation = ({
 }: GenericTaskSummationProps) => {
   const dispatch = useDispatch();
   const userPrincipal = Principal.from(user);
+  const isLoading = useSelector((state: RootState) => state.app.isLoading);
 
   const { register, handleSubmit } = useForm<SubtaskSubmission>();
   const onSubmit: SubmitHandler<SubtaskSubmission> = async (data) => {
     const rawReason = data.reason?.trim();
     const trimmedRawReason = !rawReason || rawReason === "" ? null : rawReason;
-
-    await toast.promise(
-      rejectSubtaskSubmission({
-        authAtlasSpace,
-        userPrincipal,
-        taskId: BigInt(taskId),
-        subtaskId: BigInt(subtaskId),
-        reason: trimmedRawReason,
-      }),
-      {
-        loading: "Rejecting task...",
-        error: "Failed to reject task.",
-      }
-    );
-    setShowRejectPopup(false);
-    await getSpaceTasks({
-      spaceId,
-      unAuthAtlasSpace,
+    await runWithLoading(
+      async () => {
+        await toast.promise(
+          rejectSubtaskSubmission({
+            authAtlasSpace,
+            userPrincipal,
+            taskId: BigInt(taskId),
+            subtaskId: BigInt(subtaskId),
+            reason: trimmedRawReason,
+          }),
+          {
+            loading: "Rejecting task...",
+            error: "Failed to reject task.",
+          }
+        );
+        setShowRejectPopup(false);
+        await getSpaceTasks({
+          spaceId,
+          unAuthAtlasSpace,
+          dispatch,
+        });
+      },
       dispatch,
-    });
+      () => setShowRejectPopup(false)
+    );
   };
 
   const [showRejectPopup, setShowRejectPopup] = useState(false);
 
   const acceptSubtask = async () => {
-    await toast.promise(
-      acceptSubtaskSubmission({
-        authAtlasSpace,
-        userPrincipal,
-        taskId: BigInt(taskId),
-        subtaskId: BigInt(subtaskId),
-      }),
-      {
-        loading: "Accepting task...",
-        success: "Task accepted successfully.",
-        error: "Failed to accept task.",
-      }
-    );
-    await getSpaceTasks({
-      spaceId,
-      unAuthAtlasSpace,
-      dispatch,
-    });
+    await runWithLoading(async () => {
+      await toast.promise(
+        acceptSubtaskSubmission({
+          authAtlasSpace,
+          userPrincipal,
+          taskId: BigInt(taskId),
+          subtaskId: BigInt(subtaskId),
+        }),
+        {
+          loading: "Accepting task...",
+          success: "Task accepted successfully.",
+          error: "Failed to accept task.",
+        }
+      );
+      await getSpaceTasks({
+        spaceId,
+        unAuthAtlasSpace,
+        dispatch,
+      });
+    }, dispatch);
   };
 
   const singleSubmissionState = Object.keys(submission.submissionData.state)[0];
@@ -397,37 +406,32 @@ const GenericTaskSummation = ({
         </div>
       </div>
       {showRejectPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div
+          className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${isLoading ? "z-30 blur-sm" : "z-50"}`}
+        >
           <div className="bg-[#402a5f] p-6 rounded-2xl shadow-lg w-96 text-black">
             <h2 className="text-xl text-white font-bold mb-4">
               Reason for Rejection
             </h2>
-            <form
-              onSubmit={handleSubmit(onSubmit)}
-              className="my-3 rounded-lg"
-            ></form>
-            <textarea
-              {...register("reason")}
-              className="w-full p-3 border border-[#8973FF]/20 bg-[#9173FF]/20 rounded-xl text-white mb-2 resize-none overflow-hidden"
-              placeholder="Enter reason here(optional)"
-              rows={5}
-            />
-            <div className="flex justify-end gap-2">
-              <Button
-                onClick={() => {
-                  setShowRejectPopup(false);
-                }}
-                className=""
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => handleSubmit(onSubmit)()}
-                className="bg-red-500"
-              >
-                Submit Rejection
-              </Button>
-            </div>
+            <form onSubmit={handleSubmit(onSubmit)} className="my-3 rounded-lg">
+              <textarea
+                {...register("reason")}
+                className="w-full p-3 border border-[#8973FF]/20 bg-[#9173FF]/20 rounded-xl text-white mb-2 resize-none overflow-hidden"
+                placeholder="Enter reason here(optional)"
+                rows={5}
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  onClick={() => {
+                    setShowRejectPopup(false);
+                  }}
+                  className=""
+                >
+                  Cancel
+                </Button>
+                <Button className="bg-red-500">Submit Rejection</Button>
+              </div>
+            </form>
           </div>
         </div>
       )}
