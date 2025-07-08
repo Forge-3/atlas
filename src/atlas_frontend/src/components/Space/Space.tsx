@@ -34,7 +34,7 @@ import { runWithLoading } from "../../utils/loading.ts";
 import { getStartingIn, getTaskType } from "../../utils/tasks.ts";
 
 interface TasksListProps {
-  tasks?: Tasks;
+  tasks: Tasks;
   spaceId: Principal;
 }
 
@@ -306,7 +306,7 @@ const Space = ({
               </div>
             </div>
           </div>
-          {<TasksList tasks={tasks} spaceId={spaceId} />}
+          <TasksList tasks={tasks} spaceId={spaceId} />
         </div>
       </div>
       {isCreateTaskModal && <CreateNewTaskModal callback={toggleTaskModal} />}
