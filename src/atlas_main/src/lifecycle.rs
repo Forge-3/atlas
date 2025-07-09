@@ -40,7 +40,7 @@ fn pre_upgrade() {
 
 #[post_upgrade]
 async fn post_upgrade(minter_arg: AtlasArgs) {
-    crate::migration::migrate();
+    crate::migration::migrate().await;
     match minter_arg {
         AtlasArgs::InitArg(_) => {
             ic_cdk::trap("cannot upgrade canister state with init args");
@@ -56,7 +56,6 @@ async fn post_upgrade(minter_arg: AtlasArgs) {
                     }
                 });
             }
-            //management::upgrade_spaces(upgrade_space_arg).await;
         }
     }
 }

@@ -166,6 +166,7 @@ pub async fn upgrade_space(space_id: Principal) -> Result<(), Error> {
         })
         .await
         .unwrap();
+        space::migration::migrate(version, space_id).await;
         ic_cdk::println!(
             "Successfully upgraded {} to version {}",
             ic_cdk::api::canister_self(),
@@ -260,17 +261,5 @@ pub async fn transfer_space(args: TransferSpace) -> Result<(), Error> {
         .candid::<()>()
         .expect("Failed to read response");
 
-    Ok(())
-}
-
-#[update]
-pub fn unlock_space_creation(user: Principal) -> Result<(), Error> {
-    let caller = authenticated_guard()?;
-    memory::user_rank_match(&caller, &[Rank::SuperAdmin])?;
-    memory::mut_user(user, |maybe_user| {
-        let mut user = maybe_user.ok_or(Error::UserDoNotExist)?;
-        user.set_space_creation(false);
-        Ok(user)
-    })?;
     Ok(())
 }

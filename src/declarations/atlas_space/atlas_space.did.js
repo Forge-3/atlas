@@ -1,12 +1,12 @@
 export const idlFactory = ({ IDL }) => {
-  const CkUsdcLedger = IDL.Record({
+  const CkUsdcLedger_1 = IDL.Record({
     'fee' : IDL.Opt(IDL.Nat),
     'principal' : IDL.Principal,
   });
   const SpaceInitArg = IDL.Record({
     'external_links' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     'owner' : IDL.Principal,
-    'ckusdc_ledger' : CkUsdcLedger,
+    'ckusdc_ledger' : CkUsdcLedger_1,
     'space_symbol' : IDL.Opt(IDL.Text),
     'space_background' : IDL.Opt(IDL.Text),
     'current_wasm_version' : IDL.Nat64,
@@ -99,6 +99,16 @@ export const idlFactory = ({ IDL }) => {
     'tasks_count' : IDL.Nat64,
   });
   const Result_2 = IDL.Variant({ 'Ok' : GetTasksRes, 'Err' : Error });
+  const CkUsdcLedger = IDL.Record({
+    'fee' : IDL.Opt(IDL.Nat),
+    'principal' : IDL.Principal,
+  });
+  const Config = IDL.Record({
+    'owner' : IDL.Principal,
+    'ckusdc_ledger' : CkUsdcLedger,
+    'current_wasm_version' : IDL.Nat64,
+    'parent' : IDL.Principal,
+  });
   const State = IDL.Record({
     'external_links' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     'space_symbol' : IDL.Opt(IDL.Text),
@@ -119,6 +129,7 @@ export const idlFactory = ({ IDL }) => {
     'create_task' : IDL.Func([CreateTaskArgs], [Result_1], []),
     'edit_space' : IDL.Func([EditSpaceArgs], [Result], []),
     'get_closed_tasks' : IDL.Func([GetTasksArgs], [Result_2], ['query']),
+    'get_config' : IDL.Func([], [Config], ['query']),
     'get_current_bytecode_version' : IDL.Func([], [IDL.Nat64], ['query']),
     'get_open_tasks' : IDL.Func([GetTasksArgs], [Result_2], ['query']),
     'get_space_info' : IDL.Func([], [SpaceInfo], ['query']),
@@ -144,14 +155,14 @@ export const idlFactory = ({ IDL }) => {
   });
 };
 export const init = ({ IDL }) => {
-  const CkUsdcLedger = IDL.Record({
+  const CkUsdcLedger_1 = IDL.Record({
     'fee' : IDL.Opt(IDL.Nat),
     'principal' : IDL.Principal,
   });
   const SpaceInitArg = IDL.Record({
     'external_links' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     'owner' : IDL.Principal,
-    'ckusdc_ledger' : CkUsdcLedger,
+    'ckusdc_ledger' : CkUsdcLedger_1,
     'space_symbol' : IDL.Opt(IDL.Text),
     'space_background' : IDL.Opt(IDL.Text),
     'current_wasm_version' : IDL.Nat64,

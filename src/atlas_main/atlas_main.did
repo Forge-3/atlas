@@ -96,7 +96,6 @@ service : (AtlasArgs) -> {
   set_user_admin : (principal) -> (Result_2);
   set_user_space_lead : (principal) -> (Result_2);
   transfer_space : (TransferSpace) -> (Result_2);
-  unlock_space_creation : (principal) -> (Result_2);
   upgrade_space : (principal) -> (Result_2);
   user_is_admin : (principal) -> (bool) query;
   user_is_in_hub : (principal) -> (bool) query;

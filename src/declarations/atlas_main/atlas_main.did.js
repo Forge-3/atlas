@@ -127,7 +127,6 @@ export const idlFactory = ({ IDL }) => {
     'set_user_admin' : IDL.Func([IDL.Principal], [Result_2], []),
     'set_user_space_lead' : IDL.Func([IDL.Principal], [Result_2], []),
     'transfer_space' : IDL.Func([TransferSpace], [Result_2], []),
-    'unlock_space_creation' : IDL.Func([IDL.Principal], [Result_2], []),
     'upgrade_space' : IDL.Func([IDL.Principal], [Result_2], []),
     'user_is_admin' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
     'user_is_in_hub' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),

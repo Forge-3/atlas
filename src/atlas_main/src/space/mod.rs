@@ -16,8 +16,11 @@ use shared::{SpaceArgs, SpaceInitArg};
 
 use crate::{errors::Error, memory};
 
-pub const SPACE_WASM: &[u8] =
-    std::include_bytes!("../../../target/wasm32-unknown-unknown/release/atlas_space-opt.wasm.gz");
+pub mod migration;
+
+pub const SPACE_WASM: &[u8] = std::include_bytes!(
+    "../../../../target/wasm32-unknown-unknown/release/atlas_space-opt.wasm.gz"
+);
 pub const SPACE_DEFAULT_CYCLES: u128 = 10_000_000_000_000;
 
 #[derive(

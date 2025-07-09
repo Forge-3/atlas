@@ -1,1 +1,1 @@
-pub fn migrate() {}
+pub async fn migrate() {}

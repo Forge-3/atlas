@@ -135,5 +135,5 @@ pub async fn withdraw_reward(task_id: TaskId) -> Result<(), Error> {
 pub fn transfer_space(to: Principal) {
     parent_guard().unwrap();
 
-    memory::mut_config(|config| config.owner == to);
+    memory::mut_config(|config| config.owner = to);
 }

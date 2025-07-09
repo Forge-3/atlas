@@ -1,4 +1,11 @@
 type CkUsdcLedger = record { fee : opt nat; "principal" : principal };
+type CkUsdcLedger_1 = record { fee : opt nat; "principal" : principal };
+type Config = record {
+  owner : principal;
+  ckusdc_ledger : CkUsdcLedger;
+  current_wasm_version : nat64;
+  parent : principal;
+};
 type CreateTaskArgs = record {
   task_title : text;
   token_reward : TokenReward;
@@ -53,7 +60,7 @@ type SpaceInfo = record { version : nat64; state : State };
 type SpaceInitArg = record {
   external_links : vec record { text; text };
   owner : principal;
-  ckusdc_ledger : CkUsdcLedger;
+  ckusdc_ledger : CkUsdcLedger_1;
   space_symbol : opt text;
   space_background : opt text;
   current_wasm_version : nat64;
@@ -100,6 +107,7 @@ service : (SpaceArgs) -> {
   create_task : (CreateTaskArgs) -> (Result_1);
   edit_space : (EditSpaceArgs) -> (Result);
   get_closed_tasks : (GetTasksArgs) -> (Result_2) query;
+  get_config : () -> (Config) query;
   get_current_bytecode_version : () -> (nat64) query;
   get_open_tasks : (GetTasksArgs) -> (Result_2) query;
   get_space_info : () -> (SpaceInfo) query;
