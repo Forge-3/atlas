@@ -1,12 +1,12 @@
 import React from "react";
 
 interface HubCardReversedProps {
-  ambassadorsCount: number;
+  ChampionsCount: number;
   country: string;
 }
 
 const HubCardReversed = ({
-  ambassadorsCount,
+  ChampionsCount,
   country,
 }: HubCardReversedProps) => {
   return (
@@ -27,8 +27,8 @@ const HubCardReversed = ({
         {country}
       </div>
       <div>
-        <div className="text-3xl font-semibold">{ambassadorsCount}</div>
-        <div className="text-xs font-medium">Ambassador</div>
+        <div className="text-3xl font-semibold">{ChampionsCount}</div>
+        <div className="text-xs font-medium">Champion</div>
       </div>
       <div className="w-[94px] h-[94px] rounded-full flex items-center justify-center">
         <img

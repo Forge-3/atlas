@@ -11,9 +11,8 @@ import {
 } from "../../hooks/identityKit.ts";
 import { useSpaceId } from "../../hooks/space.ts";
 import { useDispatch, useSelector } from "react-redux";
-import { customSerify, type RootState } from "../../store/store.ts";
-import { deserify } from "@karmaniverous/serify-deserify";
-import type { Task } from "../../../../declarations/atlas_space/atlas_space.did";
+import { deserialize, type RootState } from "../../store/store.ts";
+import type { Space as SpaceType } from "../../store/slices/spacesSlice.ts";
 
 const SpacePage = () => {
   const dispatch = useDispatch();
@@ -30,13 +29,14 @@ const SpacePage = () => {
     return <></>;
   }
   const spaceId = principal.toString();
-  const space = useSelector(
-    (state: RootState) => state.spaces?.spaces?.[principal.toString()] ?? null
-  );
+  const space =  
+    deserialize<SpaceType>(
+      useSelector(
+        (state: RootState) => state.spaces?.spaces?.[principal.toString()] ?? null
+      )) 
+
   const tasks = space?.tasks
-    ? (deserify(space?.tasks, customSerify) as {
-        [key: string]: Task;
-      })
+    ? (space?.tasks)
     : null;
   const spaceData = space?.state;
 

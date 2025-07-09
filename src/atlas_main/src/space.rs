@@ -1,9 +1,12 @@
 use std::{borrow::Cow, fmt};
 
 use candid::{CandidType, Encode, Principal};
-use ic_cdk::api::management_canister::main::{
-    canister_info, create_canister, install_code, CanisterInfoRequest, CanisterSettings,
-    CreateCanisterArgument, InstallCodeArgument,
+use ic_cdk::{
+    api::cost_create_canister,
+    management_canister::{
+        canister_info, create_canister_with_extra_cycles, install_code, CanisterInfoArgs,
+        CanisterInstallMode, CanisterSettings, CreateCanisterArgs, InstallCodeArgs,
+    },
 };
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor;
@@ -60,22 +63,30 @@ impl Space {
     }
 
     pub async fn create_space(arg: SpaceInitArg, space_type: SpaceType) -> Result<Self, Error> {
-        let mut archive_controllers = vec![ic_cdk::id()];
-        let (info,) = canister_info(CanisterInfoRequest {
-            canister_id: ic_cdk::id(),
+        let self_id = ic_cdk::api::canister_self();
+        let mut archive_controllers = vec![self_id];
+        let info = canister_info(&CanisterInfoArgs {
+            canister_id: self_id,
             num_requested_changes: None,
         })
         .await
-        .map_err(|err| Error::FailedToGetCanisterInfo(format!("{:?}", err)))?;
+        .map_err(|err| Error::FailedToGetCanisterInfo(err.to_string()))?;
 
         if !info.controllers.is_empty() {
             archive_controllers.extend(info.controllers);
         }
         let init_arg = Encode!(&SpaceArgs::InitArg(Box::new(arg)))
-            .map_err(|err| Error::FailedToDecodeArgs(format!("{:?}", err)))?;
+            .map_err(|err| Error::FailedToDecodeArgs(err.to_string()))?;
 
-        let (principal,) = create_canister(
-            CreateCanisterArgument {
+        let owned = ic_cdk::api::canister_cycle_balance();
+        let expected = SPACE_DEFAULT_CYCLES + SPACE_DEFAULT_CYCLES / 2;
+
+        if owned < expected {
+            return Err(Error::NotEnoughCycles { expected, owned });
+        }
+
+        let space_canister = create_canister_with_extra_cycles(
+            &CreateCanisterArgs {
                 settings: Some(CanisterSettings {
                     controllers: Some(archive_controllers.clone()),
                     compute_allocation: None,
@@ -84,23 +95,24 @@ impl Space {
                     reserved_cycles_limit: None,
                     log_visibility: None,
                     wasm_memory_limit: None,
+                    wasm_memory_threshold: None,
                 }),
             },
-            SPACE_DEFAULT_CYCLES,
+            SPACE_DEFAULT_CYCLES - cost_create_canister(),
         )
         .await
-        .map_err(|err| Error::FailedToInitializeCanister(format!("{:?}", err)))?;
+        .map_err(|err| Error::FailedToInitializeCanister(err.to_string()))?;
 
-        install_code(InstallCodeArgument {
-            mode: ic_cdk::api::management_canister::main::CanisterInstallMode::Install,
-            canister_id: principal.canister_id,
+        install_code(&InstallCodeArgs {
+            mode: CanisterInstallMode::Install,
+            canister_id: space_canister.canister_id,
             wasm_module: SPACE_WASM.to_vec(),
             arg: init_arg,
         })
         .await
-        .map_err(|err| Error::FailedToInstallWASM(format!("{:?}", err)))?;
+        .map_err(|err| Error::FailedToInstallWASM(err.to_string()))?;
 
-        Ok(Space::new(principal.canister_id, space_type))
+        Ok(Space::new(space_canister.canister_id, space_type))
     }
 
     pub fn principal(&self) -> Principal {

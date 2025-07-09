@@ -1,22 +1,17 @@
 import type { ActorSubclass } from "@dfinity/agent";
 import type {
   _SERVICE as _SERVICE_MAIN,
-  CandidUser,
   GetSpacesRes,
   Space,
 } from "../../../../declarations/atlas_main/atlas_main.did.js";
 import type { Principal } from "@dfinity/principal";
 import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import {
-  setUserBlockchainData,
-} from "../../store/slices/userSlice.js";
+import { setUserBlockchainData } from "../../store/slices/userSlice.js";
 import { unwrapCall } from "../delegatedCall.js";
 import { setConfig } from "../../store/slices/appSlice.js";
 import { setSpaces } from "../../store/slices/spacesSlice.js";
 import type { ExternalLinks } from "../atlasSpace/types.js";
-import { serify } from "@karmaniverous/serify-deserify";
-import { customSerify } from "../../store/store.js";
 
 interface CreateNewSpaceArgs {
   authAtlasMain: ActorSubclass<_SERVICE_MAIN>;
@@ -71,16 +66,12 @@ export const getAtlasUser = async ({
   });
 
   dispatch(
-    setUserBlockchainData(
-      serify(
-        {
-          ...userData,
-          owned_spaces: Array.from(userData.owned_spaces),
-          belonging_to_spaces: Array.from(userData.owned_spaces),
-        },
-        customSerify
-      ) as CandidUser
-    )
+    setUserBlockchainData({
+      ...userData,
+      in_hub: userData.in_hub.pop() ?? null,
+      owned_spaces: Array.from(userData.owned_spaces),
+      belonging_to_spaces: Array.from(userData.owned_spaces),
+    })
   );
 };
 
@@ -93,7 +84,6 @@ export const getAllSpaces = async ({
   unAuthAtlasMain,
   dispatch,
 }: GetAtlasData) => {
-  const spaces: Space[] = [];
   let spacesCount = 0n;
   let start = 0n;
   const count = 200n;
@@ -105,11 +95,19 @@ export const getAllSpaces = async ({
     call,
     errMsg: "Failed to get data from blockchain",
   });
+
+  const spacesList = res.spaces.reduce((acc, val) => {
+    return {
+      ...acc,
+      [val.id.toString()]: null,
+    };
+  }, {});
+  dispatch(setSpaces(spacesList));
+
   spacesCount = res.spaces_count;
-  spaces.push(...res.spaces);
   start += count;
 
-  while (spacesCount < spaces.length) {
+  while (spacesCount < Object.keys(spacesList).length) {
     const call = unAuthAtlasMain.get_spaces({
       start,
       count,
@@ -118,17 +116,19 @@ export const getAllSpaces = async ({
       call,
       errMsg: "Failed to get data from blockchain",
     });
-    spaces.push(...res.spaces);
+
+    const tempSpacesList = res.spaces.reduce((acc, val) => {
+      return {
+        ...acc,
+        [val.id.toString()]: null,
+      };
+    }, {});
+    dispatch(setSpaces(spacesList));
+    Object.assign(spacesList, tempSpacesList);
+
     start += count;
   }
-  const spacesList = spaces.reduce((acc, val) => {
-    return {
-      ...acc,
-      [val.id.toString()]: null,
-    };
-  }, {});
 
-  dispatch(setSpaces(spacesList));
   return spacesList;
 };
 
@@ -142,7 +142,7 @@ export const getAtlasConfig = async ({
       ...config,
       ckusdc_ledger: {
         fee: config.ckusdc_ledger.fee.pop() ?? null,
-        principal: config.ckusdc_ledger.principal.toText(),
+        principal: config.ckusdc_ledger.principal,
       },
     })
   );
@@ -170,7 +170,7 @@ interface PromoteUserToSpaceLead {
 
 export const promoteUserToSpaceLead = async ({
   authAtlasMain,
-  userId
+  userId,
 }: PromoteUserToSpaceLead) => {
   const call = authAtlasMain.set_user_space_lead(userId);
   await unwrapCall<null>({
@@ -178,7 +178,6 @@ export const promoteUserToSpaceLead = async ({
     errMsg: "Failed to promote user to space lead",
   });
 };
-
 
 interface TransferSpace {
   authAtlasMain: ActorSubclass<_SERVICE_MAIN>;
@@ -189,14 +188,30 @@ interface TransferSpace {
 export const transferSpaceTo = async ({
   authAtlasMain,
   toUserId,
-  spaceId
+  spaceId,
 }: TransferSpace) => {
   const call = authAtlasMain.transfer_space({
     to: toUserId,
-    space_id: spaceId
+    space_id: spaceId,
   });
   await unwrapCall<null>({
     call,
     errMsg: "Failed to transfer space",
+  });
+};
+
+interface UpgradeSpace {
+  authAtlasMain: ActorSubclass<_SERVICE_MAIN>;
+  spaceId: Principal;
+}
+
+export const upgradeSpace = async ({
+  authAtlasMain,
+  spaceId,
+}: UpgradeSpace) => {
+  const call = authAtlasMain.upgrade_space(spaceId);
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to upgrade space",
   });
 };

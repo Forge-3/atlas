@@ -11,6 +11,8 @@ import { authGuard } from "../../hooks/guard";
 import { useNavigate } from "react-router-dom";
 import { selectUserTxs } from "../../store/slices/userSlice";
 import { formatTransactions } from "../../canisters/ckUsdcIndex/transactions";
+import { deserialize } from "../../store/store";
+import type { UserTransactions } from "../../canisters/ckUsdcIndex/types";
 
 interface TransactionHistoryProps {
   tokenSymbol: string;
@@ -21,7 +23,8 @@ const TransactionHistory = ({ tokenSymbol }: TransactionHistoryProps) => {
   const navigate = useNavigate();
   const unAuthCkUsdIndexer = useUnAuthCkUsdcIndexerActor();
   const dispatch = useDispatch();
-  const userTxs = useSelector(selectUserTxs);
+  const userTxs = deserialize<UserTransactions>(useSelector(selectUserTxs));
+  //UserTransactions
   authGuard({
     navigate,
     user,
@@ -38,6 +41,7 @@ const TransactionHistory = ({ tokenSymbol }: TransactionHistoryProps) => {
   // TODO: PAGINATION AND LOAD MORE SPACES
   // TODO: SORTING
   // TODO: ADD COPY OF PRINCIPAL
+  if (!userTxs) return <></>
 
   const transactions = formatTransactions(userTxs).reverse();
   return (

@@ -41,6 +41,8 @@ type Error = variant {
   UserDoNotExist;
   FailedToUpdateCanisterSettings : text;
   UserAlreadyIsHubMember;
+  FailedToParse : text;
+  NotEnoughCycles : record { owned : nat; expected : nat };
   AnonymousCaller;
 };
 type GetSpacesArgs = record { count : nat64; start : nat64 };

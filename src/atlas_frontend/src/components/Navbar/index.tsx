@@ -17,11 +17,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { FiLogOut, FiCopy } from "react-icons/fi";
 import { copy } from "../../utils/shared.ts";
 import { useDispatch, useSelector } from "react-redux";
-import type { RootState } from "../../store/store.ts";
+import { deserialize, type RootState } from "../../store/store.ts";
 import { useUnAuthAtlasMainActor } from "../../hooks/identityKit.ts";
 import {
+  BlockchainUser,
   selectUserBlockchainData,
   selectUserCkUsdc,
+  type StorableUser,
 } from "../../store/slices/userSlice.ts";
 import { getAtlasConfig, getAtlasUser } from "../../canisters/atlasMain/api.ts";
 import {
@@ -36,6 +38,7 @@ import UserIcon from "./UserIcon.tsx";
 import WalletIcon from "../../icons/wallet.svg?react";
 import { FaPlus } from "react-icons/fa";
 import { getCkUsdcBalance } from "../../hooks/balances.ts";
+import type { StorableConfig } from "../../store/slices/appSlice.ts";
 
 const ConnectButton = (props: ConnectWalletButtonProps) => (
   <Button
@@ -59,17 +62,22 @@ const DropdownMenuComponent = ({
   const { user } = useAuth();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const userBlockchainData = useSelector(selectUserBlockchainData);
-  const appConfig = useSelector(
-    (state: RootState) => state.app.blockchainConfig
+  const userBlockchainData = deserialize<StorableUser>(
+    useSelector(selectUserBlockchainData)
   );
+  const userInfo = userBlockchainData
+    ? new BlockchainUser(userBlockchainData)
+    : null;
+  const appConfig = deserialize<StorableConfig>(useSelector(
+    (state: RootState) => state.app.blockchainConfig
+  ));
 
   const copyAccount = () => {
     copy(connectedAccount);
   };
   const disconnectWallet = () => {
     disconnect();
-    window.location.href = "/";
+    navigate("/");
   };
 
   useEffect(() => {
@@ -88,7 +96,7 @@ const DropdownMenuComponent = ({
           unAuthAtlasMain,
         });
       }
-      if (!userBlockchainData) {
+      if (!userInfo) {
         getAtlasUser({
           dispatch,
           userId: user.principal,
@@ -101,14 +109,14 @@ const DropdownMenuComponent = ({
   getCkUsdcBalance({
     dispatch,
   });
-  const userCkUsdc = useSelector(selectUserCkUsdc);
+  const userCkUsdc = deserialize<bigint>(useSelector(selectUserCkUsdc));
   const parsedUserCkUsdc =
     userCkUsdc !== null ? formatUnits(userCkUsdc, DECIMALS) : null;
 
-  const ownedSpacesCount = userBlockchainData?.owned_spaces.length;
+  const ownedSpacesCount = userInfo?.owned_spaces.length;
   const userCanCreateSpace =
-    (userBlockchainData?.isAdmin() ||
-      (userBlockchainData?.isSpaceLead() &&
+    (userInfo?.isAdmin() ||
+      (userInfo?.isSpaceLead() &&
         ownedSpacesCount !== undefined &&
         appConfig?.spaces_per_space_lead !== undefined &&
         ownedSpacesCount < appConfig?.spaces_per_space_lead)) ??
@@ -160,12 +168,12 @@ const DropdownMenuComponent = ({
               onClick={copyAccount}
             >
               <div>Address:</div>
-              <div className="flex items-center justify-center">
-                {shortPrincipal(connectedAccount)} <FiCopy className="ml-2" />
+              <div className="flex items-center justify-center gap-2">
+                {shortPrincipal(connectedAccount)} <FiCopy />
               </div>
             </button>
           </MenuItem>
-          {userBlockchainData?.isAdmin() && (
+          {userInfo?.isAdmin() && (
             <MenuItem>
               <button
                 className="bg-[#1E0F33] font-montserrat font-medium px-4 py-2 rounded-md mt-2 text-center w-full flex items-center justify-center gap-1"
@@ -216,7 +224,7 @@ const Navbar = () => {
     <>
       <div className="sticky top-0 z-30 w-full">
         <div className="py-6 top-0 px-10 rounded-b-xl flex justify-between items-center mx-3 backdrop-blur-lg shadow-lg bg-[#1E0F33]/30">
-          <a className="flex items-center gap-5" href="/">
+          <a className="flex items-center gap-5" onClick={() => navigate("/")}>
             <img
               src="/logos/logo.png"
               alt="Atlas logo"

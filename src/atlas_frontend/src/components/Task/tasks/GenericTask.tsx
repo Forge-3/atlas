@@ -18,6 +18,7 @@ import { useAuthAtlasSpaceActor } from "../../../hooks/identityKit";
 import { useAuth } from "@nfid/identitykit/react";
 import { useDispatch } from "react-redux";
 import type { ActorSubclass } from "@dfinity/agent";
+import { getErrorWithInfoToast } from "../../../utils/errors";
 
 interface GenericTaskProps {
   genericTask: TaskType["GenericTask"];
@@ -77,7 +78,7 @@ const GenericTask = ({
     await toast.promise(call, {
       loading: "Submitting response...",
       success: "Submitted response",
-      error: "Failed to submit response",
+      error: getErrorWithInfoToast("Failed to submit response."),
     });
 
     setSubmission(false);

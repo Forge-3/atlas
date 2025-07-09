@@ -2,9 +2,7 @@ import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSpaceId } from "../../hooks/space";
 import { useDispatch, useSelector } from "react-redux";
-import { customSerify, type RootState } from "../../store/store";
-import { deserify } from "@karmaniverous/serify-deserify";
-import type { Task as TaskType } from "../../../../declarations/atlas_space/atlas_space.did";
+import { deserialize, type RootState } from "../../store/store";
 import { useEffect } from "react";
 import {
   useAuthAtlasMainActor,
@@ -20,23 +18,35 @@ import {
 import GenericTask from "./tasks/GenericTask";
 import { FaWallet } from "react-icons/fa";
 import { useAuth } from "@nfid/identitykit/react";
-import { selectUserBlockchainData } from "../../store/slices/userSlice";
+import {
+  BlockchainUser,
+  selectUserBlockchainData,
+  type StorableUser,
+} from "../../store/slices/userSlice";
 import Button from "../Shared/Button";
-import { getSubmissionsPath } from "../../router/paths";
+import { getSpacePath, getSubmissionsPath } from "../../router/paths";
 import {
   getUsersSubmissions,
   UserSubmissions,
 } from "../../canisters/atlasSpace/tasks";
 import toast from "react-hot-toast";
 import { getAtlasUser, joinAtlasSpace } from "../../canisters/atlasMain/api";
+import type { Space } from "../../store/slices/spacesSlice";
+import { FaArrowLeftLong } from "react-icons/fa6";
+import { getErrorWithInfoToast } from "../../utils/errors";
 
 const Task = () => {
   const { spacePrincipal, taskId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const userBlockchainData = useSelector(selectUserBlockchainData);
-  const inHub = userBlockchainData?.in_hub ?? null;
+  const userBlockchainData = deserialize<StorableUser>(
+    useSelector(selectUserBlockchainData)
+  );
+  const userInfo = userBlockchainData
+    ? new BlockchainUser(userBlockchainData)
+    : null;
+  const inHub = userInfo?.in_hub ?? null;
   const authAtlasMain = useAuthAtlasMainActor();
   const unAuthAtlasMain = useUnAuthAtlasMainActor();
   const parsedSpacePrincipal = useSpaceId({
@@ -46,14 +56,10 @@ const Task = () => {
   if (!parsedSpacePrincipal) return <></>;
   const spaceId = parsedSpacePrincipal.toString();
   const authAtlasSpace = useAuthAtlasSpaceActor(parsedSpacePrincipal);
-  const space = useSelector(
-    (state: RootState) => state.spaces?.spaces?.[spaceId] ?? null
+  const space = deserialize<Space>(
+    useSelector((state: RootState) => state.spaces?.spaces?.[spaceId] ?? null)
   );
-  const tasks = space?.tasks
-    ? (deserify(space?.tasks, customSerify) as {
-        [key: string]: TaskType;
-      })
-    : null;
+  const tasks = space?.tasks ? space?.tasks : null;
   const spaceData = space?.state;
   const unAuthAtlasSpace = useUnAuthAtlasSpaceActor(parsedSpacePrincipal);
   const isUserInHub = inHub?.id.toString() === spacePrincipal;
@@ -104,13 +110,13 @@ const Task = () => {
       {
         loading: "Withdrawing funds...",
         success: "Funds withdrawn successfully.",
-        error: "Failed to withdraw funds",
+        error: getErrorWithInfoToast("Failed to withdraw funds."),
       }
     );
   };
 
   const didUserCanAdministrate =
-    userBlockchainData?.canAdministrate(parsedSpacePrincipal) ?? false;
+    userInfo?.canAdministrate(parsedSpacePrincipal) ?? false;
 
   const joinSpace = async () => {
     if (!authAtlasMain || !unAuthAtlasMain || !user) {
@@ -124,7 +130,7 @@ const Task = () => {
       {
         loading: "Trying to join space...",
         success: "Successfully joined to space",
-        error: "Failed to join to space",
+        error: getErrorWithInfoToast("Failed to join to space."),
       }
     );
     getAtlasUser({
@@ -137,19 +143,30 @@ const Task = () => {
   return (
     <div className="container mx-auto my-4">
       <div className="w-full px-3">
-        <div className="my-4 flex justify-end gap-2">
-          {!didUserCanAdministrate && userBlockchainData && !inHub && (
-            <Button onClick={joinSpace}>Join space</Button>
-          )}
-          {didUserCanAdministrate && (
+        <div className="flex justify-between my-4">
+          <div className="flex justify-start gap-2">
             <Button
-              onClick={() =>
-                navigate(getSubmissionsPath(parsedSpacePrincipal, taskId))
-              }
+              light
+              className="flex gap-2"
+              onClick={() => navigate(getSpacePath(parsedSpacePrincipal))}
             >
-              Review submission
+              <FaArrowLeftLong /> Back
             </Button>
-          )}
+          </div>
+          <div className="flex justify-end gap-2">
+            {!didUserCanAdministrate && userBlockchainData && !inHub && (
+              <Button onClick={joinSpace}>Join space</Button>
+            )}
+            {didUserCanAdministrate && (
+              <Button
+                onClick={() =>
+                  navigate(getSubmissionsPath(parsedSpacePrincipal, taskId))
+                }
+              >
+                Review submission
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="relative w-full rounded-xl bg-[#1E0F33]/60 mb-1">

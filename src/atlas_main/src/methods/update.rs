@@ -2,16 +2,15 @@ use std::collections::BTreeMap;
 
 use candid::Nat;
 use candid::{CandidType, Encode, Principal};
-use ic_cdk::{
-    api::management_canister::main::{CanisterInstallMode, InstallCodeArgument},
-    update,
-};
+use ic_cdk::call::Call;
+use ic_cdk::management_canister::{install_code, CanisterInstallMode, InstallCodeArgs};
+use ic_cdk::update;
 use serde::Deserialize;
 use shared::{SpaceArgs, SpaceInitArg};
 
 use crate::{
     errors::Error,
-    guard::{admin_or_space_lead_guard, authenticated_guard},
+    guard::authenticated_guard,
     memory,
     space::{self, Space, SpaceType},
     user::{Rank, User},
@@ -114,7 +113,9 @@ pub async fn create_new_space(
 
 #[update]
 pub async fn upgrade_space(space_id: Principal) -> Result<(), Error> {
-    let (_, user) = admin_or_space_lead_guard()?;
+    let caller = authenticated_guard()?;
+    let user = memory::user_rank_match(&caller, &[Rank::Admin, Rank::SuperAdmin, Rank::SpaceLead])?;
+
     if user.rank() == &Rank::SpaceLead {
         let owned_spaces: Vec<_> = user
             .owned_spaces()
@@ -132,13 +133,15 @@ pub async fn upgrade_space(space_id: Principal) -> Result<(), Error> {
 
     let current_bytecode_version = super::query::get_current_space_bytecode_version();
     let current_space_bytecode_version =
-        ic_cdk::call::<((),), (u64,)>(space_id, "get_current_bytecode_version", ((),))
+        Call::bounded_wait(space_id, "get_current_bytecode_version")
+            .with_args(&())
             .await
             .map_err(|err| Error::FailedToCallSpace {
-                err: format!("{:?}", err),
+                err: err.to_string(),
                 principal: space_id,
             })?
-            .0;
+            .candid::<u64>()
+            .map_err(|err| Error::FailedToParse(err.to_string()))?;
 
     if current_bytecode_version == current_space_bytecode_version {
         return Ok(());
@@ -155,18 +158,17 @@ pub async fn upgrade_space(space_id: Principal) -> Result<(), Error> {
             space::get_space_bytecode_by_version(version).expect("Bytecode version do not exist?!");
 
         let arg = Some(SpaceArgs::UpgradeArg { version });
-        let args = InstallCodeArgument {
+        install_code(&InstallCodeArgs {
             mode: CanisterInstallMode::Upgrade(None),
             canister_id: space_id,
             wasm_module: next_bytecode,
             arg: Encode!(&arg).expect("Failed to decode args"),
-        };
-        ic_cdk::api::management_canister::main::install_code(args)
-            .await
-            .unwrap();
+        })
+        .await
+        .unwrap();
         ic_cdk::println!(
             "Successfully upgraded {} to version {}",
-            ic_cdk::id(),
+            ic_cdk::api::canister_self(),
             version
         );
     }
@@ -251,9 +253,12 @@ pub async fn transfer_space(args: TransferSpace) -> Result<(), Error> {
         Ok(user)
     })?;
 
-    ic_cdk::call::<(Principal,), ()>(args.space_id, "transfer_space", ((args.to),))
+    Call::bounded_wait(args.space_id, "transfer_space")
+        .with_arg(args.to)
         .await
-        .expect("Failed to transfer space");
+        .expect("Failed to transfer space")
+        .candid::<()>()
+        .expect("Failed to read response");
 
     Ok(())
 }

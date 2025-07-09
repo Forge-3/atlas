@@ -61,7 +61,7 @@ pub fn read_config<R>(f: impl FnOnce(&Config) -> R) -> R {
 pub fn set_config(config: Config) -> Result<(), Error> {
     CONFIG
         .with_borrow_mut(|users| users.set(Some(config)))
-        .map_err(|err| Error::FailedToUpdateConfig(format!("{:?}", err)))?;
+        .map_err(|err| Error::FailedToUpdateConfig(format!("{err:?}")))?;
     Ok(())
 }
 
@@ -83,7 +83,7 @@ pub fn read_state<R>(f: impl FnOnce(&State) -> R) -> R {
 pub fn set_state(state: State) -> Result<(), Error> {
     STATE
         .with_borrow_mut(|users| users.set(state))
-        .map_err(|err| Error::FailedToUpdateConfig(format!("{:?}", err)))?;
+        .map_err(|err| Error::FailedToUpdateConfig(format!("{err:?}")))?;
     Ok(())
 }
 
@@ -140,7 +140,7 @@ pub fn get_open_tasks_len() -> u64 {
 }
 
 // Closed task methods
-
+#[allow(dead_code)]
 pub fn insert_closed_task(task_id: TaskId, new_task: Task) -> Result<(), Error> {
     CLOSED_TASKS_MAP.with_borrow_mut(|tasks| {
         if tasks.contains_key(&task_id) {

@@ -37,6 +37,7 @@ export const idlFactory = ({ IDL }) => {
     'SubtaskDoNotExists' : IDL.Nat64,
     'NotOwner' : IDL.Null,
     'FailedToTransfer' : IDL.Text,
+    'FailedToParse' : IDL.Text,
     'InvalidTaskContent' : IDL.Text,
     'TaskDoNotExists' : IDL.Nat64,
     'AnonymousCaller' : IDL.Null,
@@ -107,6 +108,7 @@ export const idlFactory = ({ IDL }) => {
     'tasks_count' : IDL.Nat64,
     'space_description' : IDL.Text,
   });
+  const SpaceInfo = IDL.Record({ 'version' : IDL.Nat64, 'state' : State });
   const WalletReceiveResult = IDL.Record({ 'accepted' : IDL.Nat64 });
   return IDL.Service({
     'accept_subtask_submission' : IDL.Func(
@@ -119,6 +121,7 @@ export const idlFactory = ({ IDL }) => {
     'get_closed_tasks' : IDL.Func([GetTasksArgs], [Result_2], ['query']),
     'get_current_bytecode_version' : IDL.Func([], [IDL.Nat64], ['query']),
     'get_open_tasks' : IDL.Func([GetTasksArgs], [Result_2], ['query']),
+    'get_space_info' : IDL.Func([], [SpaceInfo], ['query']),
     'get_state' : IDL.Func([], [State], ['query']),
     'reject_subtask_submission' : IDL.Func(
         [IDL.Principal, IDL.Nat64, IDL.Nat64],

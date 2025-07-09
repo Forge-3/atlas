@@ -6,7 +6,7 @@ const EarnRewards = () => {
     <div className="rounded-2xl w-full flex justify-between my-8 bg-cover bg-[url(/reward-bg-img.png)] font-montserrat [mix-blend-mode:luminosity]">
       <div className="flex flex-col justify-end px-5 mb-4 py-6">
         <h2 className="font-semibold md:text-2xl dlg:text-3xl dxl:text-4xl text-white ">
-          Earn rewards by being ICP Ambassador
+          Earn rewards by being ICP Champion
         </h2>
       </div>
       <div className="flex w-[65%] justify-end items-center">

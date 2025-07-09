@@ -9,8 +9,6 @@ import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import { appendUserTxs, setCkUsdcBalance } from "../../store/slices/userSlice.js";
 import type { UserTransactions } from "./types.js";
-import { serify } from "@karmaniverous/serify-deserify";
-import { customSerify } from "../../store/store.js";
 
 interface GetUserTransactionsArgs {
   unAuthCkUsdIndexer: ActorSubclass<_SERVICE>;
@@ -47,6 +45,6 @@ export const getUserTransactions = async ({
       [val.id.toString()]: val.transaction,
     };
   }, {});
-  dispatch(appendUserTxs(serify(txs, customSerify) as UserTransactions));
+  dispatch(appendUserTxs(txs));
 };
 

@@ -15,6 +15,7 @@ import { useAuth } from "@nfid/identitykit/react";
 import WalletAddressInputForm from "../components/Shared/WalletAddressInputForm";
 import { getAtlasUser, transferSpaceTo } from "../canisters/atlasMain/api";
 import { Principal } from "@dfinity/principal";
+import { getErrorWithInfoToast } from "../utils/errors";
 
 interface CreateNewTaskFormInput {
   principal: string;
@@ -69,7 +70,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     await toast.promise(call, {
       loading: "Trying to transfer space",
       success: "Successfully transferred space",
-      error: "Failed transfer space",
+      error: getErrorWithInfoToast("Failed transfer space:"),
     });
     await getAtlasUser({
       unAuthAtlasMain,

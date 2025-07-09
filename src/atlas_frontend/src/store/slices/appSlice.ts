@@ -1,10 +1,9 @@
-import { deserify } from "@karmaniverous/serify-deserify";
+import type { Principal } from "@dfinity/principal";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { customSerify } from "../store";
+import { type Config } from "../../../../declarations/atlas_main/atlas_main.did.js"
 
-export interface StorableConfig {
-  spaces_per_space_lead: number;
-  ckusdc_ledger: { fee: bigint | null; principal: string };
+export interface StorableConfig extends Omit<Config, "ckusdc_ledger"> {
+  ckusdc_ledger: { fee: bigint | null; principal: Principal };
 }
 
 interface AppState {
@@ -30,7 +29,7 @@ export const appSlice = createSlice({
   },
   selectors: {
     selectBlockchainConfig: (state: AppState) => {
-      if (state.blockchainConfig) return deserify(state.blockchainConfig, customSerify) as StorableConfig
+      if (state.blockchainConfig) return state.blockchainConfig
       return null
     }
   }

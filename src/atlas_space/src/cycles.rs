@@ -9,17 +9,17 @@ pub struct WalletReceiveResult {
 
 #[query]
 pub fn wallet_balance() -> Nat {
-    Nat::from(ic_cdk::api::canister_balance128())
+    Nat::from(ic_cdk::api::canister_cycle_balance())
 }
 
 #[update]
 pub fn wallet_receive() -> WalletReceiveResult {
-    let available = ic_cdk::api::call::msg_cycles_available128();
+    let available = ic_cdk::api::msg_cycles_available();
 
     if available == 0 {
         return WalletReceiveResult { accepted: 0 };
     }
-    let accepted = ic_cdk::api::call::msg_cycles_accept128(available);
+    let accepted = ic_cdk::api::msg_cycles_accept(available);
     assert!(accepted == available);
     WalletReceiveResult {
         accepted: accepted as u64,

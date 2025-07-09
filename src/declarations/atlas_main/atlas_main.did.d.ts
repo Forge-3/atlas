@@ -47,6 +47,8 @@ export type Error = { 'UserRankNoMatch' : Array<Rank> } |
   { 'UserDoNotExist' : null } |
   { 'FailedToUpdateCanisterSettings' : string } |
   { 'UserAlreadyIsHubMember' : null } |
+  { 'FailedToParse' : string } |
+  { 'NotEnoughCycles' : { 'owned' : bigint, 'expected' : bigint } } |
   { 'AnonymousCaller' : null };
 export interface GetSpacesArgs { 'count' : bigint, 'start' : bigint }
 export interface GetSpacesRes {
