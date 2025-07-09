@@ -85,7 +85,7 @@ export const createNewTask = async ({
     number_of_uses: numberOfUses,
   });
 
-  return await unwrapCall<bigint>({
+  return unwrapCall<bigint>({
     call,
     errMsg: "Failed to create new task",
   });

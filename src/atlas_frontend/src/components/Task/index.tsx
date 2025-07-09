@@ -33,6 +33,7 @@ import toast from "react-hot-toast";
 import { getAtlasUser, joinAtlasSpace } from "../../canisters/atlasMain/api";
 import type { Space } from "../../store/slices/spacesSlice";
 import { FaArrowLeftLong } from "react-icons/fa6";
+import { getErrorWithInfoToast } from "../../utils/errors";
 
 const Task = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -109,7 +110,7 @@ const Task = () => {
       {
         loading: "Withdrawing funds...",
         success: "Funds withdrawn successfully.",
-        error: "Failed to withdraw funds",
+        error: getErrorWithInfoToast("Failed to withdraw funds."),
       }
     );
   };
@@ -129,7 +130,7 @@ const Task = () => {
       {
         loading: "Trying to join space...",
         success: "Successfully joined to space",
-        error: "Failed to join to space",
+        error: getErrorWithInfoToast("Failed to join to space."),
       }
     );
     getAtlasUser({

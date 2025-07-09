@@ -27,6 +27,7 @@ import {
 } from "../../hooks/identityKit.ts";
 import { getAtlasUser, joinAtlasSpace } from "../../canisters/atlasMain/api.ts";
 import TransferSpaceModal from "../../modals/TransferSpaceModal.tsx";
+import { getErrorWithInfoToast } from "../../utils/errors.ts";
 
 interface TasksListProps {
   tasks: Tasks;
@@ -141,7 +142,7 @@ const Space = ({
       {
         loading: "Trying to join space...",
         success: "Successfully joined to space",
-        error: "Failed to join to space",
+        error: getErrorWithInfoToast("Failed to join to space."),
       }
     );
     await getAtlasUser({

@@ -15,6 +15,7 @@ import {
 import { useDispatch } from "react-redux";
 import { useAuth } from "@nfid/identitykit/react";
 import toast from "react-hot-toast";
+import { getErrorWithInfoToast } from "../utils/errors";
 
 interface JoinSpaceModalArgs {
   callback: () => void;
@@ -50,7 +51,7 @@ const JoinSpaceModal = ({
   {
     loading: "Trying to join space...",
     success: "Successfully joined to space",
-    error: "Failed to join to space",
+    error: getErrorWithInfoToast("Failed to join to space"),
   });
     getAtlasUser({
       unAuthAtlasMain,

@@ -30,6 +30,7 @@ import { Principal } from "@dfinity/principal";
 import { deserialize, type RootState } from "../../store/store.ts";
 import { editSpace, getAtlasSpace } from "../../canisters/atlasSpace/api.ts";
 import type { Space } from "../../store/slices/spacesSlice.ts";
+import { getErrorWithInfoToast } from "../../utils/errors.ts";
 
 const MAX_FILE_SIZE = 5_000_000;
 const MAX_DESCRIPTION_LEN = 128;
@@ -222,7 +223,7 @@ const SpaceBuilder = () => {
       await toast.promise(editSpaceCall, {
         loading: "Updating space data...",
         success: "Space updated successfully",
-        error: "Failed to update space",
+        error: getErrorWithInfoToast("Failed to update space."),
       });
       await getAtlasSpace({
         spaceId: parsedSpacePrincipal.toString(),
@@ -230,7 +231,6 @@ const SpaceBuilder = () => {
         dispatch,
       });
 
-      console.log(123, spaceData);
       if (user?.principal && unAuthAtlasMain) {
         getAtlasUser({
           dispatch,
@@ -252,7 +252,7 @@ const SpaceBuilder = () => {
       const space = await toast.promise(createSpaceCall, {
         loading: "Creating new space...",
         success: "Space created successfully",
-        error: "Failed to create space",
+        error: getErrorWithInfoToast("Failed to create space."),
       });
       if (user?.principal && unAuthAtlasMain) {
         getAtlasUser({

@@ -27,6 +27,9 @@ import type { StorableConfig } from "../store/slices/appSlice";
 import { shortPrincipal } from "../utils/icp";
 import { getAtlasSpace } from "../canisters/atlasSpace/api";
 import type { Spaces } from "../store/slices/spacesSlice";
+import { copy } from "../utils/shared";
+import { FiCopy } from "react-icons/fi";
+import { getErrorWithInfoToast } from "../utils/errors";
 
 interface AdminFormInput {
   principal: string;
@@ -108,7 +111,7 @@ const Admin = () => {
     await toast.promise(call, {
       loading: "Promoting user to space lead...",
       success: "Successfully promoted user",
-      error: "Failed promote user",
+      error: getErrorWithInfoToast("Failed promote user."),
     });
   };
 
@@ -123,7 +126,7 @@ const Admin = () => {
     await toast.promise(call, {
       loading: "Upgrading space...",
       success: "Successfully upgraded space",
-      error: "Failed to upgrade space",
+      error: getErrorWithInfoToast("Failed to upgrade space."),
     });
     const unAuthAtlasSpace = getUnAuthAtlasSpaceActor(agent, spacePrincipal);
     if (!unAuthAtlasSpace) return;
@@ -132,6 +135,9 @@ const Admin = () => {
       unAuthAtlasSpace,
       dispatch,
     });
+  };
+  const copyAccount = (spacePrincipal: string) => {
+    copy(spacePrincipal);
   };
 
   return (
@@ -196,7 +202,10 @@ const Admin = () => {
               {Object.entries(spaces ?? {}).map(
                 ([spacePrincipal, spaceData]) => (
                   <tr key={spacePrincipal}>
-                    <td>{shortPrincipal(spacePrincipal)}</td>
+                    <td className="flex items-center justify-center gap-2" onClick={() => copyAccount(spacePrincipal)}>
+                      {shortPrincipal(spacePrincipal)}{" "}
+                      <FiCopy />
+                    </td>
                     <td>
                       {spaceData?.state ? spaceData.state.space_name : "N/A"}
                     </td>
@@ -207,7 +216,7 @@ const Admin = () => {
                     </td>
                     <td className="flex items-center justify-center">
                       {(spaceData?.state?.version ?? 0n) <
-                        (appConfig?.current_space_version ?? 0n) ? (
+                      (appConfig?.current_space_version ?? 0n) ? (
                         <Button
                           onClick={() =>
                             upgradeSpecificSpace(Principal.from(spacePrincipal))
@@ -215,7 +224,9 @@ const Admin = () => {
                         >
                           Upgrade
                         </Button>
-                      ) : "Up to date"}
+                      ) : (
+                        "Up to date"
+                      )}
                     </td>
                   </tr>
                 )

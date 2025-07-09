@@ -168,8 +168,8 @@ const DropdownMenuComponent = ({
               onClick={copyAccount}
             >
               <div>Address:</div>
-              <div className="flex items-center justify-center">
-                {shortPrincipal(connectedAccount)} <FiCopy className="ml-2" />
+              <div className="flex items-center justify-center gap-2">
+                {shortPrincipal(connectedAccount)} <FiCopy />
               </div>
             </button>
           </MenuItem>
