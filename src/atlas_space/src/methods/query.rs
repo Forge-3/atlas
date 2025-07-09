@@ -8,8 +8,10 @@ use crate::{
     errors::Error,
     memory,
     state::State,
-    task::{Task, TaskId, ClosedTask},
 };
+use crate::task::task::{Task};
+use crate::task::closed_task::{ClosedTask};
+use crate::task::task_types::TaskId;
 
 const MAX_TASKS_PER_RESPONSE: u8 = 200;
 

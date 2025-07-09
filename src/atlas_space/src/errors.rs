@@ -2,7 +2,9 @@ use candid::CandidType;
 use serde::Deserialize;
 use thiserror::Error;
 
-use crate::task::TaskId;
+use crate::task::task_types::TaskId;
+
+
 
 #[derive(Clone, PartialEq, Debug, CandidType, Deserialize, Error)]
 pub enum Error {

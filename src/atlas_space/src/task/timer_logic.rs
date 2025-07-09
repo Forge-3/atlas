@@ -1,13 +1,13 @@
 use ic_cdk_timers::set_timer;
 use std::time::Duration;
-use crate::task::TaskId;
 use crate::memory::{with_open_tasks_iter, mut_open_task, remove_open_task, insert_closed_task, get_open_task};
 use crate::errors::Error;
 use ic_cdk_timers::TimerId;
-use crate::task::ClosedTask;
 use sha2::Digest;
 use ic_stable_structures::Storable;
-use crate::task::Task;
+use crate::task::task::{Task};
+use crate::task::closed_task::{ClosedTask};
+use crate::task::task_types::TaskId;
 
 pub async fn reinitialize_task_timers_after_upgrade() {
     ic_cdk::println!("Reinitialize timers for tasks");
@@ -30,7 +30,7 @@ pub async fn reinitialize_task_timers_after_upgrade() {
             }
         }
 
-        let end_time = task.end_time();
+        let end_time = task.end_time;
         let delay_sec = end_time.saturating_sub(now_sec);
         let timer_id = set_timer(Duration::from_secs(delay_sec), {
             let id = task_id.clone();
@@ -41,7 +41,7 @@ pub async fn reinitialize_task_timers_after_upgrade() {
 
         let _ = mut_open_task(task_id.clone(), |maybe_task| {
             if let Some(t) = maybe_task.as_mut() {
-                t.set_timer_id(timer_id.into());
+                t.timer_id = Some(timer_id.into());
             }
             Ok::<(), Error>(())
         });
@@ -64,7 +64,7 @@ pub fn schedule_close_task_timer(task_id: TaskId, end_time_sec: u64) -> TimerId 
 
 pub async fn close_task(task_id: TaskId) -> Result<(), Error> {
     let task = remove_open_task(&task_id)?;
-    if let Some(timer_key_data) = task.timer_id() {
+    if let Some(timer_key_data) = &task.timer_id {
         match TimerId::try_from(timer_key_data.clone()) {
             Ok(timer_id) => ic_cdk_timers::clear_timer(timer_id),
             Err(e) => return Err(e),

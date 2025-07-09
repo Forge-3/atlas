@@ -3,12 +3,16 @@ use crate::{
     guard::{parent_or_owner_or_admin_guard, user_is_in_space, authenticated_guard},
     memory,
     state::EditSpaceArgs,
-    task::{submission::Submission, CreateTaskArgs, Task, TaskId, timer_logic},
 };
 use candid::{Principal};
 use ic_cdk::update;
 use ic_stable_structures::Storable;
 use sha2::Digest;
+use crate::CreateTaskArgs;
+use crate::TaskId;
+use crate::Submission;
+use crate::task::timer_logic;
+use crate::task::task::Task;
 
 #[update]
 pub async fn set_space_name(name: String) -> Result<(), Error> {
@@ -160,7 +164,7 @@ pub async fn force_close_task(task_id: TaskId) -> Result<(), Error> {
     let caller = authenticated_guard()?;
     let task = memory::get_open_task(&task_id).ok_or(Error::TaskDoNotExists(task_id))?;
 
-    if caller != *task.creator() {
+    if caller != task.creator {
         parent_or_owner_or_admin_guard().await?;
     }
     timer_logic::close_task(task_id).await?;
