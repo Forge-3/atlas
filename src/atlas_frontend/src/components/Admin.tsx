@@ -46,7 +46,6 @@ const Admin = () => {
   const appConfig = deserialize<StorableConfig>(
     useSelector((state: RootState) => state.app.blockchainConfig)
   );
-  console.log(appConfig);
   const spaces = deserialize<Spaces>(
     useSelector((state: RootState) => state.spaces.spaces)
   );

@@ -75,6 +75,13 @@ pub fn get_user(user_id: &Principal) -> Option<User> {
     USERS_MAP.with_borrow(|users| users.get(user_id))
 }
 
+pub fn with_users_iter<F, R>(f: F) -> R
+where
+    F: for<'a> FnOnce(Box<dyn Iterator<Item = (candid::Principal, User)> + 'a>) -> R,
+{
+    USERS_MAP.with_borrow(|users| f(Box::new(users.iter())))
+}
+
 // Config state methods
 
 pub fn read_config<R>(f: impl FnOnce(&Config) -> R) -> R {

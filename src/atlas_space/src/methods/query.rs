@@ -5,6 +5,7 @@ use ic_cdk::query;
 use serde::Deserialize;
 
 use crate::{
+    config::Config,
     errors::Error,
     memory,
     state::State,
@@ -25,6 +26,11 @@ pub fn get_space_info() -> SpaceInfo {
         version: memory::read_config(|config| config.current_wasm_version),
         state: memory::read_state(|state| state.clone()),
     }
+}
+
+#[query]
+pub fn get_config() -> Config {
+    memory::read_config(|config| config.clone())
 }
 
 #[query]

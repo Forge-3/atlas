@@ -114,7 +114,6 @@ export interface _SERVICE {
   'set_user_admin' : ActorMethod<[Principal], Result_2>,
   'set_user_space_lead' : ActorMethod<[Principal], Result_2>,
   'transfer_space' : ActorMethod<[TransferSpace], Result_2>,
-  'unlock_space_creation' : ActorMethod<[Principal], Result_2>,
   'upgrade_space' : ActorMethod<[Principal], Result_2>,
   'user_is_admin' : ActorMethod<[Principal], boolean>,
   'user_is_in_hub' : ActorMethod<[Principal], boolean>,
