@@ -15,7 +15,7 @@ const sections = [
 const Help = () => {
   return (
     <div className="container mx-auto my-12 flex gap-6 scroll-smooth">
-      <aside className="w-64 sticky top-12 h-fit bg-gradient-to-b from-[#1E0F33]/80 to-[#9173FF]/10 text-white p-4 rounded-xl font-montserrat font-medium top-28">
+      <aside className="w-48 md:w-64 sticky top-12 h-fit bg-gradient-to-b from-[#1E0F33]/80 to-[#9173FF]/10 text-white p-4 rounded-xl font-montserrat font-medium top-28 text-sm md:text-base">
         <ul className="space-y-2">
           {sections.map((section) => (
             <li key={section.id}>

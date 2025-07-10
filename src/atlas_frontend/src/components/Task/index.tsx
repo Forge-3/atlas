@@ -143,22 +143,23 @@ const Task = () => {
   return (
     <div className="container mx-auto my-4">
       <div className="w-full px-3">
-        <div className="flex justify-between my-4">
-          <div className="flex justify-start gap-2">
+        <div className="w-full flex flex-col gap-2 md:flex-row md:flex-none md:w-auto md:gap-none my-4 md:justify-between">
+          <div className="flex">
             <Button
               light
-              className="flex gap-2"
+              className="flex-1 gap-2 md:flex-none"
               onClick={() => navigate(getSpacePath(parsedSpacePrincipal))}
             >
               <FaArrowLeftLong /> Back
             </Button>
           </div>
-          <div className="flex justify-end gap-2">
+          <div className="flex md:flex-none">
             {!didUserCanAdministrate && userBlockchainData && !inHub && (
-              <Button onClick={joinSpace}>Join space</Button>
+              <Button className="flex-1 md:flex-none" onClick={joinSpace}>Join space</Button>
             )}
             {didUserCanAdministrate && (
               <Button
+                className="flex-1 md:flex-none"
                 onClick={() =>
                   navigate(getSubmissionsPath(parsedSpacePrincipal, taskId))
                 }
@@ -170,29 +171,29 @@ const Task = () => {
         </div>
 
         <div className="relative w-full rounded-xl bg-[#1E0F33]/60 mb-1">
-          <div className="px-16 py-12">
+          <div className=" px-2 py-2 md:px-16 md:py-12">
             <div className="flex items-center gap-4">
               <div className="bg-white flex rounded-2xl w-fit h-fit flex-none">
                 {spaceData.space_logo ? (
                   <img
                     src={spaceData.space_logo}
                     draggable="false"
-                    className="rounded-2xl m-1 w-16 h-16"
+                    className="rounded-2xl m-0.5 w-12 h-12 md:w-16 md:h-16"
                   />
                 ) : (
-                  <div className="bg-[#4A0295] rounded-3xl m-1 w-16 h-16"></div>
+                  <div className="bg-[#4A0295] rounded-2xl m-0.5 w-12 h-12 md:w-16 md:h-16"></div>
                 )}
               </div>
               <div>
-                <h2 className="text-3xl font-semibold font-montserrat flex text-white">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold font-montserrat flex text-white">
                   {spaceData?.space_name}
                 </h2>
               </div>
             </div>
             <div className="mx-2">
-              <div className="h-1 w-full bg-white/20 mt-6 mb-8 rounded-full"></div>
+              <div className="h-1 w-full bg-white/20 mt-3 mb-4 md:mt-6 md:mb-8 rounded-full"></div>
               <div>
-                <h2 className="text-4xl font-semibold font-montserrat flex text-white">
+                <h2 className="text-xl sm:text-3xl md:text-4xl font-semibold font-montserrat flex text-white">
                   {currentTask.task_title}
                 </h2>
                 <div className="mt-6">
@@ -209,8 +210,8 @@ const Task = () => {
                   ))}
                 </div>
                 <div className="flex mt-3 items-center justify-center">
-                  <div className="mr-4">
-                    <div className="bg-[#1E0F33] p-1 w-[32px] h-[32px] rounded-lg relative">
+                  <div className="mr-3 md:mr-4">
+                    <div className="bg-[#1E0F33] p-2 mx-[1px] md:mx-[0px] w-[16px] h-[16px] md:w-[32px] md:h-[32px] rounded md:rounded-lg relative">
                       {isAccepted && (
                         <img
                           src="/icons/check-in-box.svg"
@@ -219,7 +220,7 @@ const Task = () => {
                       )}
                     </div>
                   </div>
-                  <div className="bg-[#9173FF] rounded-xl p-6 text-lg font-medium font-poppins w-full flex items-center justify-between">
+                  <div className="bg-[#9173FF] rounded-xl p-2 mb-2 md:p-6 sm:base md:text-lg md:font-medium font-poppins w-full flex items-center justify-between">
                     <div>Reward</div>
                     <FaWallet color="1E0F33" />
                   </div>
