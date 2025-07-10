@@ -1,6 +1,8 @@
 import type { ActorSubclass } from "@dfinity/agent";
 import type {
   _SERVICE,
+  BlockIndex,
+  TransferResult,
 } from "../../../../declarations/ckusdc_ledger_canister/ckusdc_ledger_canister.did";
 import type { Principal } from "@dfinity/principal";
 import { unwrapCall } from "../delegatedCall";
@@ -55,7 +57,7 @@ export const setUserSpaceAllowance = async ({
       subaccount: [],
     },
   });
-  await unwrapCall<bigint>({
+  return unwrapCall<BlockIndex>({
     call,
     errMsg: "Failed to set allowance",
   });
@@ -122,7 +124,7 @@ export const transferToPrincipal = async ({
   userPrincipal,
   amount
 }: TransferToPrincipalArgs) => {
-  return authCkUsdc.icrc1_transfer({
+  const call = authCkUsdc.icrc1_transfer({
     to: {
       owner: userPrincipal,
       subaccount: []
@@ -132,6 +134,11 @@ export const transferToPrincipal = async ({
     from_subaccount: [],
     created_at_time: [],
     amount
+  });
+
+  return unwrapCall<BlockIndex>({
+    call,
+    errMsg: "Failed to set allowance",
   });
 };
 

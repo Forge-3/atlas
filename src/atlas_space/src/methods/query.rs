@@ -4,16 +4,31 @@ use candid::CandidType;
 use ic_cdk::query;
 use serde::Deserialize;
 
-use crate::{
-    errors::Error,
-    memory,
-    state::State,
-};
-use crate::task::task::{Task};
-use crate::task::closed_task::{ClosedTask};
+use crate::task::closed_task::ClosedTask;
+use crate::task::task::Task;
 use crate::task::task_types::TaskId;
+use crate::{config::Config, errors::Error, memory, state::State};
 
 const MAX_TASKS_PER_RESPONSE: u8 = 200;
+
+#[derive(Debug, CandidType)]
+pub struct SpaceInfo {
+    version: u64,
+    state: State,
+}
+
+#[query]
+pub fn get_space_info() -> SpaceInfo {
+    SpaceInfo {
+        version: memory::read_config(|config| config.current_wasm_version),
+        state: memory::read_state(|state| state.clone()),
+    }
+}
+
+#[query]
+pub fn get_config() -> Config {
+    memory::read_config(|config| config.clone())
+}
 
 #[query]
 pub fn get_state() -> State {

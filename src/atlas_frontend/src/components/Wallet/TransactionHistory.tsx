@@ -11,6 +11,8 @@ import { authGuard } from "../../hooks/guard";
 import { useNavigate } from "react-router-dom";
 import { selectUserTxs } from "../../store/slices/userSlice";
 import { formatTransactions } from "../../canisters/ckUsdcIndex/transactions";
+import { deserialize } from "../../store/store";
+import type { UserTransactions } from "../../canisters/ckUsdcIndex/types";
 
 interface TransactionHistoryProps {
   tokenSymbol: string;
@@ -21,7 +23,8 @@ const TransactionHistory = ({ tokenSymbol }: TransactionHistoryProps) => {
   const navigate = useNavigate();
   const unAuthCkUsdIndexer = useUnAuthCkUsdcIndexerActor();
   const dispatch = useDispatch();
-  const userTxs = useSelector(selectUserTxs);
+  const userTxs = deserialize<UserTransactions>(useSelector(selectUserTxs));
+  //UserTransactions
   authGuard({
     navigate,
     user,
@@ -38,15 +41,16 @@ const TransactionHistory = ({ tokenSymbol }: TransactionHistoryProps) => {
   // TODO: PAGINATION AND LOAD MORE SPACES
   // TODO: SORTING
   // TODO: ADD COPY OF PRINCIPAL
+  if (!userTxs) return <></>
 
   const transactions = formatTransactions(userTxs).reverse();
   return (
     <div className="w-full mt-4">
       <div className="w-full rounded-xl overflow-hidden font-montserrat">
         <div className="inset-0 bg-gradient-to-b from-[#522785] to-transparent px-8 bg-cover bg-center z-0">
-          <div className="font-montserrat text-white text-2xl font-medium py-10">
+          <h2 className="font-montserrat text-white text-2xl font-medium py-10">
             ICP Transaction
-          </div>
+          </h2>
           <div className="overflow-x-auto">
             <table className="min-w-full table-auto border-separate border-spacing-x-3 rounded-t-lg text-center">
               <thead className="text-white">

@@ -93,7 +93,7 @@ const Home = () => {
               1000+{" "}
             </h2>
             <h2 className="text-white text-xl font-semibold text-center">
-              Ambassadors supporting <br /> ICP worldwide
+              Champions supporting <br /> ICP worldwide
             </h2>
           </div>
         </FadeOutBox>
@@ -104,7 +104,7 @@ const Home = () => {
               <span className="mt-3 text-[3rem]">million</span>
             </h2>
             <h2 className="text-white text-xl font-semibold text-center">
-              Reach of ambassador <br /> program
+              Reach of Champion <br /> program
             </h2>
           </div>
         </FadeOutBox>

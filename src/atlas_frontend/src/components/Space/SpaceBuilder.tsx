@@ -16,15 +16,21 @@ import { toast } from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@nfid/identitykit/react";
 import { useDispatch, useSelector } from "react-redux";
-import { selectUserBlockchainData } from "../../store/slices/userSlice.ts";
+import {
+  BlockchainUser,
+  selectUserBlockchainData,
+  type StorableUser,
+} from "../../store/slices/userSlice.ts";
 import { getSpacePath } from "../../router/paths.ts";
 import { RiGalleryUploadFill } from "react-icons/ri";
 import { FaDiscord, FaLinkedinIn, FaTelegramPlane } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import { authGuard } from "../../hooks/guard.ts";
 import { Principal } from "@dfinity/principal";
-import type { RootState } from "../../store/store.ts";
+import { deserialize, type RootState } from "../../store/store.ts";
 import { editSpace, getAtlasSpace } from "../../canisters/atlasSpace/api.ts";
+import type { Space } from "../../store/slices/spacesSlice.ts";
+import { getErrorWithInfoToast } from "../../utils/errors.ts";
 
 const MAX_FILE_SIZE = 5_000_000;
 const MAX_DESCRIPTION_LEN = 128;
@@ -117,16 +123,22 @@ const SpaceBuilder = () => {
   const navigate = useNavigate();
   const { spacePrincipal } = useParams();
   const [initEdit, setInitEdit] = useState(false);
-  const userBlockchainData = useSelector(selectUserBlockchainData);
+  const userBlockchainData = deserialize<StorableUser>(
+    useSelector(selectUserBlockchainData)
+  );
+  const userInfo = userBlockchainData
+    ? new BlockchainUser(userBlockchainData)
+    : null;
   const authAtlasMain = useAuthAtlasMainActor();
   const { user } = useAuth();
   const dispatch = useDispatch();
   const unAuthAtlasMain = useUnAuthAtlasMainActor();
-  const spaceData = spacePrincipal
-    ? useSelector(
+  const spaceData = spacePrincipal ?
+    deserialize<Space>(
+      useSelector(
         (state: RootState) => state.spaces?.spaces?.[spacePrincipal] ?? null
-      )
-    : null;
+      )) : null
+
   const {
     register,
     handleSubmit,
@@ -211,13 +223,14 @@ const SpaceBuilder = () => {
       await toast.promise(editSpaceCall, {
         loading: "Updating space data...",
         success: "Space updated successfully",
-        error: "Failed to update space",
+        error: getErrorWithInfoToast("Failed to update space."),
       });
       await getAtlasSpace({
         spaceId: parsedSpacePrincipal.toString(),
         unAuthAtlasSpace,
         dispatch,
       });
+
       if (user?.principal && unAuthAtlasMain) {
         getAtlasUser({
           dispatch,
@@ -225,7 +238,7 @@ const SpaceBuilder = () => {
           unAuthAtlasMain: unAuthAtlasMain,
         });
       }
-      window.location.href = getSpacePath(parsedSpacePrincipal);
+      navigate(getSpacePath(parsedSpacePrincipal));
     } else {
       const createSpaceCall = createNewSpace({
         authAtlasMain,
@@ -239,13 +252,13 @@ const SpaceBuilder = () => {
       const space = await toast.promise(createSpaceCall, {
         loading: "Creating new space...",
         success: "Space created successfully",
-        error: "Failed to create space",
+        error: getErrorWithInfoToast("Failed to create space."),
       });
       if (user?.principal && unAuthAtlasMain) {
         getAtlasUser({
           dispatch,
           userId: user.principal,
-          unAuthAtlasMain: unAuthAtlasMain,
+          unAuthAtlasMain,
         });
       }
       navigate(getSpacePath(space.id));
@@ -280,12 +293,8 @@ const SpaceBuilder = () => {
   };
 
   const didUserCanAdministrate =
-    (user &&
-      parsedSpacePrincipal &&
-      userBlockchainData?.isSpaceLead() &&
-      userBlockchainData?.ownSpaces(parsedSpacePrincipal)) ??
+    (parsedSpacePrincipal && userInfo?.canAdministrate(parsedSpacePrincipal)) ??
     false;
-
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="container mx-auto my-4">

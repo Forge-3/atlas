@@ -5,8 +5,8 @@ use std::cell::RefCell;
 use crate::config::Config;
 use crate::errors::Error;
 use crate::state::State;
-use crate::task::task::{Task};
-use crate::task::closed_task::{ClosedTask};
+use crate::task::closed_task::ClosedTask;
+use crate::task::task::Task;
 use crate::task::task_types::TaskId;
 
 type VMem = VirtualMemory<DefaultMemoryImpl>;
@@ -64,7 +64,7 @@ pub fn read_config<R>(f: impl FnOnce(&Config) -> R) -> R {
 pub fn set_config(config: Config) -> Result<(), Error> {
     CONFIG
         .with_borrow_mut(|users| users.set(Some(config)))
-        .map_err(|err| Error::FailedToUpdateConfig(format!("{:?}", err)))?;
+        .map_err(|err| Error::FailedToUpdateConfig(format!("{err:?}")))?;
     Ok(())
 }
 
@@ -86,7 +86,7 @@ pub fn read_state<R>(f: impl FnOnce(&State) -> R) -> R {
 pub fn set_state(state: State) -> Result<(), Error> {
     STATE
         .with_borrow_mut(|users| users.set(state))
-        .map_err(|err| Error::FailedToUpdateConfig(format!("{:?}", err)))?;
+        .map_err(|err| Error::FailedToUpdateConfig(format!("{err:?}")))?;
     Ok(())
 }
 
@@ -112,11 +112,8 @@ pub fn insert_open_task(task_id: TaskId, new_task: Task) -> Result<(), Error> {
 }
 
 pub fn remove_open_task(task_id: &TaskId) -> Result<Task, Error> {
-    OPEN_TASKS_MAP.with_borrow_mut(|tasks| {
-        tasks
-            .remove(task_id)
-            .ok_or(Error::TaskNotFound(*task_id))
-    })
+    OPEN_TASKS_MAP
+        .with_borrow_mut(|tasks| tasks.remove(task_id).ok_or(Error::TaskNotFound(*task_id)))
 }
 
 pub fn mut_open_task<F, R>(task_id: TaskId, f: F) -> Result<R, Error>

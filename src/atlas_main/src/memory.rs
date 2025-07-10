@@ -75,6 +75,13 @@ pub fn get_user(user_id: &Principal) -> Option<User> {
     USERS_MAP.with_borrow(|users| users.get(user_id))
 }
 
+pub fn with_users_iter<F, R>(f: F) -> R
+where
+    F: for<'a> FnOnce(Box<dyn Iterator<Item = (candid::Principal, User)> + 'a>) -> R,
+{
+    USERS_MAP.with_borrow(|users| f(Box::new(users.iter())))
+}
+
 // Config state methods
 
 pub fn read_config<R>(f: impl FnOnce(&Config) -> R) -> R {
@@ -84,7 +91,7 @@ pub fn read_config<R>(f: impl FnOnce(&Config) -> R) -> R {
 pub fn set_config(config: Config) -> Result<(), Error> {
     CONFIG
         .with_borrow_mut(|users| users.set(Some(config)))
-        .map_err(|err| Error::FailedToUpdateConfig(format!("{:?}", err)))?;
+        .map_err(|err| Error::FailedToUpdateConfig(format!("{err:?}")))?;
     Ok(())
 }
 
@@ -117,7 +124,7 @@ pub fn get_space(space_index: u64) -> Option<Space> {
 pub fn push_space(space_principal: &Space) -> Result<(), Error> {
     SPACES_VEC
         .with_borrow_mut(|space| space.push(space_principal))
-        .map_err(|err| Error::FailedToSaveSpace(format!("{:?}", err)))?;
+        .map_err(|err| Error::FailedToSaveSpace(format!("{err:?}")))?;
     Ok(())
 }
 

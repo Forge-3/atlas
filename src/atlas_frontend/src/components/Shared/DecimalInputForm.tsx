@@ -9,7 +9,8 @@ interface DecimalInputFormProps<TFormValues extends FieldValues> {
   small?: string;
   name: Path<TFormValues>;
   className?: string | undefined,
-  placeholder?: string
+  placeholder?: string,
+  maxValue?: number;
 }
 
 const DecimalInputForm = <TFormValues extends FieldValues>({
@@ -20,7 +21,7 @@ const DecimalInputForm = <TFormValues extends FieldValues>({
   name,
   errors,
   className,
-  placeholder
+  placeholder,
 }: DecimalInputFormProps<TFormValues>) => {
   return (
     <div>

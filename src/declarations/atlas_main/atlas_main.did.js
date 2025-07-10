@@ -49,11 +49,13 @@ export const idlFactory = ({ IDL }) => {
       'principal' : IDL.Principal,
     }),
     'FailedToSaveSpace' : IDL.Text,
+    'UserNotOwner' : IDL.Null,
     'FailedToUpdateConfig' : IDL.Text,
     'UserRichSpaceLimit' : IDL.Record({
       'found' : IDL.Nat64,
       'expected' : IDL.Nat64,
     }),
+    'FailedToDecodeArgs' : IDL.Text,
     'UserRankToHigh' : IDL.Record({ 'found' : Rank, 'expected' : Rank }),
     'UserAlreadyHaveExpectedRank' : Rank,
     'UserNotAnOwner' : IDL.Principal,
@@ -67,6 +69,8 @@ export const idlFactory = ({ IDL }) => {
     'UserDoNotExist' : IDL.Null,
     'FailedToUpdateCanisterSettings' : IDL.Text,
     'UserAlreadyIsHubMember' : IDL.Null,
+    'FailedToParse' : IDL.Text,
+    'NotEnoughCycles' : IDL.Record({ 'owned' : IDL.Nat, 'expected' : IDL.Nat }),
     'AnonymousCaller' : IDL.Null,
   });
   const Result = IDL.Variant({ 'Ok' : Space, 'Err' : Error });
@@ -90,6 +94,10 @@ export const idlFactory = ({ IDL }) => {
     'owned_spaces' : IDL.Vec(Space),
   });
   const Result_2 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });
+  const TransferSpace = IDL.Record({
+    'to' : IDL.Principal,
+    'space_id' : IDL.Principal,
+  });
   const WalletReceiveResult = IDL.Record({ 'accepted' : IDL.Nat64 });
   return IDL.Service({
     'app_config' : IDL.Func([], [Config], ['query']),
@@ -118,6 +126,7 @@ export const idlFactory = ({ IDL }) => {
     'join_space' : IDL.Func([IDL.Principal], [Result_2], []),
     'set_user_admin' : IDL.Func([IDL.Principal], [Result_2], []),
     'set_user_space_lead' : IDL.Func([IDL.Principal], [Result_2], []),
+    'transfer_space' : IDL.Func([TransferSpace], [Result_2], []),
     'upgrade_space' : IDL.Func([IDL.Principal], [Result_2], []),
     'user_is_admin' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
     'user_is_in_hub' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),

@@ -1,5 +1,5 @@
 use candid::{Nat, Principal};
-use ic_ledger_types::TransferError;
+use ic_cdk::call::Call;
 use icrc_ledger_types::icrc1::account::Account;
 use icrc_ledger_types::icrc1::transfer::TransferArg;
 use icrc_ledger_types::icrc2::transfer_from::{TransferFromArgs, TransferFromError};
@@ -26,7 +26,7 @@ pub async fn deposit_ckusdc(
 
     let transfer_args = TransferFromArgs {
         to: Account {
-            owner: ic_cdk::api::id(),
+            owner: ic_cdk::api::canister_self(),
             subaccount: Some(subaccount),
         },
         from: Account::from(caller),
@@ -37,15 +37,13 @@ pub async fn deposit_ckusdc(
         spender_subaccount: None,
     };
 
-    ic_cdk::call::<(TransferFromArgs,), (Result<Nat, TransferFromError>,)>(
-        ckusdc_ledger.principal,
-        "icrc2_transfer_from",
-        (transfer_args,),
-    )
-    .await
-    .map_err(|err| Error::FailedToTransfer(format!("Failed to call ledger: {:?}", err)))?
-    .0
-    .map_err(|err| Error::FailedToTransfer(format!("Ledger transfer error {:?}", err)))?;
+    Call::bounded_wait(ckusdc_ledger.principal, "icrc2_transfer_from")
+        .with_args(&(transfer_args,))
+        .await
+        .map_err(|err| Error::FailedToTransfer(err.to_string()))?
+        .candid::<Result<Nat, TransferFromError>>()
+        .map_err(|err| Error::FailedToParse(err.to_string()))?
+        .map_err(|err| Error::FailedToTransfer(err.to_string()))?;
 
     Ok(())
 }
@@ -66,15 +64,13 @@ pub async fn withdraw_ckusdc(
         created_at_time: None,
     };
 
-    ic_cdk::call::<(TransferArg,), (Result<Nat, TransferError>,)>(
-        ckusdc_ledger.principal,
-        "icrc1_transfer",
-        (transfer_args,),
-    )
-    .await
-    .map_err(|err| Error::FailedToTransfer(format!("Failed to call ledger: {:?}", err)))?
-    .0
-    .map_err(|err| Error::FailedToTransfer(format!("Ledger transfer error {:?}", err)))?;
+    Call::bounded_wait(ckusdc_ledger.principal, "icrc1_transfer")
+        .with_args(&(transfer_args,))
+        .await
+        .map_err(|err| Error::FailedToTransfer(err.to_string()))?
+        .candid::<Result<Nat, TransferFromError>>()
+        .map_err(|err| Error::FailedToParse(err.to_string()))?
+        .map_err(|err| Error::FailedToTransfer(err.to_string()))?;
 
     Ok(())
 }

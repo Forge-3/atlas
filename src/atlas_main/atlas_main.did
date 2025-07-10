@@ -24,8 +24,10 @@ type Error = variant {
   UserRankNoMatch : vec Rank;
   FailedToCallSpace : record { err : text; "principal" : principal };
   FailedToSaveSpace : text;
+  UserNotOwner;
   FailedToUpdateConfig : text;
   UserRichSpaceLimit : record { found : nat64; expected : nat64 };
+  FailedToDecodeArgs : text;
   UserRankToHigh : record { found : Rank; expected : Rank };
   UserAlreadyHaveExpectedRank : Rank;
   UserNotAnOwner : principal;
@@ -39,6 +41,8 @@ type Error = variant {
   UserDoNotExist;
   FailedToUpdateCanisterSettings : text;
   UserAlreadyIsHubMember;
+  FailedToParse : text;
+  NotEnoughCycles : record { owned : nat; expected : nat };
   AnonymousCaller;
 };
 type GetSpacesArgs = record { count : nat64; start : nat64 };
@@ -66,6 +70,7 @@ type SpaceInitArg = record {
   space_description : text;
 };
 type SpaceType = variant { HUB };
+type TransferSpace = record { to : principal; space_id : principal };
 type UpdateConfig = record {
   spaces_per_space_lead : opt nat8;
   ckusdc_ledger : opt CkUsdcLedger_1;
@@ -90,6 +95,7 @@ service : (AtlasArgs) -> {
   join_space : (principal) -> (Result_2);
   set_user_admin : (principal) -> (Result_2);
   set_user_space_lead : (principal) -> (Result_2);
+  transfer_space : (TransferSpace) -> (Result_2);
   upgrade_space : (principal) -> (Result_2);
   user_is_admin : (principal) -> (bool) query;
   user_is_in_hub : (principal) -> (bool) query;

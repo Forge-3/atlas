@@ -1,13 +1,15 @@
-use ic_cdk_timers::set_timer;
-use std::time::Duration;
-use crate::memory::{with_open_tasks_iter, mut_open_task, remove_open_task, insert_closed_task, get_open_task};
 use crate::errors::Error;
-use ic_cdk_timers::TimerId;
-use sha2::Digest;
-use ic_stable_structures::Storable;
-use crate::task::task::{Task};
-use crate::task::closed_task::{ClosedTask};
+use crate::memory::{
+    get_open_task, insert_closed_task, mut_open_task, remove_open_task, with_open_tasks_iter,
+};
+use crate::task::closed_task::ClosedTask;
+use crate::task::task::Task;
 use crate::task::task_types::TaskId;
+use ic_cdk_timers::set_timer;
+use ic_cdk_timers::TimerId;
+use ic_stable_structures::Storable;
+use sha2::Digest;
+use std::time::Duration;
 
 pub async fn reinitialize_task_timers_after_upgrade() {
     ic_cdk::println!("Reinitialize timers for tasks");
@@ -55,7 +57,7 @@ pub fn schedule_close_task_timer(task_id: TaskId, end_time_sec: u64) -> TimerId 
     set_timer(Duration::from_secs(delay_sec), {
         let id = task_id.clone();
         move || {
-            ic_cdk::spawn(async move {
+            ic_cdk::futures::spawn(async move {
                 let _ = close_task(id).await;
             });
         }
@@ -70,7 +72,7 @@ pub async fn close_task(task_id: TaskId) -> Result<(), Error> {
             Err(e) => return Err(e),
         }
     }
-    
+
     let subaccount = sha2::Sha256::digest(task_id.u64().to_bytes()).into();
     let mut closed_task: ClosedTask = task.into();
     closed_task.claim_remains(subaccount).await?;

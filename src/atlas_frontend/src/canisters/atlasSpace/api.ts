@@ -4,6 +4,7 @@ import type {
   ClosedTask,
   GetClosedTasksRes,
   GetTasksRes,
+  State,
   Submission,
   Task,
   TaskContent,
@@ -12,12 +13,8 @@ import { unwrapCall } from "../delegatedCall.js";
 import { setSpace, setTasks } from "../../store/slices/spacesSlice.js";
 import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import { storableState } from "./storable.js";
-import { serify } from "@karmaniverous/serify-deserify";
-import { customSerify } from "../../store/store.js";
 import type { Principal } from "@dfinity/principal";
 import type { ExternalLinks } from "./types.js";
-import { keyframes } from "framer-motion";
 
 interface GetAtlasSpaceArgs {
   unAuthAtlasSpace: ActorSubclass<_SERVICE>;
@@ -30,12 +27,36 @@ export const getAtlasSpace = async ({
   spaceId,
   dispatch,
 }: GetAtlasSpaceArgs) => {
-  const state = await unAuthAtlasSpace.get_state();
+  let state: State;
+  let version: bigint;
+
+  try {
+    ({ state, version } = await unAuthAtlasSpace.get_space_info());
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_) {
+    [state, version] = await Promise.all([
+      unAuthAtlasSpace.get_state(),
+      unAuthAtlasSpace.get_current_bytecode_version(),
+    ]);
+  }
+  const externalLinksObj = Object.fromEntries(state.external_links);
 
   dispatch(
     setSpace({
-      state: storableState(state),
       spaceId,
+      state: {
+        ...state,
+        version,
+        space_symbol: state.space_symbol.pop() ?? null,
+        space_background: state.space_background.pop() ?? null,
+        space_logo: state.space_logo.pop() ?? null,
+        external_links: {
+          x: externalLinksObj?.x ?? null,
+          telegram: externalLinksObj?.telegram ?? null,
+          discord: externalLinksObj?.discord ?? null,
+          linkedIn: externalLinksObj?.linkedIn ?? null,
+        },
+      },
     })
   );
 };
@@ -72,7 +93,7 @@ export const createNewTask = async ({
     end_time: endTime,
   });
 
-  return await unwrapCall<bigint>({
+  return unwrapCall<bigint>({
     call,
     errMsg: "Failed to create new task",
   });
@@ -151,15 +172,10 @@ export const getSpaceTasks = async ({
   } as { [key: string]: AnyTask };
 
   dispatch(
-    setTasks(
-      serify(
-        {
-          tasks: mergedTasks,
-          spaceId,
-        },
-        customSerify
-      ) as { tasks: { [key: string]: AnyTask }; spaceId: string }
-    )
+    setTasks({
+        tasks: mergedTasks,
+        spaceId,
+      })
   );
 };
 

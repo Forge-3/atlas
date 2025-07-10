@@ -3,6 +3,10 @@ import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
 export interface CkUsdcLedger { 'fee' : [] | [bigint], 'principal' : Principal }
+export interface CkUsdcLedger_1 {
+  'fee' : [] | [bigint],
+  'principal' : Principal,
+}
 export interface ClosedTask {
   'tasks' : Array<TaskType>,
   'creator' : Principal,
@@ -13,6 +17,12 @@ export interface ClosedTask {
   'start_time' : bigint,
   'rewarded' : Array<Principal>,
   'number_of_uses' : bigint,
+}
+export interface Config {
+  'owner' : Principal,
+  'ckusdc_ledger' : CkUsdcLedger,
+  'current_wasm_version' : bigint,
+  'parent' : Principal,
 }
 export interface CreateTaskArgs {
   'task_title' : string,
@@ -53,6 +63,7 @@ export type Error = { 'BytecodeUpToDate' : null } |
   { 'NotOwner' : null } |
   { 'FailedToTransfer' : string } |
   { 'TaskExpired' : null } |
+  { 'FailedToParse' : string } |
   { 'InvalidTaskContent' : string } |
   { 'TaskDoNotExists' : bigint } |
   { 'AnonymousCaller' : null } |
@@ -76,10 +87,11 @@ export type Result_3 = { 'Ok' : GetTasksRes } |
   { 'Err' : Error };
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
   { 'InitArg' : SpaceInitArg };
+export interface SpaceInfo { 'version' : bigint, 'state' : State }
 export interface SpaceInitArg {
   'external_links' : Array<[string, string]>,
   'owner' : Principal,
-  'ckusdc_ledger' : CkUsdcLedger,
+  'ckusdc_ledger' : CkUsdcLedger_1,
   'space_symbol' : [] | [string],
   'space_background' : [] | [string],
   'current_wasm_version' : bigint,
@@ -139,8 +151,10 @@ export interface _SERVICE {
   'edit_space' : ActorMethod<[EditSpaceArgs], Result>,
   'force_close_task' : ActorMethod<[bigint], Result>,
   'get_closed_tasks' : ActorMethod<[GetTasksArgs], Result_2>,
+  'get_config' : ActorMethod<[], Config>,
   'get_current_bytecode_version' : ActorMethod<[], bigint>,
   'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_3>,
+  'get_space_info' : ActorMethod<[], SpaceInfo>,
   'get_state' : ActorMethod<[], State>,
   'reject_subtask_submission' : ActorMethod<
     [Principal, bigint, bigint],
@@ -154,6 +168,7 @@ export interface _SERVICE {
     [bigint, bigint, Submission],
     Result
   >,
+  'transfer_space' : ActorMethod<[Principal], undefined>,
   'wallet_balance' : ActorMethod<[], bigint>,
   'wallet_receive' : ActorMethod<[], WalletReceiveResult>,
   'withdraw_reward' : ActorMethod<[bigint], Result>,

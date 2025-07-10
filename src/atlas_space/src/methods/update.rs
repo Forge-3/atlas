@@ -1,18 +1,19 @@
 use crate::{
     errors::Error,
-    guard::{parent_or_owner_or_admin_guard, user_is_in_space, authenticated_guard},
+    guard::{authenticated_guard, parent_guard, parent_or_owner_or_admin_guard, user_is_in_space},
     memory,
     state::EditSpaceArgs,
 };
-use candid::{Principal};
+
+use crate::task::task::Task;
+use crate::task::timer_logic;
+use crate::CreateTaskArgs;
+use crate::Submission;
+use crate::TaskId;
+use candid::Principal;
 use ic_cdk::update;
 use ic_stable_structures::Storable;
 use sha2::Digest;
-use crate::CreateTaskArgs;
-use crate::TaskId;
-use crate::Submission;
-use crate::task::timer_logic;
-use crate::task::task::Task;
 
 #[update]
 pub async fn set_space_name(name: String) -> Result<(), Error> {
@@ -64,8 +65,10 @@ pub async fn create_task(args: CreateTaskArgs) -> Result<TaskId, Error> {
     let timer_id = timer_logic::schedule_close_task_timer(next_task_id.clone(), args.end_time);
 
     memory::insert_open_task(
-        next_task_id.clone(),
-        Task::new(caller, args, subaccount, timer_id.into()).await.unwrap(),
+        next_task_id,
+        Task::new(caller, args, subaccount, timer_id.into())
+            .await
+            .unwrap(),
     )
     .unwrap();
 
@@ -102,7 +105,7 @@ pub async fn accept_subtask_submission(
     subtask_id: usize,
 ) -> Result<(), Error> {
     parent_or_owner_or_admin_guard().await?;
-    memory::mut_open_task(task_id.clone(), |maybe_task| {
+    memory::mut_open_task(task_id, |maybe_task| {
         let task = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
         task.accept_subtask_submission(user, subtask_id)?;
         Ok(())
@@ -118,7 +121,7 @@ pub async fn reject_subtask_submission(
     subtask_id: usize,
 ) -> Result<(), Error> {
     parent_or_owner_or_admin_guard().await?;
-    memory::mut_open_task(task_id.clone(), |maybe_task| {
+    memory::mut_open_task(task_id, |maybe_task| {
         let task = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
         task.reject_subtask_submission(user, subtask_id)?;
         Ok(())
@@ -169,4 +172,11 @@ pub async fn force_close_task(task_id: TaskId) -> Result<(), Error> {
     }
     timer_logic::close_task(task_id).await?;
     Ok(())
+}
+
+#[update]
+pub fn transfer_space(to: Principal) {
+    parent_guard().unwrap();
+
+    memory::mut_config(|config| config.owner = to);
 }

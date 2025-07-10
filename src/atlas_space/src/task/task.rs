@@ -1,13 +1,13 @@
-use std::{borrow::Cow};
 use crate::errors::Error;
+use std::borrow::Cow;
 
+use crate::task::submission::{Submission, SubmissionState};
+use crate::task::task_types::*;
+use crate::task::token_reward::TokenReward;
 use candid::{CandidType, Nat, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
-use crate::task::submission::{Submission, SubmissionState};
-use crate::task::token_reward::TokenReward;
-use crate::task::task_types::*;
 
 #[derive(CandidType, Deserialize)]
 pub struct CreateTaskArgs {
@@ -30,11 +30,15 @@ impl CreateTaskArgs {
             return Err(Error::InvalidTaskContent("Too many subtasks".into()));
         }
         if self.end_time <= self.start_time {
-            return Err(Error::InvalidTaskContent("Task End time must be after start time".into()));
+            return Err(Error::InvalidTaskContent(
+                "Task End time must be after start time".into(),
+            ));
         }
         let now = ic_cdk::api::time() / 1_000_000_000;
         if self.end_time <= now {
-            return Err(Error::InvalidTaskContent("Task end time must be in the future".into()));
+            return Err(Error::InvalidTaskContent(
+                "Task end time must be in the future".into(),
+            ));
         }
         self.task_content
             .iter()
@@ -97,7 +101,7 @@ impl Task {
         let current_time_seconds = ic_cdk::api::time() / 1_000_000_000;
         current_time_seconds > self.end_time
     }
-    
+
     pub fn is_active(&self) -> bool {
         let now = ic_cdk::api::time() / 1_000_000_000;
         now >= self.start_time

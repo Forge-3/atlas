@@ -4,8 +4,6 @@ use thiserror::Error;
 
 use crate::task::task_types::TaskId;
 
-
-
 #[derive(Clone, PartialEq, Debug, CandidType, Deserialize, Error)]
 pub enum Error {
     #[error("Anonymous principal is not allowed")]
@@ -91,4 +89,7 @@ pub enum Error {
 
     #[error("Task is not active (start_time is in the future)")]
     TaskNotActive,
+
+    #[error("Failed to parse call response: {0}")]
+    FailedToParse(String),
 }

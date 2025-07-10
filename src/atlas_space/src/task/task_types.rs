@@ -1,21 +1,18 @@
-use std::{borrow::Cow, collections::BTreeMap, fmt};
 use crate::errors::Error;
+use std::{borrow::Cow, collections::BTreeMap, fmt};
 
+use crate::task::submission::{Submission, SubmissionData, SubmissionState};
 use candid::{CandidType, Principal};
+use ic_cdk_timers::TimerId;
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
-use crate::task::submission::{Submission, SubmissionData, SubmissionState};
-use ic_cdk_timers::TimerId;
 use serde::Serialize;
-use slotmap::KeyData;
 use slotmap::Key;
+use slotmap::KeyData;
 
 #[derive(Clone, Debug, Eq, PartialEq, CandidType, Serialize, Deserialize, Decode, Encode)]
-pub struct TimerKeyData(
-    #[n(0)]
-    pub u64,
-);
+pub struct TimerKeyData(#[n(0)] pub u64);
 
 impl From<TimerId> for TimerKeyData {
     fn from(timer_id: TimerId) -> Self {

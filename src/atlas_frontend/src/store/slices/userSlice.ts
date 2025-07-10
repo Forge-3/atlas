@@ -5,38 +5,40 @@ import type {
   CandidUser,
   Space,
 } from "../../../../declarations/atlas_main/atlas_main.did.js";
-import { deserify } from "@karmaniverous/serify-deserify";
-import { customSerify } from "../store.ts";
 import type { UserTransactions } from "../../canisters/ckUsdcIndex/types.ts";
 import type { Principal } from "@dfinity/principal";
 
-export class BlockchainUser implements Omit<CandidUser, 'in_hub'> {
+export class BlockchainUser implements StorableUser {
   public integrations: Integrations;
   public rank: Rank;
   public space_creation_in_progress: boolean;
   public belonging_to_spaces: Space[];
   public owned_spaces: Space[];
-  public in_hub: Space | null
+  public in_hub: Space | null;
 
-  constructor(public user: CandidUser) {
+  constructor(public user: StorableUser) {
     this.integrations = user.integrations;
     this.rank = user.rank;
     this.space_creation_in_progress = user.space_creation_in_progress;
     this.belonging_to_spaces = user.belonging_to_spaces;
     this.owned_spaces = user.owned_spaces;
-    this.in_hub = user.in_hub.pop() ?? null
+    this.in_hub = user.in_hub
   }
 
   belongingToAnySpace() {
-    return this.belonging_to_spaces.length > 0
+    return this.belonging_to_spaces.length > 0;
   }
 
   belongingToSpace(space: Principal) {
-    return this.belonging_to_spaces.some(({id}) => id.toString() === space.toString())
+    return this.belonging_to_spaces.some(
+      ({ id }) => id.toString() === space.toString()
+    );
   }
 
   ownSpaces(space: Principal) {
-    return this.owned_spaces.some(({id}) => id.toString() === space.toString())
+    return this.owned_spaces.some(
+      ({ id }) => id.toString() === space.toString()
+    );
   }
 
   getRank() {
@@ -54,6 +56,19 @@ export class BlockchainUser implements Omit<CandidUser, 'in_hub'> {
   isSuperAdmin() {
     return this.getRank() === "SuperAdmin";
   }
+
+  canAdministrate(space: Principal) {
+    return this.isAdmin() || (this.isSpaceLead() && this.ownSpaces(space));
+  }
+}
+
+export interface StorableUser extends Omit<CandidUser, "in_hub"> {
+  'integrations' : Integrations,
+  'rank' : Rank,
+  'in_hub' : Space | null,
+  'space_creation_in_progress' : boolean,
+  'belonging_to_spaces' : Array<Space>,
+  'owned_spaces' : Array<Space>,
 }
 
 interface UserState {
@@ -61,7 +76,7 @@ interface UserState {
   balances: {
     ckUsdc: bigint | null;
   };
-  blockchain: CandidUser | null;
+  blockchain: StorableUser | null;
   userHub: string | null;
 }
 
@@ -80,7 +95,7 @@ export const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    setUserBlockchainData: (state, action: PayloadAction<CandidUser>) => {
+    setUserBlockchainData: (state, action: PayloadAction<StorableUser>) => {
       state.blockchain = { ...state.blockchain, ...action.payload };
     },
     setCkUsdcBalance: (state, action: PayloadAction<bigint>) => {
@@ -96,29 +111,22 @@ export const userSlice = createSlice({
   selectors: {
     selectUserBlockchainData: (userState: UserState) => {
       if (!userState.blockchain) return null;
-      return new BlockchainUser(
-        deserify(userState.blockchain, customSerify) as CandidUser
-      );
+      return userState.blockchain
+      
     },
     selectUserCkUsdc: (userState: UserState): bigint | null => {
       if (userState.balances.ckUsdc)
-        return deserify(userState.balances.ckUsdc, customSerify) as bigint;
+        return userState.balances.ckUsdc;
       return null;
     },
     selectUserTxs: (userState: UserState) => {
-      return deserify(userState.txs, customSerify) as UserTransactions;
+      return userState.txs;
     },
   },
 });
 
-export const {
-  setUserBlockchainData,
-  setCkUsdcBalance,
-  appendUserTxs,
-} = userSlice.actions;
-export const {
-  selectUserBlockchainData,
-  selectUserCkUsdc,
-  selectUserTxs,
-} = userSlice.selectors;
+export const { setUserBlockchainData, setCkUsdcBalance, appendUserTxs } =
+  userSlice.actions;
+export const { selectUserBlockchainData, selectUserCkUsdc, selectUserTxs } =
+  userSlice.selectors;
 export default userSlice.reducer;

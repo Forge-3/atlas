@@ -2,7 +2,7 @@ use candid::{CandidType, Principal};
 use serde::Deserialize;
 use thiserror::Error;
 
-use crate::{space::Space, user::Rank};
+use crate::user::Rank;
 
 #[derive(Clone, PartialEq, Debug, CandidType, Deserialize, Error)]
 pub enum Error {
@@ -62,4 +62,16 @@ pub enum Error {
 
     #[error("User already is hub member")]
     UserAlreadyIsHubMember,
+
+    #[error("User does not own this space")]
+    UserNotOwner,
+
+    #[error("Failed to decode canister args: {0}")]
+    FailedToDecodeArgs(String),
+
+    #[error("Failed to parse call response: {0}")]
+    FailedToParse(String),
+
+    #[error("Not enough cycles")]
+    NotEnoughCycles { expected: u128, owned: u128 },
 }

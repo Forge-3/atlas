@@ -13,7 +13,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { selectUserCkUsdc } from "../../store/slices/userSlice";
 import { formatUnits, parseUnits } from "ethers";
 import { DECIMALS } from "../../canisters/ckUsdcLedger/constans";
-import { selectBlockchainConfig } from "../../store/slices/appSlice";
+import {
+  selectBlockchainConfig,
+  type StorableConfig,
+} from "../../store/slices/appSlice";
 import WalletAddressInputForm from "../Shared/WalletAddressInputForm";
 import {
   useAuthCkUsdcLedgerActor,
@@ -25,6 +28,8 @@ import {
 } from "../../canisters/ckUsdcLedger/api";
 import { Principal } from "@dfinity/principal";
 import toast from "react-hot-toast";
+import { deserialize } from "../../store/store";
+import { getErrorWithInfoToast } from "../../utils/errors";
 
 const WalletHeader = () => {
   const navigate = useNavigate();
@@ -37,6 +42,19 @@ const WalletHeader = () => {
   });
   const authCkUsdc = useAuthCkUsdcLedgerActor();
   const unAuthCkUsdcActor = useUnAuthCkUsdcLedgerActor();
+  const userCkUsdc = deserialize<bigint>(useSelector(selectUserCkUsdc));
+  const parsedUserCkUsdc =
+    userCkUsdc !== null ? formatUnits(userCkUsdc, DECIMALS) : null;
+
+  const blockchainConfig = deserialize<StorableConfig>(
+    useSelector(selectBlockchainConfig)
+  );
+  const ckUsdcFee = blockchainConfig
+    ? (blockchainConfig.ckusdc_ledger.fee ?? 0n)
+    : 0n;
+  const maxAmount = userCkUsdc ? userCkUsdc - ckUsdcFee : 0n;
+  const parsedCkUsdcFee = formatUnits(ckUsdcFee, DECIMALS);
+  const maxAmountDecimal = formatUnits(maxAmount, DECIMALS);
 
   interface WithdrawalFormInput {
     withdrawalAmount: number;
@@ -48,15 +66,18 @@ const WalletHeader = () => {
       .number()
       .typeError("Withdrawal amount must be a number")
       .min(0.1)
+      .max(Number(maxAmountDecimal))
       .required()
       .label("Withdrawal amount"),
     withdrawalPrincipal: yup
       .string()
+      .max(63)
       .matches(
         /^([a-z0-9]{5}-){10}[a-z0-9]{3}$/,
-        "Enter a valid wallet address (account ID or principal)"
+        "Enter a valid wallet address (principal)"
       )
-      .required("Address is required"),
+      .notOneOf([user?.principal.toString()], "You cannot transfer to yourself")
+      .required("Principal is required"),
   });
 
   const {
@@ -74,29 +95,20 @@ const WalletHeader = () => {
   getCkUsdcBalance({
     dispatch,
   });
-  const userCkUsdc = useSelector(selectUserCkUsdc);
-  const parsedUserCkUsdc =
-    userCkUsdc !== null ? formatUnits(userCkUsdc, DECIMALS) : null;
-
-  const blockchainConfig = useSelector(selectBlockchainConfig);
-  const ckUsdcFee = blockchainConfig
-    ? (blockchainConfig.ckusdc_ledger.fee ?? 0n)
-    : 0n;
-  const parsedCkUsdcFee = formatUnits(ckUsdcFee, DECIMALS);
 
   const onSubmit: SubmitHandler<WithdrawalFormInput> = async (data) => {
     const amount = parseUnits(data.withdrawalAmount.toString(), DECIMALS);
-    const toPrincipal = Principal.from(data.withdrawalPrincipal);
+    const userPrincipal = Principal.from(data.withdrawalPrincipal);
     if (!authCkUsdc || !user?.principal) return;
     const call = transferToPrincipal({
       authCkUsdc,
-      userPrincipal: toPrincipal,
+      userPrincipal,
       amount,
     });
     await toast.promise(call, {
       loading: "Withdrawing funds...",
       success: "Funds Withdrawn successfully",
-      error: "Insufficient funds",
+      error: getErrorWithInfoToast("Insufficient funds."),
     });
     await getUserBalance({
       unAuthCkUsdc: unAuthCkUsdcActor,
@@ -106,9 +118,6 @@ const WalletHeader = () => {
   };
 
   const setMax = () => {
-    if (!userCkUsdc) return;
-    const maxAmount = userCkUsdc - ckUsdcFee;
-    const maxAmountDecimal = formatUnits(maxAmount, DECIMALS);
     setValue("withdrawalAmount", Number(maxAmountDecimal));
   };
 
@@ -138,6 +147,7 @@ const WalletHeader = () => {
 
               <WalletAddressInputForm
                 register={register}
+                maxLength={63}
                 name="withdrawalPrincipal"
                 placeholder="Enter the principal"
                 className="py-3 px-4 rounded-xl bg-white/20 backdrop-blur-sm border-0"
@@ -150,6 +160,7 @@ const WalletHeader = () => {
                   placeholder="Enter the amount"
                   className="py-3 px-4 rounded-xl bg-white/20 backdrop-blur-sm border-0"
                   errors={errors}
+                  maxValue={1000}
                 />
                 <span
                   className="absolute text-[#9173FF] top-3 right-6 cursor-pointer select-none"

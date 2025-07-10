@@ -1,4 +1,5 @@
 type CkUsdcLedger = record { fee : opt nat; "principal" : principal };
+type CkUsdcLedger_1 = record { fee : opt nat; "principal" : principal };
 type ClosedTask = record {
   tasks : vec TaskType;
   creator : principal;
@@ -9,6 +10,12 @@ type ClosedTask = record {
   start_time : nat64;
   rewarded : vec principal;
   number_of_uses : nat64;
+};
+type Config = record {
+  owner : principal;
+  ckusdc_ledger : CkUsdcLedger;
+  current_wasm_version : nat64;
+  parent : principal;
 };
 type CreateTaskArgs = record {
   task_title : text;
@@ -50,6 +57,7 @@ type Error = variant {
   NotOwner;
   FailedToTransfer : text;
   TaskExpired;
+  FailedToParse : text;
   InvalidTaskContent : text;
   TaskDoNotExists : nat64;
   AnonymousCaller;
@@ -72,10 +80,11 @@ type SpaceArgs = variant {
   UpgradeArg : record { version : nat64 };
   InitArg : SpaceInitArg;
 };
+type SpaceInfo = record { version : nat64; state : State };
 type SpaceInitArg = record {
   external_links : vec record { text; text };
   owner : principal;
-  ckusdc_ledger : CkUsdcLedger;
+  ckusdc_ledger : CkUsdcLedger_1;
   space_symbol : opt text;
   space_background : opt text;
   current_wasm_version : nat64;
@@ -126,8 +135,10 @@ service : (SpaceArgs) -> {
   edit_space : (EditSpaceArgs) -> (Result);
   force_close_task : (nat64) -> (Result);
   get_closed_tasks : (GetTasksArgs) -> (Result_2) query;
+  get_config : () -> (Config) query;
   get_current_bytecode_version : () -> (nat64) query;
   get_open_tasks : (GetTasksArgs) -> (Result_3) query;
+  get_space_info : () -> (SpaceInfo) query;
   get_state : () -> (State) query;
   reject_subtask_submission : (principal, nat64, nat64) -> (Result);
   set_space_background : (text) -> (Result);
@@ -135,6 +146,7 @@ service : (SpaceArgs) -> {
   set_space_logo : (text) -> (Result);
   set_space_name : (text) -> (Result);
   submit_subtask_submission : (nat64, nat64, Submission) -> (Result);
+  transfer_space : (principal) -> ();
   wallet_balance : () -> (nat) query;
   wallet_receive : () -> (WalletReceiveResult);
   withdraw_reward : (nat64) -> (Result);

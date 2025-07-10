@@ -20,16 +20,21 @@ export interface UserSubmissionsData {
   [key: string]: TasksData;
 }
 
-export interface StorableState extends Omit<State, 'space_symbol' | 'space_background' | 'space_logo' | 'external_links'>{
+export interface StorableState
+  extends Omit<
+    State,
+    "space_symbol" | "space_background" | "space_logo" | "external_links"
+  > {
   space_symbol: string | null;
   space_background: string | null;
   space_logo: string | null;
-  external_links: ExternalLinks
+  external_links: ExternalLinks;
+  version: bigint;
 }
 
 export interface ExternalLinks {
-    x: string | null;
-    telegram: string | null;
-    discord: string | null;
-    linkedIn: string | null;
-  };
+  x: string | null;
+  telegram: string | null;
+  discord: string | null;
+  linkedIn: string | null;
+}

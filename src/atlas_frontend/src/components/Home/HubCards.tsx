@@ -4,14 +4,14 @@ import HubCardReversed from "./HubCardReversed.tsx";
 
 const HubCards = () => {
   const data: {
-    ambassadorsCount: number;
+    ChampionsCount: number;
     country: string;
   }[] = [
-    { ambassadorsCount: 74, country: "Argentina" },
-    { ambassadorsCount: 14, country: "Egypt" },
-    { ambassadorsCount: 43, country: "Mexico" },
-    { ambassadorsCount: 122, country: "Poland" },
-    { ambassadorsCount: 42, country: "Turkey" },
+    { ChampionsCount: 74, country: "Argentina" },
+    { ChampionsCount: 14, country: "Egypt" },
+    { ChampionsCount: 43, country: "Mexico" },
+    { ChampionsCount: 122, country: "Poland" },
+    { ChampionsCount: 42, country: "Turkey" },
   ];
 
   return (

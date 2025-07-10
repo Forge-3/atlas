@@ -24,7 +24,9 @@ import {
   setUserSpaceAllowanceIfNeeded,
 } from "../canisters/ckUsdcLedger/api";
 import { useAuth } from "@nfid/identitykit/react";
-import { selectBlockchainConfig } from "../store/slices/appSlice";
+import { selectBlockchainConfig, type StorableConfig } from "../store/slices/appSlice";
+import { deserialize } from "../store/store";
+import { getErrorWithInfoToast } from "../utils/errors";
 
 type TaskType = "generic";
 const allowedTaskTypes = ["generic"] as const;
@@ -146,7 +148,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   const unAuthCkUsdcActor = useUnAuthCkUsdcLedgerActor();
   const authCkUsdcActor = useAuthCkUsdcLedgerActor();
 
-  const blockchainConfig = useSelector(selectBlockchainConfig);
+  const blockchainConfig = deserialize<StorableConfig>(useSelector(selectBlockchainConfig));
   const ckUsdcFee = blockchainConfig
     ? (blockchainConfig.ckusdc_ledger.fee ?? 0n)
     : 0n;
@@ -224,7 +226,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     await toast.promise(getOrSetAllowance, {
       loading: "Checking available funds...",
       success: "Funds allowance granted successfully",
-      error: "Insufficient funds",
+      error: getErrorWithInfoToast("Failed to allocate funds:"),
     });
 
     const createNewTaskCall = createNewTask({
@@ -239,7 +241,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     const taskId = await toast.promise(createNewTaskCall, {
       loading: "Creating new task...",
       success: "Task created successfully",
-      error: "Failed to create task",
+      error: getErrorWithInfoToast("Failed to create task:"),
     });
     callback();
     await getSpaceTasks({
@@ -287,7 +289,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
             <input
               type="text"
               min="1"
-              max="50"
+              max="256"
               {...register("taskTitle")}
               className={`border-2 p-2 rounded-xl w-full ${
                 errors?.taskTitle?.message && "border-red-500"
