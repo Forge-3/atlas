@@ -133,11 +133,13 @@ const SpaceBuilder = () => {
   const { user } = useAuth();
   const dispatch = useDispatch();
   const unAuthAtlasMain = useUnAuthAtlasMainActor();
-  const spaceData = spacePrincipal ?
-    deserialize<Space>(
-      useSelector(
-        (state: RootState) => state.spaces?.spaces?.[spacePrincipal] ?? null
-      )) : null
+  const spaceData = spacePrincipal
+    ? deserialize<Space>(
+        useSelector(
+          (state: RootState) => state.spaces?.spaces?.[spacePrincipal] ?? null
+        )
+      )
+    : null;
 
   const {
     register,
@@ -418,7 +420,9 @@ const SpaceBuilder = () => {
                     </p>
                   </div>
                   <div className="relative pt-8 pb-4 bg-[#9173FF]/20 rounded-xl">
-                    <p className="absolute left-4 top-2 text-base sm:text-xl">Bio:</p>
+                    <p className="absolute left-4 top-2 text-base sm:text-xl">
+                      Bio:
+                    </p>
                     <textarea
                       {...register("spaceDescription")}
                       className="bg-transparent outline-none px-4 pb-8 font-medium text-sm sm:text-lg w-full"
@@ -432,72 +436,72 @@ const SpaceBuilder = () => {
                       {spaceDescription?.length ?? 0}/{MAX_DESCRIPTION_LEN}
                     </p>
                   </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 font-montserrat font-medium w-full text-white">
-                <div className="flex flex-col">
-                  <div className="flex gap-2 items-center">
-                    <div className="p-2 bg-[#9173FF]/20 rounded-xl flex-none">
-                      <FaDiscord size={24} />
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 font-montserrat font-medium w-full text-white mt-1 sm:mt-2">
+                    <div className="flex flex-col">
+                      <div className="flex gap-2 items-center">
+                        <div className="p-2 bg-[#9173FF]/20 rounded-xl flex-none">
+                          <FaDiscord size={24} />
+                        </div>
+                        <input
+                          {...register("spaceDiscord")}
+                          className="p-2 bg-[#9173FF]/20 outline-none rounded-xl my-1 sm:my-2 w-full p-1 text-sm sm:text-base"
+                          placeholder="Discord link"
+                          maxLength={MAX_LINK_LEN}
+                        />
+                      </div>
+                      <p className="text-red-500 mt-1 text-xs sm:text-sm">
+                        {errors.spaceDiscord?.message}
+                      </p>
                     </div>
-                    <input
-                      {...register("spaceDiscord")}
-                      className="p-2 bg-[#9173FF]/20 outline-none rounded-xl my-1 sm:my-2 w-full p-1 text-sm sm:text-base"
-                      placeholder="Discord link"
-                      maxLength={MAX_LINK_LEN}
-                    />
-                  </div>
-                  <p className="text-red-500 mt-1 text-xs sm:text-sm">
-                    {errors.spaceDiscord?.message}
-                  </p>
-                </div>
-                <div className="flex flex-col">
-                  <div className="flex gap-2 items-center">
-                    <div className="p-2 bg-[#9173FF]/20 rounded-xl flex-none">
-                      <FaTelegramPlane size={24} />
+                    <div className="flex flex-col">
+                      <div className="flex gap-2 items-center">
+                        <div className="p-2 bg-[#9173FF]/20 rounded-xl flex-none">
+                          <FaTelegramPlane size={24} />
+                        </div>
+                        <input
+                          {...register("spaceTelegram")}
+                          className="p-2 bg-[#9173FF]/20 outline-none rounded-xl my-1 sm:my-2 w-full p-1 text-sm sm:text-base"
+                          placeholder="Telegram link"
+                          maxLength={MAX_LINK_LEN}
+                        />
+                      </div>
+                      <p className="text-red-500 mt-1 text-xs sm:text-sm">
+                        {errors.spaceTelegram?.message}
+                      </p>
                     </div>
-                    <input
-                      {...register("spaceTelegram")}
-                      className="p-2 bg-[#9173FF]/20 outline-none rounded-xl my-1 sm:my-2 w-full p-1 text-sm sm:text-base"
-                      placeholder="Telegram link"
-                      maxLength={MAX_LINK_LEN}
-                    />
-                  </div>
-                  <p className="text-red-500 mt-1 text-xs sm:text-sm">
-                    {errors.spaceTelegram?.message}
-                  </p>
-                </div>
-                <div className="flex flex-col">
-                  <div className="flex gap-2 items-center">
-                    <div className="p-2 bg-[#9173FF]/20 rounded-xl flex-none">
-                      <FaXTwitter size={24} />
+                    <div className="flex flex-col">
+                      <div className="flex gap-2 items-center">
+                        <div className="p-2 bg-[#9173FF]/20 rounded-xl flex-none">
+                          <FaXTwitter size={24} />
+                        </div>
+                        <input
+                          {...register("spaceX")}
+                          className="p-2 bg-[#9173FF]/20 outline-none rounded-xl my-1 sm:my-2 w-full p-1 text-sm sm:text-base"
+                          placeholder="Twitter link"
+                          maxLength={MAX_LINK_LEN}
+                        />
+                      </div>
+                      <p className="text-red-500 mt-1 text-xs sm:text-sm">
+                        {errors.spaceX?.message}
+                      </p>
                     </div>
-                    <input
-                      {...register("spaceX")}
-                      className="p-2 bg-[#9173FF]/20 outline-none rounded-xl my-1 sm:my-2 w-full p-1 text-sm sm:text-base"
-                      placeholder="Twitter link"
-                      maxLength={MAX_LINK_LEN}
-                    />
-                  </div>
-                  <p className="text-red-500 mt-1 text-xs sm:text-sm">
-                    {errors.spaceX?.message}
-                  </p>
-                </div>
-                <div className="flex flex-col">
-                  <div className="flex gap-2 items-center">
-                    <div className="p-2 bg-[#9173FF]/20 rounded-xl flex-none">
-                      <FaLinkedinIn size={24} />
+                    <div className="flex flex-col">
+                      <div className="flex gap-2 items-center">
+                        <div className="p-2 bg-[#9173FF]/20 rounded-xl flex-none">
+                          <FaLinkedinIn size={24} />
+                        </div>
+                        <input
+                          {...register("spaceLinkedIn")}
+                          className="p-2 bg-[#9173FF]/20 outline-none rounded-xl my-1 sm:my-2 w-full p-1 text-sm sm:text-base"
+                          placeholder="LinkedIn link"
+                          maxLength={MAX_LINK_LEN}
+                        />
+                      </div>
+                      <p className="text-red-500 mt-1 text-xs sm:text-sm">
+                        {errors.spaceLinkedIn?.message}
+                      </p>
                     </div>
-                    <input
-                      {...register("spaceLinkedIn")}
-                      className="p-2 bg-[#9173FF]/20 outline-none rounded-xl my-1 sm:my-2 w-full p-1 text-sm sm:text-base"
-                      placeholder="LinkedIn link"
-                      maxLength={MAX_LINK_LEN}
-                    />
                   </div>
-                  <p className="text-red-500 mt-1 text-xs sm:text-sm">
-                    {errors.spaceLinkedIn?.message}
-                  </p>
                 </div>
               </div>
             </div>
