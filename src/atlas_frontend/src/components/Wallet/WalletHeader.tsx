@@ -136,7 +136,7 @@ const WalletHeader = () => {
             Wallet
           </div>
           <WalletIcon className="h-12 sm:h-16" />
-          <div className="bg-[#9173FF]/30 text-white px-2 py-1 text-[14px] sm:px-6 sm:py-4 sm:text-lg rounded-2xl backdrop-blur-sm">
+          <div className="bg-[#9173FF]/30 text-white px-2 py-1 text-[14px] sm:px-6 sm:py-4 sm:text-lg rounded-2xl backdrop-blur-sm text-center">
             {parsedUserCkUsdc} XP
           </div>
         </div>

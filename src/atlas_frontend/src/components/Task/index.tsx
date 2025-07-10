@@ -143,22 +143,23 @@ const Task = () => {
   return (
     <div className="container mx-auto my-4">
       <div className="w-full px-3">
-        <div className="flex justify-between my-4">
-          <div className="flex justify-start gap-2">
+        <div className="w-full flex flex-col gap-2 md:flex-row md:flex-none md:w-auto md:gap-none my-4 md:justify-between">
+          <div className="flex">
             <Button
               light
-              className="flex gap-2"
+              className="flex-1 gap-2 md:flex-none"
               onClick={() => navigate(getSpacePath(parsedSpacePrincipal))}
             >
               <FaArrowLeftLong /> Back
             </Button>
           </div>
-          <div className="flex justify-end gap-2">
+          <div className="flex md:flex-none">
             {!didUserCanAdministrate && userBlockchainData && !inHub && (
-              <Button onClick={joinSpace}>Join space</Button>
+              <Button className="flex-1 md:flex-none" onClick={joinSpace}>Join space</Button>
             )}
             {didUserCanAdministrate && (
               <Button
+                className="flex-1 md:flex-none"
                 onClick={() =>
                   navigate(getSubmissionsPath(parsedSpacePrincipal, taskId))
                 }
@@ -184,7 +185,7 @@ const Task = () => {
                 )}
               </div>
               <div>
-                <h2 className="md:text-3xl font-semibold font-montserrat flex text-white">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold font-montserrat flex text-white">
                   {spaceData?.space_name}
                 </h2>
               </div>
@@ -192,7 +193,7 @@ const Task = () => {
             <div className="mx-2">
               <div className="h-1 w-full bg-white/20 mt-3 mb-4 md:mt-6 md:mb-8 rounded-full"></div>
               <div>
-                <h2 className="md:text-4xl font-semibold font-montserrat flex text-white">
+                <h2 className="text-xl sm:text-3xl md:text-4xl font-semibold font-montserrat flex text-white">
                   {currentTask.task_title}
                 </h2>
                 <div className="mt-6">
@@ -219,7 +220,7 @@ const Task = () => {
                       )}
                     </div>
                   </div>
-                  <div className="bg-[#9173FF] rounded-xl p-2 md:p-6 md:text-lg font-medium font-poppins w-full flex items-center justify-between">
+                  <div className="bg-[#9173FF] rounded-xl p-2 mb-2 md:p-6 sm:base md:text-lg md:font-medium font-poppins w-full flex items-center justify-between">
                     <div>Reward</div>
                     <FaWallet color="1E0F33" />
                   </div>

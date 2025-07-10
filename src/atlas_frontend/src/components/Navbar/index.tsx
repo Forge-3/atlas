@@ -231,7 +231,7 @@ const Navbar = () => {
             draggable="false"
           />
         </a>
-        <div className="flex items-center justify-center gap-6">
+        <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4">
           {user && (
             <div className="flex items-center justify-center gap-6">
               <Button

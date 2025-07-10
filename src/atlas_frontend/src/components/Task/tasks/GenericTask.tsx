@@ -113,10 +113,10 @@ const GenericTask = ({
       </div>
       <div className="bg-[#1E0F33] rounded-xl p-3 md:p-6 w-full">
         <div className="mb-4">
-          <h4 className="text-base md:text-3xl font-medium font-poppins text-white mb-1 text-wrap break-all">
+          <h4 className="text-base sm:text-xl md:text-3xl font-medium font-poppins text-white mb-1 text-wrap break-all">
             {genericTask.task_content.TitleAndDescription.task_title}
           </h4>
-          <p className="text-sm md:text-xl text-zinc-400 text-wrap break-all">
+          <p className="text-sm sm:text-base md:text-xl text-zinc-400 text-wrap break-all">
             {genericTask.task_content.TitleAndDescription.task_description}
           </p>
         </div>

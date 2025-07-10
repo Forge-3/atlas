@@ -92,11 +92,11 @@ const Submissions = () => {
   
       <div className="container mx-auto my-4">
         <div className="w-full px-3">
-            <div className="flex justify-between my-4">
-            <div className="flex justify-start gap-2">
+            <div className="w-full flex flex-col gap-2 md:flex-row md:flex-none md:w-auto md:gap-none my-4 md:justify-between">
+            <div className="flex">
               <Button
                 light
-                className="flex gap-2"
+                className="flex-1 gap-2"
                 onClick={() => navigate(getTaskPath(principal, taskId))}
               >
                 <FaArrowLeftLong /> Back
@@ -129,7 +129,8 @@ const Submissions = () => {
                   <span className="text-[#9173FF] ml-2">(Submissions)</span>
                 </h2>
               </div>
-              <table className="table-auto mt-6 w-full text-white text-center rtl:text-right border-separate border-spacing-x-2 font-montserrat">
+              <div className="overflow-x-auto">
+              <table className="table-auto mt-6 w-full overflow-x-auto  text-white text-center rtl:text-right border-separate border-spacing-x-2 font-montserrat">
                 <thead>
                   <tr>
                     <th scope="col" className="px-2 py-3 text-xs sm:text-sm text-left w-8 rounded-tl-lg"></th>
@@ -163,6 +164,7 @@ const Submissions = () => {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         </div>
