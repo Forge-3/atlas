@@ -38,7 +38,7 @@ interface TasksListProps {
 const TasksList = ({ tasks = {}, spaceId }: TasksListProps) => {
   const nowInSeconds = Math.floor(Date.now() / 1000);
 
-  const allTaskEntries = Object.entries(tasks).map(([id, task]) => {
+  const taskEntries = Object.entries(tasks).map(([id, task]) => {
     const isClosed = "refunded" in task;
     const isStarting = Number(task.start_time) > Number(nowInSeconds);
     const type: "expired" | "starting" | "ongoing" = isClosed ? "expired" : isStarting ? "starting" : "ongoing";
@@ -47,7 +47,7 @@ const TasksList = ({ tasks = {}, spaceId }: TasksListProps) => {
     return { id, task, type, startingIn };
   });
 
-  if (allTaskEntries.length === 0) return <></>;
+  if (taskEntries.length === 0) return <></>;
 
   return (
     <>
@@ -66,7 +66,7 @@ const TasksList = ({ tasks = {}, spaceId }: TasksListProps) => {
       
       <div className="relative w-full bg-[#1E0F33] rounded-b-xl">
         <div className="flex gap-4 px-8 py-6 flex-wrap justify-start">
-          {allTaskEntries.map((entry) => (
+          {taskEntries.map((entry) => (
             <TaskCard
               key={entry.id}
               id={entry.id}
