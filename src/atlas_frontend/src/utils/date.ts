@@ -62,3 +62,7 @@ export function formatDuration(seconds: number): string {
 
   return parts.length ? parts.join(" ") : "Less than a minute";
 }
+
+export function nowInSeconds(): number {
+  return Math.floor(Date.now() / 1000);
+}

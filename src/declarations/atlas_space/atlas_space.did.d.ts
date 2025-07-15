@@ -47,6 +47,7 @@ export type Error = { 'BytecodeUpToDate' : null } |
   { 'FailedToUpdateConfig' : string } |
   { 'UserDoesNotBelongToSpace' : null } |
   { 'TaskNotActive' : null } |
+  { 'AllRewardsClaimed' : null } |
   { 'TaskAlreadyExists' : bigint } |
   { 'FailedToCallMain' : string } |
   { 'ConfigNotSet' : null } |
@@ -56,7 +57,6 @@ export type Error = { 'BytecodeUpToDate' : null } |
   { 'UserAlreadySubmitted' : null } |
   { 'RewardAlreadyRefunded' : null } |
   { 'NotAdmin' : null } |
-  { 'NoUnusedRewards' : null } |
   { 'IncorrectSubmission' : string } |
   { 'CountToHigh' : { 'max' : bigint, 'found' : bigint } } |
   { 'SubtaskDoNotExists' : bigint } |

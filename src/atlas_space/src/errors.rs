@@ -76,7 +76,7 @@ pub enum Error {
     NotTaskCreator,
 
     #[error("All task rewards have been claimed")]
-    NoUnusedRewards,
+    AllRewardsClaimed,
 
     #[error("Creator has claimed unused rewards")]
     RewardAlreadyRefunded,

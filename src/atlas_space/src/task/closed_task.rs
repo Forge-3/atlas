@@ -62,7 +62,7 @@ impl ClosedTask {
 
         let rewarded_count = self.rewarded.len() as u64;
         if rewarded_count >= self.number_of_uses {
-            return Err(Error::NoUnusedRewards);
+            return Err(Error::AllRewardsClaimed);
         }
 
         if self.tasks.is_empty() {
@@ -99,7 +99,7 @@ impl ClosedTask {
 
         let unused = self.number_of_uses - accepted_users.len() as u64;
         if unused == 0 {
-            return Err(Error::NoUnusedRewards);
+            return Err(Error::AllRewardsClaimed);
         }
 
         self.token_reward

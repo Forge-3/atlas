@@ -28,7 +28,7 @@ import {
 import { getAtlasUser, joinAtlasSpace } from "../../canisters/atlasMain/api.ts";
 import TransferSpaceModal from "../../modals/TransferSpaceModal.tsx";
 import { getErrorWithInfoToast } from "../../utils/errors.ts";
-import { formatDuration } from "../../utils/date.ts";
+import { formatDuration, nowInSeconds } from "../../utils/date.ts";
 
 interface TasksListProps {
   tasks: Tasks;
@@ -36,13 +36,12 @@ interface TasksListProps {
 }
 
 const TasksList = ({ tasks = {}, spaceId }: TasksListProps) => {
-  const nowInSeconds = Math.floor(Date.now() / 1000);
-
+  const now = nowInSeconds();
   const taskEntries = Object.entries(tasks).map(([id, task]) => {
     const isClosed = "refunded" in task;
-    const isStarting = Number(task.start_time) > Number(nowInSeconds);
+    const isStarting = Number(task.start_time) > Number(now);
     const type: "expired" | "starting" | "ongoing" = isClosed ? "expired" : isStarting ? "starting" : "ongoing";
-    const startingIn = type === "starting" ? formatDuration(Number(task.start_time) - Number(nowInSeconds)) : undefined;
+    const startingIn = type === "starting" ? formatDuration(Number(task.start_time) - Number(now)) : undefined;
 
     return { id, task, type, startingIn };
   });

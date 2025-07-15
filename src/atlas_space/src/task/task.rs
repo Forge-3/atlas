@@ -34,10 +34,12 @@ impl CreateTaskArgs {
                 "Task End time must be after start time".into(),
             ));
         }
-        let now = ic_cdk::api::time() / 1_000_000_000;
-        if self.end_time <= now {
+
+        let now = ic_cdk::api::time() / 1_000_000_000;  // nanoseconds to seconds
+        let min_task_time = 5 * 60; // 5 minutes
+        if self.end_time <= (now + min_task_time) {
             return Err(Error::InvalidTaskContent(
-                "Task end time must be in the future".into(),
+                format!("Task end time must be at least {} minutes in the future", min_task_time / 60),
             ));
         }
         self.task_content
@@ -98,13 +100,13 @@ impl Task {
     }
 
     pub fn is_expired(&self) -> bool {
-        let current_time_seconds = ic_cdk::api::time() / 1_000_000_000;
-        current_time_seconds > self.end_time
+        let now = ic_cdk::api::time() / 1_000_000_000; // nanoseconds to seconds
+        now > self.end_time
     }
 
     pub fn is_active(&self) -> bool {
-        let now = ic_cdk::api::time() / 1_000_000_000;
-        now >= self.start_time
+        let now = ic_cdk::api::time() / 1_000_000_000; // nanoseconds to seconds
+        now > self.start_time
     }
 
     pub fn submit_subtask_submission(

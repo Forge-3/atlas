@@ -1,6 +1,6 @@
 use crate::{
     errors::Error,
-    guard::{authenticated_guard, parent_guard, parent_or_owner_or_admin_guard, user_is_in_space},
+    guard::{parent_guard, parent_or_owner_or_admin_guard, user_is_in_space},
     memory,
     state::EditSpaceArgs,
 };
@@ -164,12 +164,7 @@ pub async fn withdraw_reward(task_id: TaskId) -> Result<(), Error> {
 
 #[update]
 pub async fn force_close_task(task_id: TaskId) -> Result<(), Error> {
-    let caller = authenticated_guard()?;
-    let task = memory::get_open_task(&task_id).ok_or(Error::TaskDoNotExists(task_id))?;
-
-    if caller != task.creator {
-        parent_or_owner_or_admin_guard().await?;
-    }
+    parent_or_owner_or_admin_guard().await?;
     timer_logic::close_task(task_id).await?;
     Ok(())
 }

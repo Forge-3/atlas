@@ -36,6 +36,7 @@ import { getAtlasUser, joinAtlasSpace } from "../../canisters/atlasMain/api";
 import type { Space } from "../../store/slices/spacesSlice";
 import { FaArrowLeftLong } from "react-icons/fa6";
 import { getErrorWithInfoToast } from "../../utils/errors";
+import { nowInSeconds } from "../../utils/date";
 
 const Task = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -95,8 +96,7 @@ const Task = () => {
     return 'refunded' in task;
   }
 
-  const now_in_seconds = Math.floor(Date.now() / 1000);
-  const taskDisabled = currentTask.start_time > BigInt(now_in_seconds) || isClosedTask(currentTask);
+  const taskDisabled = currentTask.start_time > BigInt(nowInSeconds()) || isClosedTask(currentTask);
 
   const usersSubmissions = currentTask?.tasks
     ? getUsersSubmissions(currentTask.tasks)

@@ -22,7 +22,7 @@ pub enum Submission {
         #[n(0)]
         content: String,
     },
-    #[n(255)]
+    #[n(1)]
     Empty,
 }
 
