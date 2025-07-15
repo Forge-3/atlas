@@ -57,7 +57,6 @@ export type Error = { 'BytecodeUpToDate' : null } |
   { 'UserAlreadySubmitted' : null } |
   { 'RewardAlreadyRefunded' : null } |
   { 'NotAdmin' : null } |
-  { 'NoUnusedRewards' : null } |
   { 'IncorrectSubmission' : string } |
   { 'CountToHigh' : { 'max' : bigint, 'found' : bigint } } |
   { 'SubtaskDoNotExists' : bigint } |
