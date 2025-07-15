@@ -15,7 +15,7 @@ use crate::cycles::WalletReceiveResult;
 use crate::errors::Error;
 use crate::methods::query::{GetTasksArgs, GetTasksRes, SpaceInfo};
 use crate::state::{EditSpaceArgs, State};
-use crate::task::{submission::Submission, CreateTaskArgs, TaskId};
+use crate::task::{submission::Submission, CreateTaskArgs, DiscordGuild, TaskId};
 
 use candid::{Nat, Principal};
 use shared::SpaceArgs;

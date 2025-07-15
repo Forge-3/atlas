@@ -30,15 +30,19 @@ import { getErrorWithInfoToast } from "../utils/errors";
 import DiscordTask from "./tasks/DiscordTask";
 import type { TaskContent } from "../../../declarations/atlas_space/atlas_space.did";
 
-type TaskType = "generic" | "discord";
-const allowedTaskTypes = ["generic" , "discord"] as const;
+// type TaskType = "generic" | "discord";
+// const allowedTaskTypes = ["generic" , "discord"] as const;
+export enum TaskFormType {
+  Generic = "generic",
+  Discord = "discord",
+}
 
 interface CreateNewTaskFormInput {
   numberOfUses: number;
   rewardPerUsage: number;
   taskTitle: string;
   tasks?: {
-    taskType: TaskType;
+    taskType: TaskFormType;
     title: string;
     description: string;
     guildId: number;
@@ -49,7 +53,7 @@ const maxTitleLength = 50;
 const maxDescriptionLength = 500;
 
 const taskSchema = yup.object({
-  taskType: yup.mixed<TaskType>().oneOf(allowedTaskTypes).required(),
+  taskType: yup.mixed<TaskFormType>().oneOf(Object.values(TaskFormType)).required(),
   title: yup
     .string()
     .trim()
@@ -114,7 +118,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     defaultValues: {
       numberOfUses: 1,
       rewardPerUsage: 0.1,
-      tasks: [{ taskType: "generic", title: "", description: "" }],
+      tasks: [{ taskType: TaskFormType.Generic, title: "", description: "" }],
     },
   });
   const { fields, append, remove } = useFieldArray({
@@ -176,14 +180,14 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
 
     const taskContent = tasks
     ?.map((task) => {
-        if (task.taskType === "generic") {
+        if (task.taskType === TaskFormType.Generic) {
             return {
                 TitleAndDescription: {
                     task_description: task.description,
                     task_title: task.title,
                 },
             } as TaskContent;
-        } else if (task.taskType === "discord") {
+        } else if (task.taskType === TaskFormType.Discord) {
             return {
                 DiscordTask: {
                     task_title: task.title,
@@ -261,7 +265,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
             <Button
               onClick={() =>
                 append({
-                  taskType: "generic",
+                  taskType:TaskFormType.Generic,
                   title: "",
                   description: "",
                   guildId: 0,
@@ -351,6 +355,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                         maxTitleLength={maxSubtitleLength}
                         maxDescriptionLength={maxDescriptionLength}
                         guildId={0}
+                        spacePrincipal={principal}
                       />
                 )}
                   </div>

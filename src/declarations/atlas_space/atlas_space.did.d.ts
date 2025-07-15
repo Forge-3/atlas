@@ -19,6 +19,11 @@ export interface CreateTaskArgs {
   'task_content' : Array<TaskContent>,
   'number_of_uses' : bigint,
 }
+export interface DiscordGuild {
+  'id' : string,
+  'icon' : [] | [string],
+  'name' : string,
+}
 export interface EditSpaceArgs {
   'external_links' : Array<[string, string]>,
   'space_background' : [] | [string],
@@ -60,6 +65,8 @@ export type Result_1 = { 'Ok' : bigint } |
   { 'Err' : Error };
 export type Result_2 = { 'Ok' : GetTasksRes } |
   { 'Err' : Error };
+export type Result_3 = { 'Ok' : Array<DiscordGuild> } |
+  { 'Err' : string };
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
   { 'InitArg' : SpaceInitArg };
 export interface SpaceInfo { 'version' : bigint, 'state' : State }
@@ -139,6 +146,7 @@ export interface _SERVICE {
   'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_2>,
   'get_space_info' : ActorMethod<[], SpaceInfo>,
   'get_state' : ActorMethod<[], State>,
+  'get_user_guilds' : ActorMethod<[string], Result_3>,
   'reject_subtask_submission' : ActorMethod<
     [Principal, bigint, bigint],
     Result

@@ -23,8 +23,7 @@ import {
 import { shortPrincipal } from "../../utils/icp";
 import { TiArrowSortedDown } from "react-icons/ti";
 import type { ActorSubclass } from "@dfinity/agent";
-import { Principal } from "@dfinity/principal";
-import type { TaskData, TasksData } from "../../canisters/atlasSpace/types";
+import type { TasksData } from "../../canisters/atlasSpace/types";
 import type { Space } from "../../store/slices/spacesSlice";
 import { FaArrowLeftLong } from "react-icons/fa6";
 import { getTaskPath } from "../../router/paths";

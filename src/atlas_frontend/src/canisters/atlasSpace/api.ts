@@ -1,6 +1,7 @@
 import type { ActorSubclass } from "@dfinity/agent";
 import type {
   _SERVICE,
+  DiscordGuild,
   GetTasksRes,
   State,
   Submission,
@@ -13,6 +14,7 @@ import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { Principal } from "@dfinity/principal";
 import type { ExternalLinks } from "./types.js";
+import { string } from "yup";
 
 interface GetAtlasSpaceArgs {
   unAuthAtlasSpace: ActorSubclass<_SERVICE>;
@@ -254,5 +256,18 @@ export const editSpace = async ({
   await unwrapCall<null>({
     call,
     errMsg: "Failed to edit space",
+  });
+};
+
+
+export const getDiscordGuilds = async (
+  actor: ActorSubclass<_SERVICE>,
+  accessToken: string,
+)=> {
+  const call = actor.get_user_guilds(accessToken);
+
+  return await unwrapCall<DiscordGuild[]>({
+    call,
+    errMsg: "Failed to get Discord guilds from canister",
   });
 };

@@ -3,11 +3,12 @@ use crate::{
     guard::{parent_guard, parent_or_owner_or_admin_guard, user_is_in_space},
     memory,
     state::EditSpaceArgs,
-    task::{submission::Submission, CreateTaskArgs, Task, TaskId},
+    task::{submission::Submission, CreateTaskArgs, DiscordGuild, Task, TaskId},
 };
 
 use candid::Principal;
-use ic_cdk::update;
+use ic_cdk::{call::CallResult, management_canister::http_request, update};
+use ic_management_canister_types::{HttpHeader, HttpMethod, HttpRequestArgs, HttpRequestResult};
 use ic_stable_structures::Storable;
 use sha2::Digest;
 
@@ -136,4 +137,49 @@ pub fn transfer_space(to: Principal) {
     parent_guard().unwrap();
 
     memory::mut_config(|config| config.owner = to);
+}
+
+#[update]
+async fn get_user_guilds(token: String) -> Result<Vec<DiscordGuild>, String> {
+    let url = "https://discord.com/api/users/@me/guilds".to_string();
+    ic_cdk::println!("Requesting guilds with token: {}", token);
+
+    let arg = HttpRequestArgs {
+        url: url.to_string(),
+        method: HttpMethod::GET,
+        headers: vec![
+            HttpHeader {
+                name: "Authorization".to_string(),
+                value: format!("Bearer {}", token.trim()),
+            },
+            HttpHeader {
+                name: "Content-Type".to_string(),
+                value: "application/json".to_string(),
+            },
+        ],
+        body: None,
+        max_response_bytes: Some(2_000_000),
+        transform: None,
+    };
+
+    let response: CallResult<HttpRequestResult> = http_request(&arg).await;
+
+    let http_response = response.map_err(|e| format!("HTTP request failed: {:?}", e))?;
+
+    ic_cdk::println!("HTTP Response Status: {}", http_response.status);
+    let response_body_str = String::from_utf8_lossy(&http_response.body);
+    ic_cdk::println!("Raw HTTP Response Body: {}", response_body_str);
+
+    if http_response.status != 200u32 {
+        return Err(format!("Unexpected status code: {}", http_response.status));
+    }
+
+    let guilds: Vec<DiscordGuild> = serde_json::from_slice(&http_response.body).map_err(|e| {
+        format!(
+            "Failed to deserialize guilds: {:?}. Raw body was: {}",
+            e, response_body_str
+        )
+    })?;
+
+    Ok(guilds)
 }

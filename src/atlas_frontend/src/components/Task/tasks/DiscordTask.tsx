@@ -48,7 +48,7 @@ const DiscordTask = ({
   isUserInHub,
 }: DiscordTaskProps) => {
   const dispatch = useDispatch();
-  const { user } = useAuth();
+  const { user, connect } = useAuth();
   const [openSubmission, setSubmission] = useState(false);
   const { register, handleSubmit } = useForm({
     resolver: yupResolver(schema),
@@ -56,7 +56,6 @@ const DiscordTask = ({
       taskSubmission: "",
     },
   });
-  const { connect } = useAuth();
   const authAtlasSpace = useAuthAtlasSpaceActor(spacePrincipal);
 
   const onSubmit: SubmitHandler<DiscordTaskFormInput> = async ({
@@ -95,8 +94,6 @@ const DiscordTask = ({
   const submissionState = userSubmission?.[1].state
     ? Object.keys(userSubmission?.[1].state)[0]
     : null;
-
-    console.log("DiscordTask", user, userSubmission, openSubmission, isUserInHub);
 
   return (
     <div className="flex mt-2">

@@ -128,6 +128,15 @@ export const idlFactory = ({ IDL }) => {
     'space_description' : IDL.Text,
   });
   const SpaceInfo = IDL.Record({ 'version' : IDL.Nat64, 'state' : State });
+  const DiscordGuild = IDL.Record({
+    'id' : IDL.Text,
+    'icon' : IDL.Opt(IDL.Text),
+    'name' : IDL.Text,
+  });
+  const Result_3 = IDL.Variant({
+    'Ok' : IDL.Vec(DiscordGuild),
+    'Err' : IDL.Text,
+  });
   const WalletReceiveResult = IDL.Record({ 'accepted' : IDL.Nat64 });
   return IDL.Service({
     'accept_subtask_submission' : IDL.Func(
@@ -143,6 +152,7 @@ export const idlFactory = ({ IDL }) => {
     'get_open_tasks' : IDL.Func([GetTasksArgs], [Result_2], ['query']),
     'get_space_info' : IDL.Func([], [SpaceInfo], ['query']),
     'get_state' : IDL.Func([], [State], ['query']),
+    'get_user_guilds' : IDL.Func([IDL.Text], [Result_3], []),
     'reject_subtask_submission' : IDL.Func(
         [IDL.Principal, IDL.Nat64, IDL.Nat64],
         [Result],

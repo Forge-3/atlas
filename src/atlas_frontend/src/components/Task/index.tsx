@@ -64,6 +64,7 @@ const Task = () => {
   const spaceData = space?.state;
   const unAuthAtlasSpace = useUnAuthAtlasSpaceActor(parsedSpacePrincipal);
   const isUserInHub = inHub?.id.toString() === spacePrincipal;
+  console.log("principal space: ", spacePrincipal)
 
   useEffect(() => {
     if (!unAuthAtlasSpace || spaceData) return;
@@ -207,7 +208,7 @@ const Task = () => {
                         <GenericTask
                           key={key}
                           genericTask={task[1].GenericTask}
-                          spacePrincipal={principal}
+                          spacePrincipal={parsedSpacePrincipal}
                           taskId={taskId}
                           subtaskId={key}
                           unAuthAtlasSpace={unAuthAtlasSpace}
@@ -220,7 +221,7 @@ const Task = () => {
                         <DiscordTask
                           key={key}
                           discordTask={task[1].DiscordTask}
-                          spacePrincipal={principal}
+                          spacePrincipal={parsedSpacePrincipal}
                           taskId={taskId}
                           subtaskId={key}
                           unAuthAtlasSpace={unAuthAtlasSpace} 

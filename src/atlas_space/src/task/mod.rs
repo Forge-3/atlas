@@ -13,6 +13,13 @@ pub mod submission;
 pub mod token_reward;
 pub mod xp_reward;
 
+#[derive(Debug, serde::Deserialize, serde::Serialize, candid::CandidType, Clone)]
+pub struct DiscordGuild {
+    pub id: String,
+    pub name: String,
+    pub icon: Option<String>,
+}
+
 #[derive(CandidType, Deserialize)]
 pub struct CreateTaskArgs {
     pub task_title: String,
@@ -121,7 +128,7 @@ impl From<&TaskContent> for TaskType {
                 task_content: TaskContent::DiscordTask {
                     task_title: task_title.clone(),
                     task_description: task_description.clone(),
-                    guild_id: guild_id.clone(),
+                    guild_id: *guild_id,
                 },
                 submission: Default::default(),
             },

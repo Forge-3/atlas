@@ -1,44 +1,32 @@
+import type { Principal } from "@dfinity/principal";
 import type {
+  SubmissionData,
   SubmissionState,
   TaskType,
 } from "../../../../declarations/atlas_space/atlas_space.did";
 import type { UserSubmissionsData } from "./types";
 
-export const getUsersSubmissions = (tasks: { [key: string]: TaskType }) => { // tasks jest obiektem, nie tablicą
-  const data = Object.entries(tasks).reduce((acc, [subtaskIdStr, task]) => { // Iterujemy po Object.entries
-    // Sprawdzamy, który wariant TaskType to jest
-    if ("GenericTask" in task) {
-      const genericTask = task.GenericTask;
-      genericTask.submission.forEach(([principal, submissionData]) => {
-        const principalText = principal.toText();
-        if (!acc[principalText]) {
-          acc[principalText] = {};
-        }
-        acc[principalText][subtaskIdStr] = { // Używamy subtaskIdStr jako klucza
-          submissionData,
-          taskType: "GenericTask" as keyof TaskType,
-        };
-      });
-    } else if ("DiscordTask" in task) { // <-- KLUCZOWA ZMIANA: Obsługa DiscordTask
-      const discordTask = task.DiscordTask;
-      discordTask.submission.forEach(([principal, submissionData]) => {
-        const principalText = principal.toText();
-        if (!acc[principalText]) {
-          acc[principalText] = {};
-        }
-        acc[principalText][subtaskIdStr] = { // Używamy subtaskIdStr jako klucza
-          submissionData,
-          taskType: "DiscordTask" as keyof TaskType, // Dodaj typ zadania
-        };
-      });
-    } else {
-      console.warn(`[getUsersSubmissions] Unknown task type for subtaskId ${subtaskIdStr}:`, task);
-    }
-    return acc;
-  }, {} as UserSubmissionsData);
+export const getUsersSubmissions = (tasks: { [key: string]: TaskType }) => {
+  const data: UserSubmissionsData = {};
 
-  return new UserSubmissions(data);
-};
+for (const [subtaskIdStr, task] of Object.entries(tasks)) {
+  const foundType = Object.keys(task)[0] as keyof TaskType;
+  const taskData = task[foundType] as { submission: [Principal, SubmissionData][] };
+
+  for (const [principal, submissionData] of taskData.submission) {
+    const principalText = principal.toText();
+    if (!data[principalText]) {
+      data[principalText] = {};
+    }
+    data[principalText][subtaskIdStr] = {
+      submissionData,
+      taskType: foundType,
+    };
+  }
+}
+
+return new UserSubmissions(data);
+}
 
 export class UserSubmissions {
   constructor(public userSubmissionsData: UserSubmissionsData) {}

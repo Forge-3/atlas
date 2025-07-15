@@ -12,6 +12,7 @@ type CreateTaskArgs = record {
   task_content : vec TaskContent;
   number_of_uses : nat64;
 };
+type DiscordGuild = record { id : text; icon : opt text; name : text };
 type EditSpaceArgs = record {
   external_links : vec record { text; text };
   space_background : opt text;
@@ -52,6 +53,7 @@ type GetTasksRes = record {
 type Result = variant { Ok; Err : Error };
 type Result_1 = variant { Ok : nat64; Err : Error };
 type Result_2 = variant { Ok : GetTasksRes; Err : Error };
+type Result_3 = variant { Ok : vec DiscordGuild; Err : text };
 type SpaceArgs = variant {
   UpgradeArg : record { version : nat64 };
   InitArg : SpaceInitArg;
@@ -121,6 +123,7 @@ service : (SpaceArgs) -> {
   get_open_tasks : (GetTasksArgs) -> (Result_2) query;
   get_space_info : () -> (SpaceInfo) query;
   get_state : () -> (State) query;
+  get_user_guilds : (text) -> (Result_3);
   reject_subtask_submission : (principal, nat64, nat64) -> (Result);
   set_space_background : (text) -> (Result);
   set_space_description : (text) -> (Result);
