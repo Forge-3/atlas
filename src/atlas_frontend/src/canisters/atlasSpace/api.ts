@@ -107,66 +107,64 @@ export enum TaskTypeEnum {
 }
 
 const fetchTasks = async ({
+  taskType,
   unAuthAtlasSpace,
-  unwrapMessage,
   start: initialStart = 0n,
   count = 200n,
 }: {
+  taskType: TaskTypeEnum;
   unAuthAtlasSpace: ActorSubclass<_SERVICE>;
-  unwrapMessage: string;
   start?: bigint;
   count?: bigint;
-  }): Promise<Tasks> => {
-  const allTasks: Tasks = {};
-  
-const fetchByType = async (taskType: TaskTypeEnum) => {
-    const result: [bigint, AnyTask][] = [];
-    let totalCount = 0n;
-    let start = initialStart;
+}): Promise<Tasks> => {
+  const result: [bigint, AnyTask][] = [];
+  let totalCount = 0n;
+  let start = initialStart;
 
-    const fetchFn = () => {
-      switch (taskType) {
-        case TaskTypeEnum.Open:
-          return unAuthAtlasSpace.get_open_tasks({ start, count });
-        case TaskTypeEnum.Closed:
-          return unAuthAtlasSpace.get_closed_tasks({ start, count });
-        default:
-          throw new Error(`Unsupported TaskTypeEnum: ${taskType}`);
-      }
-    };
-
-    const res = await unwrapCall<{ tasks_count: bigint; tasks: [bigint, AnyTask][] }>({
-      call: fetchFn(),
-      errMsg: `${unwrapMessage} (${taskType})`,
-    });
-
-    totalCount = res.tasks_count;
-    result.push(...res.tasks);
-    start += count;
-
-    while (totalCount > BigInt(result.length)) {
-      const res = await unwrapCall<{ tasks_count: bigint; tasks: [bigint, AnyTask][] }>({
-        call: fetchFn(),
-        errMsg: `${unwrapMessage} (${taskType})`,
-      });
-      result.push(...res.tasks);
-      start += count;
+  const unwrapMessage = (() => {
+    switch (taskType) {
+      case TaskTypeEnum.Open:
+        return "Failed to fetch open tasks";
+      case TaskTypeEnum.Closed:
+        return "Failed to fetch closed tasks";
+      default:
+        return "Failed to fetch tasks";
     }
+  })();
 
-    return result.reduce((acc, [id, val]) => {
-      acc[id.toString()] = val;
-      return acc;
-    }, {} as Tasks);
+  const fetchFn = () => {
+    switch (taskType) {
+      case TaskTypeEnum.Open:
+        return unAuthAtlasSpace.get_open_tasks({ start, count });
+      case TaskTypeEnum.Closed:
+        return unAuthAtlasSpace.get_closed_tasks({ start, count });
+      default:
+        throw new Error(`Unsupported TaskTypeEnum: ${taskType}`);
+    }
   };
 
-  const taskTypes = Object.values(TaskTypeEnum) as TaskTypeEnum[];
+  const res = await unwrapCall<{ tasks_count: bigint; tasks: [bigint, AnyTask][] }>({
+    call: fetchFn(),
+    errMsg: unwrapMessage,
+  });
 
-  for (const type of taskTypes) {
-    const tasks = await fetchByType(type);
-    Object.assign(allTasks, tasks);
+  totalCount = res.tasks_count;
+  result.push(...res.tasks);
+  start += count;
+
+  while (totalCount > result.length) {
+    const res = await unwrapCall<{ tasks_count: bigint; tasks: [bigint, AnyTask][] }>({
+      call: fetchFn(),
+      errMsg: unwrapMessage,
+    });
+    result.push(...res.tasks);
+    start += count;
   }
 
-  return allTasks;
+  return result.reduce((acc, [id, val]) => {
+    acc[id.toString()] = val;
+    return acc;
+  }, {} as Tasks);
 };
 
 export const getSpaceTasks = async ({
@@ -174,10 +172,21 @@ export const getSpaceTasks = async ({
   spaceId,
   dispatch,
 }: GetAtlasSpaceArgs) => {
-  const mergedTasks = await fetchTasks({
-    unAuthAtlasSpace,
-    unwrapMessage: "Failed to fetch open tasks",
-  });
+  const [openTasks, closedTasks] = await Promise.all([
+    fetchTasks({
+      taskType: TaskTypeEnum.Open,
+      unAuthAtlasSpace,
+    }),
+    fetchTasks({
+      taskType: TaskTypeEnum.Closed,
+      unAuthAtlasSpace,
+    }),
+  ]);
+
+  const mergedTasks = {
+    ...openTasks,
+    ...closedTasks,
+  } as { [key: string]: AnyTask };
 
   dispatch(
     setTasks({

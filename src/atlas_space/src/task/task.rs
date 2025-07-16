@@ -8,6 +8,7 @@ use candid::{CandidType, Nat, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
+use crate::task::timer_logic::now_in_seconds;
 
 #[derive(CandidType, Deserialize)]
 pub struct CreateTaskArgs {
@@ -35,9 +36,8 @@ impl CreateTaskArgs {
             ));
         }
 
-        let now = ic_cdk::api::time() / 1_000_000_000;  // nanoseconds to seconds
         let min_task_time = 5 * 60; // 5 minutes
-        if self.end_time <= (now + min_task_time) {
+        if self.end_time <= (now_in_seconds() + min_task_time) {
             return Err(Error::InvalidTaskContent(
                 format!("Task end time must be at least {} minutes in the future", min_task_time / 60),
             ));
@@ -100,13 +100,11 @@ impl Task {
     }
 
     pub fn is_expired(&self) -> bool {
-        let now = ic_cdk::api::time() / 1_000_000_000; // nanoseconds to seconds
-        now > self.end_time
+        now_in_seconds() > self.end_time
     }
 
     pub fn is_active(&self) -> bool {
-        let now = ic_cdk::api::time() / 1_000_000_000; // nanoseconds to seconds
-        now > self.start_time
+        now_in_seconds() > self.start_time
     }
 
     pub fn submit_subtask_submission(

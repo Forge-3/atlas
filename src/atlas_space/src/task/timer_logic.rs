@@ -14,7 +14,7 @@ use std::time::Duration;
 pub async fn reinitialize_task_timers_after_upgrade() {
     ic_cdk::println!("Reinitialize timers for tasks");
 
-    let now_sec = ic_cdk::api::time() / 1_000_000_000;
+    let now_sec = now_in_seconds();
     let tasks: Vec<(TaskId, Task)> = with_open_tasks_iter(|iter| {
         iter.map(|(task_id, task)| (task_id.clone(), task.clone())).collect()
     });
@@ -32,9 +32,7 @@ pub async fn reinitialize_task_timers_after_upgrade() {
             let id = task_id.clone();
             move || {
                 ic_cdk::futures::spawn(async move {
-                    if let Err(e) = close_task(id).await {
-                        ic_cdk::println!("Failed to close task {:?}: {:?}", id, e);
-                    }
+                    close_task(id).await.unwrap();
                 });
             }
         });
@@ -51,16 +49,13 @@ pub async fn reinitialize_task_timers_after_upgrade() {
 }
 
 pub fn schedule_close_task_timer(task_id: TaskId, end_time_sec: u64) -> TimerId {
-    let now_sec = ic_cdk::api::time() / 1_000_000_000;
-    let delay_sec = end_time_sec.saturating_sub(now_sec);
+    let delay_sec = end_time_sec.saturating_sub(now_in_seconds());
 
     set_timer(Duration::from_secs(delay_sec), {
         let id = task_id.clone();
         move || {
             ic_cdk::futures::spawn(async move {
-                if let Err(e) = close_task(id).await {
-                    ic_cdk::println!("Failed to close task {:?}: {:?}", id, e);
-                }
+                close_task(id).await.unwrap();
             });
         }
     })
@@ -88,4 +83,8 @@ pub async fn close_task_if_expired(task_id: TaskId) -> Result<bool, Error> {
     }
 
     Ok(is_expired)
+}
+
+pub fn now_in_seconds() -> u64 {
+    ic_cdk::api::time() / 1_000_000_000 // nanoseconds to seconds
 }
