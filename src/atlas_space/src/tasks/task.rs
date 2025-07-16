@@ -9,6 +9,7 @@ use candid::{CandidType, Nat, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
+use crate::task::timer_logic::now_in_seconds;
 
 #[derive(CandidType, Deserialize)]
 pub struct CreateTaskArgs {
