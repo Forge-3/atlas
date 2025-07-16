@@ -107,6 +107,10 @@ type TaskType = variant {
     task_content : TaskContent;
     submission : vec record { principal; SubmissionData };
   };
+  DiscordTask : record {
+    task_content : TaskContent;
+    submission : vec record { principal; SubmissionData };
+  };
   GenericTask : record {
     task_content : TaskContent;
     submission : vec record { principal; SubmissionData };
