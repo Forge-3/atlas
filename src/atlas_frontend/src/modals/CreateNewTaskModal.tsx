@@ -30,8 +30,6 @@ import { getErrorWithInfoToast } from "../utils/errors";
 import DiscordTask from "./tasks/DiscordTask";
 import type { TaskContent } from "../../../declarations/atlas_space/atlas_space.did";
 
-// type TaskType = "generic" | "discord";
-// const allowedTaskTypes = ["generic" , "discord"] as const;
 export enum TaskFormType {
   Generic = "generic",
   Discord = "discord",
@@ -45,7 +43,8 @@ interface CreateNewTaskFormInput {
     taskType: TaskFormType;
     title: string;
     description: string;
-    guildId: number;
+    guildId?: string;
+    inviteLink?: string;
   }[];
 }
 const maxSubtitleLength = 50;
@@ -68,10 +67,27 @@ const taskSchema = yup.object({
     .required()
     .label("Task description"),
   guildId: yup
-    .number()
-    .typeError("Guild ID must be a number")
-    .required()
-    .label("Guild ID")
+    .string()
+    .when("taskType", {
+      is: (value: TaskFormType) => value === TaskFormType.Discord,
+      then: (schema: yup.StringSchema) =>
+        schema
+          .typeError("Guild ID must be a valid string")
+          .required("Guild ID is required for Discord tasks"),
+    })
+    .label("Guild ID"),
+  inviteLink: yup
+    .string()
+    .when("taskType", {
+      is: (value: TaskFormType) => value === TaskFormType.Discord,
+      then: (schema: yup.StringSchema) =>
+        schema
+          .trim()
+          .url("Must be a valid URL")
+          .required("Invite link is required for Discord tasks")
+          .matches(/^https:\/\/(discord\.gg|discord\.com\/invite)\/[a-zA-Z0-9-]{6,10}$/, "Invalid Discord invite link format. Must be https://discord.gg/XXXXXX or https://discord.com/invite/XXXXXX (6-10 alphanumeric chars or a custom vanity URL)."),
+    })
+    .label("Invite Link"),
 });
 
 const schema = yup.object({
@@ -118,7 +134,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     defaultValues: {
       numberOfUses: 1,
       rewardPerUsage: 0.1,
-      tasks: [{ taskType: TaskFormType.Generic, title: "", description: "" }],
+      tasks: [{ taskType: TaskFormType.Generic, title: "", description: ""}],
     },
   });
   const { fields, append, remove } = useFieldArray({
@@ -192,7 +208,8 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                 DiscordTask: {
                     task_title: task.title,
                     task_description: task.description,
-                    guild_id: BigInt(task.guildId),
+                    invite_link: task.inviteLink,
+                    guild_id: task.guildId,
                 },
             } as TaskContent;
         }
@@ -265,10 +282,9 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
             <Button
               onClick={() =>
                 append({
-                  taskType:TaskFormType.Generic,
+                  taskType: TaskFormType.Generic,
                   title: "",
                   description: "",
-                  guildId: 0,
                 })
               }
               className="flex gap-2"
@@ -354,10 +370,9 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                         errors={errors}
                         maxTitleLength={maxSubtitleLength}
                         maxDescriptionLength={maxDescriptionLength}
-                        guildId={0}
                         spacePrincipal={principal}
                       />
-                )}
+                    )}
                   </div>
                 </div>
               );

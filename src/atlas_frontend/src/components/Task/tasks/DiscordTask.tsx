@@ -14,6 +14,7 @@ import toast from "react-hot-toast";
 import { submitSubtaskSubmission, getSpaceTasks } from "../../../canisters/atlasSpace/api";
 import { useAuthAtlasSpaceActor } from "../../../hooks/identityKit";
 import Button from "../../Shared/Button";
+import { useDiscordTask } from "../../../hooks/useDiscordTask";
 
 type DiscordTaskType = Extract<TaskType, { DiscordTask: unknown }>['DiscordTask'];
 
@@ -57,6 +58,7 @@ const DiscordTask = ({
     },
   });
   const authAtlasSpace = useAuthAtlasSpaceActor(spacePrincipal);
+  const { signInForUser, accessToken, isJoined, joinServer } = useDiscordTask(spacePrincipal);
 
   const onSubmit: SubmitHandler<DiscordTaskFormInput> = async ({
     taskSubmission,
@@ -95,6 +97,8 @@ const DiscordTask = ({
     ? Object.keys(userSubmission?.[1].state)[0]
     : null;
 
+  const inviteLink = 'DiscordTask' in discordTask.task_content ? discordTask.task_content.DiscordTask.invite_link : undefined;
+  
   return (
     <div className="flex mt-2">
       <div className="flex flex-col mr-4">
@@ -135,10 +139,20 @@ const DiscordTask = ({
             </div>
           </form>
         )}
-        {user && !userSubmission && !openSubmission && isUserInHub && (
-          <div className="flex">
-            <Button onClick={() => setSubmission(true)}>Submit message</Button>
-          </div>
+        {user && !userSubmission && !openSubmission && isUserInHub && !accessToken && (
+          <Button onClick={signInForUser} className="w-half">
+            Sign in with Discord
+          </Button>
+        )}
+        {user && !userSubmission && !openSubmission && isUserInHub && accessToken && !isJoined && inviteLink && (
+          <Button onClick={() => joinServer(inviteLink)} className="w-half">
+            Join Discord Server
+          </Button>
+        )}
+        {user && !userSubmission && !openSubmission && isUserInHub && accessToken && isJoined && (
+          <Button onClick={() => setSubmission(true)} className="w-half">
+            Submit Task
+          </Button>
         )}
         {!user && (
           <div className="flex">

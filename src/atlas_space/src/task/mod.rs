@@ -60,7 +60,9 @@ pub enum TaskContent {
         #[n(1)]
         task_description: String,
         #[n(2)]
-        guild_id: u64,
+        guild_id: String,
+        #[n(3)]
+        invite_link: String,
     },
 }
 
@@ -87,6 +89,7 @@ impl TaskContent {
                 task_title,
                 task_description,
                 guild_id,
+                invite_link,
             } => {
                 if task_title.trim().len() > 50 {
                     return Err(Error::InvalidTaskContent(
@@ -98,8 +101,13 @@ impl TaskContent {
                         "Subtask description is too long (max length: 500)".into(),
                     ));
                 }
-                if guild_id.to_string().trim().is_empty() {
+                if guild_id.trim().is_empty() {
                     return Err(Error::InvalidTaskContent("Guild ID cannot be empty".into()));
+                }
+                if invite_link.trim().is_empty() {
+                    return Err(Error::InvalidTaskContent(
+                        "Discord invite link cannot be empty".into(),
+                    ));
                 }
                 Ok(())
             }
@@ -124,11 +132,13 @@ impl From<&TaskContent> for TaskType {
                 task_title,
                 task_description,
                 guild_id,
+                invite_link,
             } => Self::DiscordTask {
                 task_content: TaskContent::DiscordTask {
                     task_title: task_title.clone(),
                     task_description: task_description.clone(),
-                    guild_id: *guild_id,
+                    guild_id: guild_id.clone(),
+                    invite_link: invite_link.clone(),
                 },
                 submission: Default::default(),
             },

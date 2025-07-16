@@ -110,7 +110,8 @@ export type TaskContent = {
     'DiscordTask' : {
       'task_description' : string,
       'task_title' : string,
-      'guild_id' : bigint,
+      'invite_link' : string,
+      'guild_id' : string,
     }
   } |
   {

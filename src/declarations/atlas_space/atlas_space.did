@@ -97,7 +97,8 @@ type TaskContent = variant {
   DiscordTask : record {
     task_description : text;
     task_title : text;
-    guild_id : nat64;
+    invite_link : text;
+    guild_id : text;
   };
   TitleAndDescription : record { task_description : text; task_title : text };
 };

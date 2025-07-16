@@ -51,7 +51,8 @@ export const idlFactory = ({ IDL }) => {
     'DiscordTask' : IDL.Record({
       'task_description' : IDL.Text,
       'task_title' : IDL.Text,
-      'guild_id' : IDL.Nat64,
+      'invite_link' : IDL.Text,
+      'guild_id' : IDL.Text,
     }),
     'TitleAndDescription' : IDL.Record({
       'task_description' : IDL.Text,
