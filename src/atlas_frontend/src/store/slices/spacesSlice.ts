@@ -59,6 +59,9 @@ export const spaceSlice = createSlice({
         };
       }
     },
+    clearSpaces: (state) => {
+      state.spaces = null;
+    },
   },
   selectors: {
     getSpace: (state: SpacesState, action: PayloadAction<string>) =>
@@ -66,7 +69,7 @@ export const spaceSlice = createSlice({
   },
 });
 
-export const { setSpaces, setSpace, setTasks } = spaceSlice.actions;
+export const { setSpaces, setSpace, setTasks, clearSpaces } = spaceSlice.actions;
 export const { getSpace } = spaceSlice.selectors;
 
 export default spaceSlice.reducer;

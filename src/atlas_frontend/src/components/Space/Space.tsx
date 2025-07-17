@@ -29,6 +29,8 @@ import { getAtlasUser, joinAtlasSpace } from "../../canisters/atlasMain/api.ts";
 import TransferSpaceModal from "../../modals/TransferSpaceModal.tsx";
 import { getErrorWithInfoToast } from "../../utils/errors.ts";
 import { formatDuration, nowInSeconds } from "../../utils/date.ts";
+import { deleteSpace } from "../../canisters/atlasMain/api.ts";
+import { clearSpaces } from "../../store/slices/spacesSlice.ts";
 
 interface TasksListProps {
   tasks: Tasks;
@@ -159,7 +161,31 @@ const Space = ({
     });
   };
 
-return (
+  const handleDeleteSpace = async () => {
+    if (!authAtlasMain) return;
+
+    const confirmed = window.confirm("Are you sure you want to delete this space? This action cannot be undone.");
+    if (!confirmed) return;
+
+    await toast.promise(
+      deleteSpace({
+        authAtlasMain,
+        spaceId: parsedSpacePrincipal,
+      }),
+      {
+        loading: "Deleting space...",
+        success: "Space deleted",
+        error: getErrorWithInfoToast("Failed to delete space."),
+      }
+    );
+
+    dispatch(clearSpaces());
+
+    navigate(SPACES_PATH);
+  };
+
+
+  return (
     <>
       <div className="container mx-auto my-4">
         <div className="w-full px-3">
@@ -198,7 +224,16 @@ return (
                   >
                     Edit space
                   </Button>
-                ) }
+                )}
+                {didUserCanAdministrate && (
+                  <Button
+                    light
+                    className="!text-red-400 hover:!bg-red-900/20"
+                    onClick={handleDeleteSpace}
+                  >
+                    Delete space
+                  </Button>
+                )}
                 {didUserCanAdministrate && (
                   <Button className="flex-1 md:flex-none" onClick={toggleTaskModal}>
                     Create new task
@@ -218,18 +253,18 @@ return (
                 }
               ></div>
               <div className="flex md:mt-2 flex-col md:flex-row">
-              <div className="absolute md:static left-12 transform -translate-x -translate-y-16 md:mt-8 md:gap-4 md:-translate-y-4">
-                <div className="bg-white  flex rounded-3xl w-fit h-fit flex-none">
-                  {avatarImg ? (
-                    <img
-                      src={avatarImg}
-                      draggable="false"
-                      className="rounded-3xl m-[3px] w-20 h-20 md:m-[5px] md:w-28 md:h-28"
-                    />
-                  ) : (
-                    <div className="bg-[#4A0295] rounded-3xl m-[3px] w-20 h-20 md:m-[5px] md:w-28 md:h-28"></div>
-                  )}
-                </div>
+                <div className="absolute md:static left-12 transform -translate-x -translate-y-16 md:mt-8 md:gap-4 md:-translate-y-4">
+                  <div className="bg-white  flex rounded-3xl w-fit h-fit flex-none">
+                    {avatarImg ? (
+                      <img
+                        src={avatarImg}
+                        draggable="false"
+                        className="rounded-3xl m-[3px] w-20 h-20 md:m-[5px] md:w-28 md:h-28"
+                      />
+                    ) : (
+                      <div className="bg-[#4A0295] rounded-3xl m-[3px] w-20 h-20 md:m-[5px] md:w-28 md:h-28"></div>
+                    )}
+                  </div>
                 </div>
                 <div className="mt-8 mb-2 md:mb-6 md:mt-6 md:mx-5 text-white font-montserrat min-w-0 md:flex-wrap md:my-1 flex-1">
                   <h2 className="text-base sm:text-2xl md:text-3xl lg:text-4xl font-semibold mb-2 truncate">{name}</h2>
@@ -281,8 +316,8 @@ return (
                 </div>
               </div>
             </div>
-          </div>
           <TasksList tasks={tasks} spaceId={spaceId} />
+          </div>
         </div>
       </div>
       {isCreateTaskModal && <CreateNewTaskModal callback={toggleTaskModal} />}

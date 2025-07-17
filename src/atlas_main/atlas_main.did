@@ -29,6 +29,7 @@ type Error = variant {
   FailedToResetSpaceVec : text;
   FailedToCleanSpace : record { err : text; "principal" : principal };
   UserRichSpaceLimit : record { found : nat64; expected : nat64 };
+  FailedToStopCanister : text;
   FailedToDecodeArgs : text;
   UserRankToHigh : record { found : Rank; expected : Rank };
   UserAlreadyHaveExpectedRank : Rank;

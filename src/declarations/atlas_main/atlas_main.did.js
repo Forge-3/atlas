@@ -60,6 +60,7 @@ export const idlFactory = ({ IDL }) => {
       'found' : IDL.Nat64,
       'expected' : IDL.Nat64,
     }),
+    'FailedToStopCanister' : IDL.Text,
     'FailedToDecodeArgs' : IDL.Text,
     'UserRankToHigh' : IDL.Record({ 'found' : Rank, 'expected' : Rank }),
     'UserAlreadyHaveExpectedRank' : Rank,

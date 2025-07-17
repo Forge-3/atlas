@@ -3,7 +3,8 @@ use std::collections::BTreeMap;
 use candid::Nat;
 use candid::{CandidType, Encode, Principal};
 use ic_cdk::call::Call;
-use ic_cdk::management_canister::{install_code, CanisterInstallMode, InstallCodeArgs, delete_canister, DeleteCanisterArgs};
+use ic_cdk::management_canister::{install_code, CanisterInstallMode, InstallCodeArgs, delete_canister, 
+    DeleteCanisterArgs, stop_canister, StopCanisterArgs};
 use ic_cdk::update;
 use serde::Deserialize;
 use shared::{SpaceArgs, SpaceInitArg};
@@ -303,12 +304,11 @@ pub async fn delete_space(space_id: Principal) -> Result<(), Error> {
         principal: space_id,
     })?;
 
-    memory::remove_space(space_index)?;
-    memory::mut_user(caller, |maybe_user| {
-        let mut user = maybe_user.expect("User do not exist?!");
-        user.remove_owned_space(space_index);
-        Ok(user)
-    })?;
+    stop_canister(&StopCanisterArgs {
+        canister_id: space_id,
+    })
+    .await
+    .map_err(|err| Error::FailedToStopCanister(err.to_string()))?;
 
     delete_canister(&DeleteCanisterArgs {
             canister_id: space_id,
@@ -316,6 +316,13 @@ pub async fn delete_space(space_id: Principal) -> Result<(), Error> {
     )
     .await
     .map_err(|err| Error::FailedToDeleteCanister(err.to_string()))?;
+
+    memory::remove_space(space_index)?;
+    memory::mut_user(caller, |maybe_user| {
+        let mut user = maybe_user.expect("User do not exist?!");
+        user.remove_owned_space(space_index);
+        Ok(user)
+    })?;
 
     Ok(())
 }

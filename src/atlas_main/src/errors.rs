@@ -81,6 +81,9 @@ pub enum Error {
     #[error("Failed to delete canister: {0}")]
     FailedToDeleteCanister(String),
 
+    #[error("Failed to stop canister: {0}")]
+    FailedToStopCanister(String),
+
     #[error("Failed to clean up space {principal}: {err}")]
     FailedToCleanSpace {
         principal: Principal,

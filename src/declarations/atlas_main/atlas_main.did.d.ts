@@ -35,6 +35,7 @@ export type Error = { 'UserRankNoMatch' : Array<Rank> } |
   { 'FailedToResetSpaceVec' : string } |
   { 'FailedToCleanSpace' : { 'err' : string, 'principal' : Principal } } |
   { 'UserRichSpaceLimit' : { 'found' : bigint, 'expected' : bigint } } |
+  { 'FailedToStopCanister' : string } |
   { 'FailedToDecodeArgs' : string } |
   { 'UserRankToHigh' : { 'found' : Rank, 'expected' : Rank } } |
   { 'UserAlreadyHaveExpectedRank' : Rank } |
