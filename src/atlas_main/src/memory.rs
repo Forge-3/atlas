@@ -128,6 +128,28 @@ pub fn push_space(space_principal: &Space) -> Result<(), Error> {
     Ok(())
 }
 
+pub fn remove_space(index: u64) -> Result<(), Error> {
+    SPACES_VEC.with_borrow_mut(|stable_vec| {
+        let mut temp_vec: Vec<Space> = stable_vec.iter().collect();
+
+        if index as usize >= temp_vec.len() {
+            return Err(Error::SpaceNotExist);
+        }
+        temp_vec.remove(index as usize);
+
+        let memory = MEMORY_MANAGER
+            .with(|m| m.borrow().get(SPACES_VEC_MEMORY_ID));
+        let new_stable_vec = StableVec::new(memory).map_err(|err| Error::FailedToResetSpaceVec(format!("{err:?}")))?;
+
+        for space in &temp_vec {
+            new_stable_vec.push(space).map_err(|err| Error::FailedToSaveSpace(format!("{err:?}")))?;
+        }
+
+        *stable_vec = new_stable_vec;
+        Ok(())
+    })
+}
+
 // Spaces WASM
 
 pub fn insert_new_version(version: u64, bytecode: Vec<u8>) {

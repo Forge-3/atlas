@@ -8,6 +8,7 @@ use crate::tasks::token_reward::TokenReward;
 use candid::{CandidType, Nat, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
+use sha2::Digest;
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType)]
 pub struct ClosedTask {
@@ -52,6 +53,31 @@ impl ClosedTask {
         }
         self.token_reward.withdraw_reward(user, subaccount).await?;
         self.rewarded.push(user);
+        Ok(())
+    }
+
+    pub async fn claim_all_rewards(&mut self, task_id: TaskId) -> Result<(), Error>{
+        let users: std::collections::HashSet<_> = self
+            .tasks
+            .iter()
+            .flat_map(|task| {
+                task.get_submission_map().iter().filter_map(|(user, data)| {
+                    if data.get_state() == &SubmissionState::Accepted
+                        && !self.rewarded.contains(user)
+                    {
+                        Some(user.clone())
+                    } else {
+                        None
+                    }
+                })
+            })
+            .collect();
+
+        for user in users {
+            let subaccount = sha2::Sha256::digest(task_id.u64().to_bytes()).into();
+            self.claim_reward(user, subaccount).await?;
+        }
+        
         Ok(())
     }
 

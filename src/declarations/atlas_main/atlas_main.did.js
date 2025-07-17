@@ -51,6 +51,11 @@ export const idlFactory = ({ IDL }) => {
     'FailedToSaveSpace' : IDL.Text,
     'UserNotOwner' : IDL.Null,
     'FailedToUpdateConfig' : IDL.Text,
+    'FailedToResetSpaceVec' : IDL.Text,
+    'FailedToCleanSpace' : IDL.Record({
+      'err' : IDL.Text,
+      'principal' : IDL.Principal,
+    }),
     'UserRichSpaceLimit' : IDL.Record({
       'found' : IDL.Nat64,
       'expected' : IDL.Nat64,
@@ -60,6 +65,7 @@ export const idlFactory = ({ IDL }) => {
     'UserAlreadyHaveExpectedRank' : Rank,
     'UserNotAnOwner' : IDL.Principal,
     'CountToHigh' : IDL.Record({ 'max' : IDL.Nat64, 'found' : IDL.Nat64 }),
+    'FailedToDeleteCanister' : IDL.Text,
     'SpaceNotExist' : IDL.Null,
     'FailedToGetCanisterInfo' : IDL.Text,
     'FailedToInstallWASM' : IDL.Text,
@@ -74,6 +80,7 @@ export const idlFactory = ({ IDL }) => {
     'AnonymousCaller' : IDL.Null,
   });
   const Result = IDL.Variant({ 'Ok' : Space, 'Err' : Error });
+  const Result_1 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });
   const GetSpacesArgs = IDL.Record({
     'count' : IDL.Nat64,
     'start' : IDL.Nat64,
@@ -82,7 +89,7 @@ export const idlFactory = ({ IDL }) => {
     'spaces' : IDL.Vec(Space),
     'spaces_count' : IDL.Nat64,
   });
-  const Result_1 = IDL.Variant({ 'Ok' : GetSpacesRes, 'Err' : Error });
+  const Result_2 = IDL.Variant({ 'Ok' : GetSpacesRes, 'Err' : Error });
   const GetUserBy = IDL.Variant({ 'Principal' : IDL.Principal });
   const Integrations = IDL.Record({ 'discord_id' : IDL.Opt(IDL.Text) });
   const CandidUser = IDL.Record({
@@ -93,7 +100,6 @@ export const idlFactory = ({ IDL }) => {
     'belonging_to_spaces' : IDL.Vec(Space),
     'owned_spaces' : IDL.Vec(Space),
   });
-  const Result_2 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });
   const TransferSpace = IDL.Record({
     'to' : IDL.Principal,
     'space_id' : IDL.Principal,
@@ -114,20 +120,21 @@ export const idlFactory = ({ IDL }) => {
         [Result],
         [],
       ),
+    'delete_space' : IDL.Func([IDL.Principal], [Result_1], []),
     'get_current_space_bytecode_version' : IDL.Func([], [IDL.Nat64], ['query']),
     'get_space_bytecode_by_version' : IDL.Func(
         [IDL.Nat64],
         [IDL.Opt(IDL.Vec(IDL.Nat8))],
         ['query'],
       ),
-    'get_spaces' : IDL.Func([GetSpacesArgs], [Result_1], ['query']),
+    'get_spaces' : IDL.Func([GetSpacesArgs], [Result_2], ['query']),
     'get_user' : IDL.Func([GetUserBy], [CandidUser], ['query']),
     'get_user_hub' : IDL.Func([IDL.Principal], [IDL.Opt(Space)], ['query']),
-    'join_space' : IDL.Func([IDL.Principal], [Result_2], []),
-    'set_user_admin' : IDL.Func([IDL.Principal], [Result_2], []),
-    'set_user_space_lead' : IDL.Func([IDL.Principal], [Result_2], []),
-    'transfer_space' : IDL.Func([TransferSpace], [Result_2], []),
-    'upgrade_space' : IDL.Func([IDL.Principal], [Result_2], []),
+    'join_space' : IDL.Func([IDL.Principal], [Result_1], []),
+    'set_user_admin' : IDL.Func([IDL.Principal], [Result_1], []),
+    'set_user_space_lead' : IDL.Func([IDL.Principal], [Result_1], []),
+    'transfer_space' : IDL.Func([TransferSpace], [Result_1], []),
+    'upgrade_space' : IDL.Func([IDL.Principal], [Result_1], []),
     'user_is_admin' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
     'user_is_in_hub' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
     'user_is_in_space' : IDL.Func(

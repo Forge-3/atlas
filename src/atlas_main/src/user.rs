@@ -95,6 +95,10 @@ impl User {
         &self.owned_spaces
     }
 
+    pub fn remove_owned_space(&mut self, space: u64) {
+        self.owned_spaces.retain(|&i| i != space);
+    }
+
     pub fn promote_to_admin(&mut self) -> Result<(), Error> {
         match self.rank() {
             Rank::User => {
