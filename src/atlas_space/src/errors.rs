@@ -92,4 +92,7 @@ pub enum Error {
 
     #[error("Failed to parse call response: {0}")]
     FailedToParse(String),
+
+    #[error("Failed to claim rewards for tasks: {0:?}")]
+    FailedToClaimRewards(Vec<(TaskId, Error)>),
 }

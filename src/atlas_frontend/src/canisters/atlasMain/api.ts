@@ -215,3 +215,19 @@ export const upgradeSpace = async ({
     errMsg: "Failed to upgrade space",
   });
 };
+
+interface DeleteSpace {
+  authAtlasMain: ActorSubclass<_SERVICE_MAIN>;
+  spaceId: Principal;
+}
+
+export const deleteSpace = async ({
+  authAtlasMain,
+  spaceId,
+}: DeleteSpace) => {
+  const call = authAtlasMain.delete_space(spaceId);
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to delete space",
+  });
+};

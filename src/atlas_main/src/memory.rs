@@ -8,7 +8,7 @@ use crate::errors::Error;
 use crate::space::Space;
 use crate::user::{Rank, User};
 
-type VMem = VirtualMemory<DefaultMemoryImpl>;
+pub type VMem = VirtualMemory<DefaultMemoryImpl>;
 
 pub const CONFIG_MEMORY_ID: MemoryId = MemoryId::new(0);
 pub const USERS_MAP_MEMORY_ID: MemoryId = MemoryId::new(1);
@@ -36,7 +36,7 @@ thread_local! {
         )
     );
 
-    static SPACES_VEC: RefCell<StableVec<Space, VMem>> = RefCell::new(
+    static SPACES_VEC: RefCell<StableVec<Option<Space>, VMem>> = RefCell::new(
         StableVec::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(SPACES_VEC_MEMORY_ID)),
         ).expect("Failed to initialize stable Vec")
@@ -114,18 +114,45 @@ pub fn with_space_vec_iter<F, R>(f: F) -> R
 where
     F: for<'a> FnOnce(Box<dyn Iterator<Item = Space> + 'a>) -> R,
 {
+    SPACES_VEC.with_borrow(|space| {
+        let iter = space.iter().flatten();
+        f(Box::new(iter))
+    })
+}
+
+pub fn with_optional_space_vec_iter<F, R>(f: F) -> R
+where
+    F: for<'a> FnOnce(Box<dyn Iterator<Item = Option<Space>> + 'a>) -> R,
+{
     SPACES_VEC.with_borrow(|space| f(Box::new(space.iter())))
 }
 
 pub fn get_space(space_index: u64) -> Option<Space> {
-    SPACES_VEC.with_borrow(|space| space.get(space_index))
+    SPACES_VEC.with_borrow(|space| space.get(space_index).flatten())
 }
 
-pub fn push_space(space_principal: &Space) -> Result<(), Error> {
-    SPACES_VEC
-        .with_borrow_mut(|space| space.push(space_principal))
-        .map_err(|err| Error::FailedToSaveSpace(format!("{err:?}")))?;
-    Ok(())
+pub fn push_space(space_principal: &Space) -> Result<u64, Error> {
+    SPACES_VEC.with_borrow_mut(|spaces| {
+        if let Some(i) = (0..spaces.len()).find(|&i| spaces.get(i).unwrap_or(None).is_none()) {
+            spaces.set(i, &Some(space_principal.clone()));
+            return Ok(i);
+        }
+
+        spaces
+            .push(&Some(space_principal.clone()))
+            .map_err(|err| Error::FailedToSaveSpace(format!("{err:?}")))?;
+        Ok(spaces.len() - 1)
+    })
+}
+
+pub fn remove_space(index: u64) -> Result<(), Error> {
+    SPACES_VEC.with_borrow_mut(|vec| {
+        if index >= vec.len() {
+            return Err(Error::SpaceNotExist);
+        }
+        vec.set(index, &None);
+        Ok(())
+    })
 }
 
 // Spaces WASM

@@ -3,11 +3,15 @@ use std::collections::BTreeMap;
 use candid::Nat;
 use candid::{CandidType, Encode, Principal};
 use ic_cdk::call::Call;
-use ic_cdk::management_canister::{install_code, CanisterInstallMode, InstallCodeArgs};
+use ic_cdk::management_canister::{
+    delete_canister, install_code, stop_canister, CanisterInstallMode, DeleteCanisterArgs,
+    InstallCodeArgs, StopCanisterArgs,
+};
 use ic_cdk::update;
 use serde::Deserialize;
 use shared::{SpaceArgs, SpaceInitArg};
 
+use crate::guard::admin_or_space_lead_guard;
 use crate::{
     errors::Error,
     guard::authenticated_guard,
@@ -98,12 +102,9 @@ pub async fn create_new_space(
     })?;
     let space = space?;
 
-    memory::push_space(&space)?;
+    let space_index = memory::push_space(&space)?;
     memory::mut_user(caller, |maybe_user| {
         let mut user = maybe_user.expect("User do not exist?!");
-        let space_index = memory::get_space_vec_len()
-            .checked_sub(1)
-            .expect("Space vector is empty!?");
         user.push_space(space_index);
         Ok(user)
     })?;
@@ -260,6 +261,80 @@ pub async fn transfer_space(args: TransferSpace) -> Result<(), Error> {
         .expect("Failed to transfer space")
         .candid::<()>()
         .expect("Failed to read response");
+
+    Ok(())
+}
+
+#[update]
+pub async fn delete_space(space_id: Principal) -> Result<(), Error> {
+    let (caller, user) = admin_or_space_lead_guard()?;
+
+    let space_index = user
+        .owned_spaces()
+        .iter()
+        .find(|&&i| memory::get_space(i).is_some_and(|space| space.principal() == space_id))
+        .copied()
+        .ok_or(Error::UserNotOwner)?;
+
+    Call::bounded_wait(space_id, "clean_up_space_before_deletion")
+        .with_arg(())
+        .await
+        .map_err(|err| Error::FailedToCallSpace {
+            err: err.to_string(),
+            principal: space_id,
+        })?
+        .candid::<Result<(), String>>()
+        .map_err(|err| Error::FailedToCleanSpace {
+            err: err.to_string(),
+            principal: space_id,
+        })?
+        .map_err(|err_string| Error::FailedToCleanSpace {
+            err: err_string,
+            principal: space_id,
+        })?;
+
+    stop_canister(&StopCanisterArgs {
+        canister_id: space_id,
+    })
+    .await
+    .unwrap_or_else(|err| panic!("Failed to stop canister: {err}"));
+
+    delete_canister(&DeleteCanisterArgs {
+        canister_id: space_id,
+    })
+    .await
+    .unwrap_or_else(|err| panic!("Failed to delete canister: {err}"));
+
+    memory::remove_space(space_index)?;
+    memory::mut_user(caller, |maybe_user| {
+        let mut user = maybe_user.expect("User do not exist?!");
+        user.remove_owned_space(space_index);
+        Ok(user)
+    })?;
+
+    let mut users_to_update = vec![];
+    memory::with_users_iter(|iter| {
+        iter.for_each(|(user_id, mut user)| {
+            let original_len = user.belonging_to_spaces().len();
+
+            let position_to_remove = user
+                .belonging_to_spaces
+                .iter()
+                .position(|&i| i == space_index);
+
+            if let Some(pos) = position_to_remove {
+                user.belonging_to_spaces.remove(pos);
+            }
+
+            if user.belonging_to_spaces().len() != original_len {
+                users_to_update.push((user_id, user));
+            }
+        });
+    });
+
+    users_to_update.into_iter().for_each(|(id, user)| {
+        memory::insert_user(id, user);
+    });
 
     Ok(())
 }

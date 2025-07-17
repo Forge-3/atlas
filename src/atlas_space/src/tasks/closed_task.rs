@@ -1,9 +1,9 @@
-use crate::{errors::Error, tasks::task_types::TaskId};
+use crate::errors::Error;
 use std::{borrow::Cow, collections::HashSet};
 
 use crate::tasks::submission::SubmissionState;
 use crate::tasks::task::Task;
-use crate::tasks::task_types::TaskType;
+use crate::tasks::task_types::{TaskId, TaskType};
 use crate::tasks::token_reward::TokenReward;
 use candid::{CandidType, Nat, Principal};
 use ic_stable_structures::{storable::Bound, Storable};

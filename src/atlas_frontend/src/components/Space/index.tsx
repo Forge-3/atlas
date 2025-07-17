@@ -51,14 +51,14 @@ const SpacePage = () => {
   }, [dispatch, agent, spaceData, principal]);
 
   useEffect(() => {
-    if (!agent || tasks) return;
+    if (!agent || tasks || !space) return;
     const unAuthAtlasSpace = getUnAuthAtlasSpaceActor(agent, principal);
     getSpaceTasks({
       spaceId,
       unAuthAtlasSpace,
       dispatch,
     });
-  }, [dispatch, agent, tasks, principal]);
+  }, [dispatch, agent, tasks, principal, space]);
 
   if (!spaceData) {
     return <></>;

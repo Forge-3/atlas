@@ -53,6 +53,7 @@ export type Error = { 'BytecodeUpToDate' : null } |
   { 'ConfigNotSet' : null } |
   { 'UserAlreadyRewarded' : null } |
   { 'TaskNotFound' : bigint } |
+  { 'FailedToClaimRewards' : Array<[bigint, Error]> } |
   { 'NotAdminNorOwnerNorParent' : null } |
   { 'UserAlreadySubmitted' : null } |
   { 'RewardAlreadyRefunded' : null } |
@@ -79,11 +80,13 @@ export interface GetTasksRes {
 }
 export type Result = { 'Ok' : null } |
   { 'Err' : Error };
-export type Result_1 = { 'Ok' : bigint } |
+export type Result_1 = { 'Ok' : null } |
+  { 'Err' : string };
+export type Result_2 = { 'Ok' : bigint } |
   { 'Err' : Error };
-export type Result_2 = { 'Ok' : GetClosedTasksRes } |
+export type Result_3 = { 'Ok' : GetClosedTasksRes } |
   { 'Err' : Error };
-export type Result_3 = { 'Ok' : GetTasksRes } |
+export type Result_4 = { 'Ok' : GetTasksRes } |
   { 'Err' : Error };
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
   { 'InitArg' : SpaceInitArg };
@@ -149,14 +152,15 @@ export interface _SERVICE {
     [Principal, bigint, bigint],
     Result
   >,
-  'create_task' : ActorMethod<[CreateTaskArgs], Result_1>,
+  'clean_up_space_before_deletion' : ActorMethod<[], Result_1>,
+  'create_task' : ActorMethod<[CreateTaskArgs], Result_2>,
   'delete_closed_task' : ActorMethod<[bigint], Result>,
   'edit_space' : ActorMethod<[EditSpaceArgs], Result>,
   'force_close_task' : ActorMethod<[bigint], Result>,
-  'get_closed_tasks' : ActorMethod<[GetTasksArgs], Result_2>,
+  'get_closed_tasks' : ActorMethod<[GetTasksArgs], Result_3>,
   'get_config' : ActorMethod<[], Config>,
   'get_current_bytecode_version' : ActorMethod<[], bigint>,
-  'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_3>,
+  'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_4>,
   'get_space_info' : ActorMethod<[], SpaceInfo>,
   'get_state' : ActorMethod<[], State>,
   'reject_subtask_submission' : ActorMethod<
