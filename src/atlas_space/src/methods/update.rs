@@ -3,6 +3,7 @@ use crate::{
     guard::{parent_guard, parent_or_owner_or_admin_guard, user_is_in_space},
     memory,
     state::EditSpaceArgs,
+    task::closed_task::ClosedTask,
 };
 
 use crate::tasks::task::Task;
@@ -188,7 +189,8 @@ pub async fn clean_up_space_before_deletion() -> Result<(), String> {
     }
 
     let mut errors = vec![];
-    let closed_tasks: Vec<_> = memory::with_closed_tasks_iter(|iter| iter.collect());
+    let closed_tasks: Vec<(TaskId, ClosedTask)> =
+        memory::with_closed_tasks_iter(|iter| iter.collect());
 
     for (task_id, mut closed_task) in closed_tasks {
         if let Err(err) = closed_task.claim_all_rewards(task_id).await {

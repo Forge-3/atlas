@@ -56,28 +56,18 @@ impl ClosedTask {
         Ok(())
     }
 
-    pub async fn claim_all_rewards(&mut self, task_id: TaskId) -> Result<(), Error>{
-        let users: std::collections::HashSet<_> = self
+    pub async fn claim_all_rewards(&mut self, task_id: TaskId) -> Result<(), Error> {
+        let users: std::collections::HashSet<Principal> = self
             .tasks
             .iter()
-            .flat_map(|task| {
-                task.get_submission_map().iter().filter_map(|(user, data)| {
-                    if data.get_state() == &SubmissionState::Accepted
-                        && !self.rewarded.contains(user)
-                    {
-                        Some(user.clone())
-                    } else {
-                        None
-                    }
-                })
-            })
+            .flat_map(|task| task.get_submission_map().keys().cloned())
             .collect();
 
         for user in users {
             let subaccount = sha2::Sha256::digest(task_id.u64().to_bytes()).into();
-            self.claim_reward(user, subaccount).await?;
+            let _ = self.claim_reward(user, subaccount).await; // For now errors are skipped, cause we have to check every user. Can also log them in the future. (maybe logic in ClosedTask will change)
         }
-        
+
         Ok(())
     }
 

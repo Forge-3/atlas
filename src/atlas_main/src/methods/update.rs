@@ -3,8 +3,10 @@ use std::collections::BTreeMap;
 use candid::Nat;
 use candid::{CandidType, Encode, Principal};
 use ic_cdk::call::Call;
-use ic_cdk::management_canister::{install_code, CanisterInstallMode, InstallCodeArgs, delete_canister, 
-    DeleteCanisterArgs, stop_canister, StopCanisterArgs};
+use ic_cdk::management_canister::{
+    delete_canister, install_code, stop_canister, CanisterInstallMode, DeleteCanisterArgs,
+    InstallCodeArgs, StopCanisterArgs,
+};
 use ic_cdk::update;
 use serde::Deserialize;
 use shared::{SpaceArgs, SpaceInitArg};
@@ -286,18 +288,19 @@ pub async fn delete_space(space_id: Principal) -> Result<(), Error> {
         })
         .ok_or(Error::UserNotOwner)?;
 
-    let cleanup_result: Result<(), String> = Call::bounded_wait(space_id, "clean_up_space_before_deletion")
-        .with_arg(())
-        .await
-        .map_err(|err| Error::FailedToCallSpace {
-            err: err.to_string(),
-            principal: space_id,
-        })?
-        .candid::<Result<(), String>>()
-        .map_err(|err| Error::FailedToCleanSpace {
-            err: err.to_string(),
-            principal: space_id,
-        })?;
+    let cleanup_result: Result<(), String> =
+        Call::bounded_wait(space_id, "clean_up_space_before_deletion")
+            .with_arg(())
+            .await
+            .map_err(|err| Error::FailedToCallSpace {
+                err: err.to_string(),
+                principal: space_id,
+            })?
+            .candid::<Result<(), String>>()
+            .map_err(|err| Error::FailedToCleanSpace {
+                err: err.to_string(),
+                principal: space_id,
+            })?;
 
     cleanup_result.map_err(|err_string| Error::FailedToCleanSpace {
         err: err_string,
@@ -311,9 +314,8 @@ pub async fn delete_space(space_id: Principal) -> Result<(), Error> {
     .map_err(|err| Error::FailedToStopCanister(err.to_string()))?;
 
     delete_canister(&DeleteCanisterArgs {
-            canister_id: space_id,
-        },
-    )
+        canister_id: space_id,
+    })
     .await
     .map_err(|err| Error::FailedToDeleteCanister(err.to_string()))?;
 
@@ -326,4 +328,3 @@ pub async fn delete_space(space_id: Principal) -> Result<(), Error> {
 
     Ok(())
 }
-

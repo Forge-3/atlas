@@ -137,12 +137,14 @@ pub fn remove_space(index: u64) -> Result<(), Error> {
         }
         temp_vec.remove(index as usize);
 
-        let memory = MEMORY_MANAGER
-            .with(|m| m.borrow().get(SPACES_VEC_MEMORY_ID));
-        let new_stable_vec = StableVec::new(memory).map_err(|err| Error::FailedToResetSpaceVec(format!("{err:?}")))?;
+        let memory = MEMORY_MANAGER.with(|m| m.borrow().get(SPACES_VEC_MEMORY_ID));
+        let new_stable_vec = StableVec::new(memory)
+            .map_err(|err| Error::FailedToResetSpaceVec(format!("{err:?}")))?;
 
         for space in &temp_vec {
-            new_stable_vec.push(space).map_err(|err| Error::FailedToSaveSpace(format!("{err:?}")))?;
+            new_stable_vec
+                .push(space)
+                .map_err(|err| Error::FailedToSaveSpace(format!("{err:?}")))?;
         }
 
         *stable_vec = new_stable_vec;
