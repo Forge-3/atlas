@@ -1,7 +1,7 @@
 use crate::errors::Error;
 use std::{borrow::Cow, collections::BTreeMap, fmt};
 
-use crate::task::submission::{Submission, SubmissionData, SubmissionState};
+use crate::tasks::submission::{Submission, SubmissionData, SubmissionState};
 use candid::{CandidType, Principal};
 use ic_cdk_timers::TimerId;
 use ic_stable_structures::{storable::Bound, Storable};

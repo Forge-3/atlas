@@ -64,15 +64,15 @@ const TasksList = ({ tasks = {}, spaceId }: TasksListProps) => {
       </div>
       
       <div className="relative w-full bg-[#1E0F33] rounded-b-xl">
-        <div className="flex gap-4 px-8 py-6 flex-wrap justify-start">
-          {taskEntries.map((entry) => (
+        <div className="flex gap-4 md:mx-3 px-8 py-6 flex-wrap justify-between md:justify-center">
+          {taskEntries.map(({ id, task, type, startingIn }) => (
             <TaskCard
-              key={entry.id}
-              id={entry.id}
-              task={entry.task}
-              type={entry.type}
+              key={id}
+              task={task}
+              type={type}
+              id={id}
               spaceId={spaceId}
-              startingIn={entry.type === "starting" ? entry.startingIn : undefined}
+              startingIn={startingIn}
             />
           ))}
         </div>
@@ -159,69 +159,81 @@ const Space = ({
     });
   };
 
-  return (
+return (
     <>
       <div className="container mx-auto my-4">
         <div className="w-full px-3">
-          <div className="flex justify-between my-4">
-            <div className="flex justify-start gap-2">
+          <div className="w-full flex flex-col gap-2 md:flex-row md:flex-none md:w-auto md:gap-none my-4 ">
+            <div className="flex flex-1 gap-2 justify-stretch md:justify-between">
               <Button
                 light
-                className="flex gap-2"
+                className="flex-1 gap-2 md:flex-none "
                 onClick={() => navigate(SPACES_PATH)}
               >
                 <FaArrowLeftLong /> Back
               </Button>
-            </div>
-            <div className="flex justify-end gap-2">
-              {userInfo?.ownSpaces(parsedSpacePrincipal) && (
-                <Button onClick={toggleTransferModal} light={true}>
+              {userInfo?.ownSpaces(parsedSpacePrincipal) ? (
+                <Button
+                  light
+                  className="flex-1 md:flex-none md:justify-end md:gap-2"
+                  onClick={toggleTransferModal}
+                >
                   Transfer space
                 </Button>
+              ) : (
+                <div className="hidden"></div>
               )}
-              {!didUserCanAdministrate && userBlockchainData && !inHub && (
-                <Button onClick={joinSpace}>Join space</Button>
-              )}
-              {didUserCanAdministrate && (
-                <>
+            </div>
+            {(didUserCanAdministrate || (!didUserCanAdministrate && userBlockchainData && !inHub)) && (
+              <div className="flex flex-1 w-full gap-2 md:flex-none md:w-auto md:gap-none">
+                {!didUserCanAdministrate && userBlockchainData && !inHub ? (
+                  <Button className="flex-1 md:flex-none" onClick={joinSpace}>
+                    Join space
+                  </Button>
+                ) : didUserCanAdministrate && (
                   <Button
                     light
-                    onClick={() =>
-                      navigate(getSpaceEditPath(parsedSpacePrincipal))
-                    }
+                    className="flex-1 md:flex-none"
+                    onClick={() => navigate(getSpaceEditPath(parsedSpacePrincipal))}
                   >
                     Edit space
                   </Button>
-                  <Button onClick={toggleTaskModal}>Create new task</Button>
-                </>
-              )}
-            </div>
+                ) }
+                {didUserCanAdministrate && (
+                  <Button className="flex-1 md:flex-none" onClick={toggleTaskModal}>
+                    Create new task
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
           <div className="relative w-full rounded-t-xl bg-[#1E0F33] mb-1">
-            <div className="p-8">
+            <div className="relative p-5 md:p-8 md:static">
               <div
-                className={`${backgroundImg ? "h-52 rounded-3xl bg-center bg-no-repeat bg-cover relative" : "bg-[#4A0295]"} w-full flex items-center justify-center`}
+                className={`${backgroundImg ? "h-52 rounded-3xl bg-center bg-no-repeat bg-cover relative" : "h-52 rounded-3xl bg-center bg-no-repeat bg-gradient-to-b from-[#9173FF] to-transparent to-[150%] bg-cover relative"} w-full flex items-center justify-center`}
                 style={
                   backgroundImg
                     ? { backgroundImage: `url('${backgroundImg}')` }
                     : {}
                 }
               ></div>
-              <div className="flex mt-8 gap-4">
-                <div className="bg-white flex rounded-3xl w-fit h-fit flex-none">
+              <div className="flex md:mt-2 flex-col md:flex-row">
+              <div className="absolute md:static left-12 transform -translate-x -translate-y-16 md:mt-8 md:gap-4 md:-translate-y-4">
+                <div className="bg-white  flex rounded-3xl w-fit h-fit flex-none">
                   {avatarImg ? (
                     <img
                       src={avatarImg}
                       draggable="false"
-                      className="rounded-3xl m-[5px] w-28 h-28"
+                      className="rounded-3xl m-[3px] w-20 h-20 md:m-[5px] md:w-28 md:h-28"
                     />
                   ) : (
-                    <div className="bg-[#4A0295] rounded-3xl m-[5px] w-28 h-28"></div>
+                    <div className="bg-[#4A0295] rounded-3xl m-[3px] w-20 h-20 md:m-[5px] md:w-28 md:h-28"></div>
                   )}
                 </div>
-                <div className="my-1 text-white font-montserrat flex-1">
-                  <h2 className="text-4xl font-semibold flex mb-2">{name}</h2>
-                  <p className="bg-[#9173FF]/20 px-4 py-2 rounded-xl font-medium w-full">
+                </div>
+                <div className="mt-8 mb-2 md:mb-6 md:mt-6 md:mx-5 text-white font-montserrat min-w-0 md:flex-wrap md:my-1 flex-1">
+                  <h2 className="text-base sm:text-2xl md:text-3xl lg:text-4xl font-semibold mb-2 truncate">{name}</h2>
+                  <p className="bg-[#9173FF]/20 text-xs md:text-base lg:text-2xl px-2 md:px-4 py-2 rounded-xl font-medium truncate">
                     {description}
                   </p>
                 </div>

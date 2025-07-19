@@ -8,14 +8,14 @@ mod memory;
 mod methods;
 mod nat256;
 mod state;
-mod task;
+mod tasks;
 
 use crate::config::Config;
 use crate::cycles::WalletReceiveResult;
 use crate::errors::Error;
 use crate::methods::query::{GetClosedTasksRes, GetTasksArgs, GetTasksRes, SpaceInfo};
 use crate::state::{EditSpaceArgs, State};
-use crate::task::{submission::Submission, task::CreateTaskArgs, task_types::TaskId};
+use crate::tasks::{submission::Submission, task::CreateTaskArgs, task_types::TaskId};
 
 use candid::{Nat, Principal};
 use shared::SpaceArgs;

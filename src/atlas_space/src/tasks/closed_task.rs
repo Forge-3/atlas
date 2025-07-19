@@ -1,10 +1,10 @@
 use crate::errors::Error;
 use std::borrow::Cow;
 
-use crate::task::submission::SubmissionState;
-use crate::task::task::Task;
-use crate::task::task_types::TaskType;
-use crate::task::token_reward::TokenReward;
+use crate::tasks::submission::SubmissionState;
+use crate::tasks::task::Task;
+use crate::tasks::task_types::TaskType;
+use crate::tasks::token_reward::TokenReward;
 use candid::{CandidType, Nat, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
@@ -78,7 +78,7 @@ impl ClosedTask {
             .iter()
             .filter_map(|(user, data)| {
                 if data.get_state() == &SubmissionState::Accepted {
-                    Some(user.clone())
+                    Some(*user)
                 } else {
                     None
                 }

@@ -5,9 +5,9 @@ use std::cell::RefCell;
 use crate::config::Config;
 use crate::errors::Error;
 use crate::state::State;
-use crate::task::closed_task::ClosedTask;
-use crate::task::task::Task;
-use crate::task::task_types::TaskId;
+use crate::tasks::closed_task::ClosedTask;
+use crate::tasks::task::Task;
+use crate::tasks::task_types::TaskId;
 
 type VMem = VirtualMemory<DefaultMemoryImpl>;
 

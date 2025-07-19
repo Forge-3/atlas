@@ -1,14 +1,14 @@
 use crate::errors::Error;
 use std::borrow::Cow;
 
-use crate::task::submission::{Submission, SubmissionState};
-use crate::task::task_types::*;
-use crate::task::token_reward::TokenReward;
+use crate::tasks::submission::{Submission, SubmissionState};
+use crate::tasks::task_types::*;
+use crate::tasks::timer_logic::now_in_seconds;
+use crate::tasks::token_reward::TokenReward;
 use candid::{CandidType, Nat, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
-use crate::task::timer_logic::now_in_seconds;
 
 #[derive(CandidType, Deserialize)]
 pub struct CreateTaskArgs {
@@ -38,9 +38,10 @@ impl CreateTaskArgs {
 
         let min_task_time = 5 * 60; // 5 minutes
         if self.end_time <= (now_in_seconds() + min_task_time) {
-            return Err(Error::InvalidTaskContent(
-                format!("Task end time must be at least {} minutes in the future", min_task_time / 60),
-            ));
+            return Err(Error::InvalidTaskContent(format!(
+                "Task end time must be at least {} minutes in the future",
+                min_task_time / 60
+            )));
         }
         self.task_content
             .iter()

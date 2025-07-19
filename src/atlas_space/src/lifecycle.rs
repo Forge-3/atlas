@@ -1,7 +1,7 @@
 use ic_cdk::{init, post_upgrade};
 use shared::SpaceArgs;
 
-use crate::task::timer_logic::reinitialize_task_timers_after_upgrade;
+use crate::tasks::timer_logic::reinitialize_task_timers_after_upgrade;
 use crate::{config::Config, guard::authenticated_guard, memory};
 
 #[init]

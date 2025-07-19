@@ -4,9 +4,9 @@ use candid::CandidType;
 use ic_cdk::query;
 use serde::Deserialize;
 
-use crate::task::closed_task::ClosedTask;
-use crate::task::task::Task;
-use crate::task::task_types::TaskId;
+use crate::tasks::closed_task::ClosedTask;
+use crate::tasks::task::Task;
+use crate::tasks::task_types::TaskId;
 use crate::{config::Config, errors::Error, memory, state::State};
 
 const MAX_TASKS_PER_RESPONSE: u8 = 200;

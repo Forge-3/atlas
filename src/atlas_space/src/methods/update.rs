@@ -5,8 +5,8 @@ use crate::{
     state::EditSpaceArgs,
 };
 
-use crate::task::task::Task;
-use crate::task::timer_logic;
+use crate::tasks::task::Task;
+use crate::tasks::timer_logic;
 use crate::CreateTaskArgs;
 use crate::Submission;
 use crate::TaskId;
@@ -62,7 +62,7 @@ pub async fn create_task(args: CreateTaskArgs) -> Result<TaskId, Error> {
     let next_task_id = memory::mut_state(|state| TaskId::new(state.get_next_task_id()));
     let subaccount = sha2::Sha256::digest(next_task_id.u64().to_bytes()).into();
 
-    let timer_id = timer_logic::schedule_close_task_timer(next_task_id.clone(), args.end_time);
+    let timer_id = timer_logic::schedule_close_task_timer(next_task_id, args.end_time);
 
     memory::insert_open_task(
         next_task_id,
@@ -83,12 +83,12 @@ pub async fn submit_subtask_submission(
 ) -> Result<(), Error> {
     let caller = user_is_in_space().await?;
 
-    let expired = timer_logic::close_task_if_expired(task_id.clone()).await?;
+    let expired = timer_logic::close_task_if_expired(task_id).await?;
     if expired {
         return Err(Error::TaskExpired);
     }
 
-    memory::mut_open_task(task_id.clone(), |maybe_task| {
+    memory::mut_open_task(task_id, |maybe_task| {
         let task = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
         task.submit_subtask_submission(caller, subtask_id, submission)?;
 
@@ -136,9 +136,9 @@ pub async fn withdraw_reward(task_id: TaskId) -> Result<(), Error> {
     let subaccount = sha2::Sha256::digest(task_id.u64().to_bytes()).into();
 
     if let Some(mut task) = memory::get_open_task(&task_id) {
-        task.claim_reward(caller.clone(), subaccount).await?;
+        task.claim_reward(caller, subaccount).await?;
 
-        memory::mut_open_task(task_id.clone(), |maybe_task| {
+        memory::mut_open_task(task_id, |maybe_task| {
             let task_mut = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
             *task_mut = task;
             Ok(())
@@ -148,9 +148,9 @@ pub async fn withdraw_reward(task_id: TaskId) -> Result<(), Error> {
     }
 
     if let Some(mut task) = memory::get_closed_task(&task_id) {
-        task.claim_reward(caller.clone(), subaccount).await?;
+        task.claim_reward(caller, subaccount).await?;
 
-        memory::mut_closed_task(task_id.clone(), |maybe_task| {
+        memory::mut_closed_task(task_id, |maybe_task| {
             let task_mut = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
             *task_mut = task;
             Ok(())

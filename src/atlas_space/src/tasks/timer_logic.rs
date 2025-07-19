@@ -2,9 +2,9 @@ use crate::errors::Error;
 use crate::memory::{
     get_open_task, insert_closed_task, mut_open_task, remove_open_task, with_open_tasks_iter,
 };
-use crate::task::closed_task::ClosedTask;
-use crate::task::task::Task;
-use crate::task::task_types::TaskId;
+use crate::tasks::closed_task::ClosedTask;
+use crate::tasks::task::Task;
+use crate::tasks::task_types::TaskId;
 use ic_cdk_timers::set_timer;
 use ic_cdk_timers::TimerId;
 use ic_stable_structures::Storable;
@@ -16,11 +16,12 @@ pub async fn reinitialize_task_timers_after_upgrade() {
 
     let now_sec = now_in_seconds();
     let tasks: Vec<(TaskId, Task)> = with_open_tasks_iter(|iter| {
-        iter.map(|(task_id, task)| (task_id.clone(), task.clone())).collect()
+        iter.map(|(task_id, task)| (task_id, task.clone()))
+            .collect()
     });
 
     for (task_id, task) in tasks {
-        if let Ok(expired) = close_task_if_expired(task_id.clone()).await {
+        if let Ok(expired) = close_task_if_expired(task_id).await {
             if expired {
                 continue;
             }
@@ -29,7 +30,7 @@ pub async fn reinitialize_task_timers_after_upgrade() {
         let end_time = task.end_time;
         let delay_sec = end_time.saturating_sub(now_sec);
         let timer_id = set_timer(Duration::from_secs(delay_sec), {
-            let id = task_id.clone();
+            let id = task_id;
             move || {
                 ic_cdk::futures::spawn(async move {
                     close_task(id).await.unwrap();
@@ -37,7 +38,7 @@ pub async fn reinitialize_task_timers_after_upgrade() {
             }
         });
 
-        if let Err(e) = mut_open_task(task_id.clone(), |maybe_task| {
+        if let Err(e) = mut_open_task(task_id, |maybe_task| {
             if let Some(t) = maybe_task.as_mut() {
                 t.timer_id = Some(timer_id.into());
             }
@@ -52,7 +53,7 @@ pub fn schedule_close_task_timer(task_id: TaskId, end_time_sec: u64) -> TimerId 
     let delay_sec = end_time_sec.saturating_sub(now_in_seconds());
 
     set_timer(Duration::from_secs(delay_sec), {
-        let id = task_id.clone();
+        let id = task_id;
         move || {
             ic_cdk::futures::spawn(async move {
                 close_task(id).await.unwrap();
@@ -64,7 +65,7 @@ pub fn schedule_close_task_timer(task_id: TaskId, end_time_sec: u64) -> TimerId 
 pub async fn close_task(task_id: TaskId) -> Result<(), Error> {
     let task = remove_open_task(&task_id)?;
     if let Some(timer_key_data) = &task.timer_id {
-        TimerId::try_from(timer_key_data.clone()).map(|timer_id| ic_cdk_timers::clear_timer(timer_id))?;
+        TimerId::try_from(timer_key_data.clone()).map(ic_cdk_timers::clear_timer)?;
     }
 
     let subaccount = sha2::Sha256::digest(task_id.u64().to_bytes()).into();
