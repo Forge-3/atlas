@@ -3,7 +3,7 @@ use crate::{
     guard::{parent_guard, parent_or_owner_or_admin_guard, user_is_in_space},
     memory,
     state::EditSpaceArgs,
-    task::closed_task::ClosedTask,
+    tasks::closed_task::ClosedTask,
 };
 
 use crate::tasks::task::Task;
@@ -183,7 +183,7 @@ pub async fn clean_up_space_before_deletion() -> Result<(), String> {
 
     let open_tasks: Vec<_> = memory::with_open_tasks_iter(|iter| iter.collect());
     for (task_id, _) in &open_tasks {
-        timer_logic::close_task(task_id.clone())
+        timer_logic::close_task(*task_id)
             .await
             .map_err(|e| format!("Failed to close task {task_id:?}: {e:?}"))?;
     }
@@ -195,7 +195,7 @@ pub async fn clean_up_space_before_deletion() -> Result<(), String> {
     for (task_id, mut closed_task) in closed_tasks {
         if let Err(err) = closed_task.claim_all_rewards(task_id).await {
             ic_cdk::println!("Failed to claim rewards for task {:?}: {:?}", task_id, err);
-            errors.push(format!("Task {:?}: {:?}", task_id, err));
+            errors.push(format!("Task {task_id:?}: {err:?}"));
         }
     }
 
