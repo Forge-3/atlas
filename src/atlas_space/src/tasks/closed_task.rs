@@ -57,14 +57,10 @@ impl ClosedTask {
     }
 
     pub async fn claim_all_rewards(&mut self, task_id: TaskId) -> Result<(), Error> {
-        let users: std::collections::HashSet<Principal> = self
+        let accepted_users: std::collections::HashSet<Principal> = self
             .tasks
             .iter()
             .flat_map(|task| task.get_submission_map().keys().cloned())
-            .collect();
-
-        let accepted_users: std::collections::HashSet<Principal> = users
-            .into_iter()
             .filter(|user| {
                 self.tasks
                     .iter()
