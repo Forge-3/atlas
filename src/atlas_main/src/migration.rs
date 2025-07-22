@@ -14,12 +14,8 @@ thread_local! {
 }
 
 pub async fn migrate() {
-    let new_spaces_data = OLD_SPACES_VEC.with_borrow(|spaces| {
-        spaces
-            .iter()
-            .map(Some)
-            .collect::<Vec<Option<Space>>>()
-    });
+    let new_spaces_data = OLD_SPACES_VEC
+        .with_borrow(|spaces| spaces.iter().map(Some).collect::<Vec<Option<Space>>>());
     OLD_SPACES_VEC.with_borrow_mut(|spaces| {
         *spaces = StableVec::new(MEMORY_MANAGER.with(|m| m.borrow().get(SPACES_VEC_MEMORY_ID)))
             .expect("Failed to clear stable Vec")
