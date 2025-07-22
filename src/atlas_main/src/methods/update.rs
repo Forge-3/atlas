@@ -275,17 +275,8 @@ pub async fn delete_space(space_id: Principal) -> Result<(), Error> {
     let space_index = user
         .owned_spaces()
         .iter()
-        .find_map(|&i| {
-            if let Some(space) = memory::get_space(i) {
-                if space.principal() == space_id {
-                    Some(i)
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        })
+        .find(|&&i| memory::get_space(i).is_some_and(|space| space.principal() == space_id))
+        .copied()
         .ok_or(Error::UserNotOwner)?;
 
     let cleanup_result: Result<(), String> =
@@ -311,13 +302,13 @@ pub async fn delete_space(space_id: Principal) -> Result<(), Error> {
         canister_id: space_id,
     })
     .await
-    .map_err(|err| Error::FailedToStopCanister(err.to_string()))?;
+    .unwrap_or_else(|err| panic!("Failed to stop canister: {err}"));
 
     delete_canister(&DeleteCanisterArgs {
         canister_id: space_id,
     })
     .await
-    .map_err(|err| Error::FailedToDeleteCanister(err.to_string()))?;
+    .unwrap_or_else(|err| panic!("Failed to delete canister: {err}"));
 
     memory::remove_space(space_index)?;
     memory::mut_user(caller, |maybe_user| {

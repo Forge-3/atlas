@@ -63,9 +63,31 @@ impl ClosedTask {
             .flat_map(|task| task.get_submission_map().keys().cloned())
             .collect();
 
-        for user in users {
-            let subaccount = sha2::Sha256::digest(task_id.u64().to_bytes()).into();
-            let _ = self.claim_reward(user, subaccount).await; // For now errors are skipped, cause we have to check every user. Can also log them in the future. (maybe logic in ClosedTask will change)
+        let accepted_users: std::collections::HashSet<Principal> = users
+            .into_iter()
+            .filter(|user| {
+                self.tasks
+                    .iter()
+                    .all(|task| match task.get_submission(*user) {
+                        Ok(sub) => sub.get_state() == &SubmissionState::Accepted,
+                        Err(_) => false,
+                    })
+            })
+            .collect();
+
+        let users_to_reward: std::collections::HashSet<Principal> = accepted_users
+            .difference(&self.rewarded.iter().cloned().collect())
+            .cloned()
+            .collect();
+
+        let subaccount = sha2::Sha256::digest(task_id.u64().to_bytes()).into();
+        for user in users_to_reward {
+            if Nat::from(self.rewarded.len()) >= self.number_of_uses {
+                return Err(Error::UsageLimitExceeded);
+            }
+
+            self.token_reward.withdraw_reward(user, subaccount).await?;
+            self.rewarded.push(user);
         }
 
         Ok(())

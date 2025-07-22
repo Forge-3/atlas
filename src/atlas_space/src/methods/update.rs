@@ -181,16 +181,15 @@ pub fn transfer_space(to: Principal) {
 pub async fn clean_up_space_before_deletion() -> Result<(), String> {
     parent_guard().map_err(|e| e.to_string())?;
 
-    let open_tasks: Vec<_> = memory::with_open_tasks_iter(|iter| iter.collect());
+    let open_tasks: Vec<(TaskId, Task)> = memory::get_all_open_tasks();
     for (task_id, _) in &open_tasks {
         timer_logic::close_task(*task_id)
             .await
             .map_err(|e| format!("Failed to close task {task_id:?}: {e:?}"))?;
     }
 
-    let mut errors = vec![];
-    let closed_tasks: Vec<(TaskId, ClosedTask)> =
-        memory::with_closed_tasks_iter(|iter| iter.collect());
+    let mut errors = Vec::new();
+    let closed_tasks: Vec<(TaskId, ClosedTask)> = memory::get_all_closed_tasks();
 
     for (task_id, mut closed_task) in closed_tasks {
         if let Err(err) = closed_task.claim_all_rewards(task_id).await {
