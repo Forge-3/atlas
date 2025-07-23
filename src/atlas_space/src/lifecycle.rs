@@ -17,6 +17,7 @@ pub fn init(args: SpaceArgs) {
 
 #[post_upgrade]
 async fn post_upgrade(minter_arg: Option<SpaceArgs>) {
+    crate::migration::migrate().await;
     if let Some(SpaceArgs::InitArg(_)) = minter_arg {
         ic_cdk::trap("Cannot upgrade canister state with init args!");
     }

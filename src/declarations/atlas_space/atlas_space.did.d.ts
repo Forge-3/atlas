@@ -103,6 +103,7 @@ export type TaskContent = {
     'TitleAndDescription' : {
       'task_description' : string,
       'task_title' : string,
+      'allow_resubmit' : boolean,
     }
   };
 export type TaskType = {

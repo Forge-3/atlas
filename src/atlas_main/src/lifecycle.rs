@@ -58,4 +58,10 @@ async fn post_upgrade(minter_arg: AtlasArgs) {
             }
         }
     }
+
+    // Check data consistency
+    memory::read_config(|config| config.clone());
+    memory::with_users_iter(|users| users.last());
+    memory::get_space_vec_len();
+    memory::get_bytecode_map_len();
 }

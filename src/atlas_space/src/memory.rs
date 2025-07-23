@@ -7,16 +7,16 @@ use crate::errors::Error;
 use crate::state::State;
 use crate::task::{Task, TaskId};
 
-type VMem = VirtualMemory<DefaultMemoryImpl>;
+pub type VMem = VirtualMemory<DefaultMemoryImpl>;
 
 const CONFIG_MEMORY_ID: MemoryId = MemoryId::new(0);
 const STATE_MEMORY_ID: MemoryId = MemoryId::new(1);
 
-const OPEN_TASKS_MAP_MEMORY_ID: MemoryId = MemoryId::new(2);
-const CLOSED_TASKS_MAP_MEMORY_ID: MemoryId = MemoryId::new(3);
+pub const OPEN_TASKS_MAP_MEMORY_ID: MemoryId = MemoryId::new(2);
+pub const CLOSED_TASKS_MAP_MEMORY_ID: MemoryId = MemoryId::new(3);
 
 thread_local! {
-    static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(
+    pub static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(
         MemoryManager::init(DefaultMemoryImpl::default())
     );
 
