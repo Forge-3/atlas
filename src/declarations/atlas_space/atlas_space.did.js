@@ -79,6 +79,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const SubmissionData = IDL.Record({
     'state' : SubmissionState,
+    'rejection_reason' : IDL.Opt(IDL.Text),
     'submission' : Submission,
   });
   const TaskType = IDL.Variant({
@@ -136,7 +137,7 @@ export const idlFactory = ({ IDL }) => {
     'get_space_info' : IDL.Func([], [SpaceInfo], ['query']),
     'get_state' : IDL.Func([], [State], ['query']),
     'reject_subtask_submission' : IDL.Func(
-        [IDL.Principal, IDL.Nat64, IDL.Nat64],
+        [IDL.Principal, IDL.Nat64, IDL.Nat64, IDL.Opt(IDL.Text)],
         [Result],
         [],
       ),

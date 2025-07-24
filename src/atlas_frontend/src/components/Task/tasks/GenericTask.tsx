@@ -9,6 +9,7 @@ import { useForm, type SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import {
+  getRejectionInfo,
   getSpaceTasks,
   submitSubtaskSubmission,
 } from "../../../canisters/atlasSpace/api";
@@ -96,22 +97,36 @@ const GenericTask = ({
     : [];
 
   const currentSubmissionState = submissionData?.state
-    ? Object.keys(submissionData?.state)[0]
-    : null;
+  ? Object.keys(submissionData?.state)[0]
+  : null;
 
   const canSubmit = user && isUserInHub && (
-    currentSubmissionState === null ||
-    (currentSubmissionState === "Rejected" && genericTask.task_content.TitleAndDescription.allow_resubmit)
+  currentSubmissionState === null ||
+  (currentSubmissionState === "Rejected" && genericTask.task_content.TitleAndDescription.allow_resubmit)
   );
+
+  const rawState = Object.keys(submissionData?.state || {})[0] ?? null;
+
+  const validStates = ["Rejected", "WaitingForReview", "Accepted"] as const;
+  type SubmissionState = typeof validStates[number];
+
+  const submissionState = validStates.includes(rawState as SubmissionState)
+    ? (rawState as SubmissionState)
+    : null;
+
+  const { reasonText, showRejectionReason } = getRejectionInfo(
+    submissionData ?? null,
+    submissionState
+  )
 
    return (
     <div className="flex mt-2">
       <div className="flex flex-col mr-4">
         <div className="bg-[#1E0F33] p-1 w-[32px] h-[32px] rounded-lg relative">
-          {currentSubmissionState === "WaitingForReview" && (
+          {submissionState === "WaitingForReview" && (
             <img src="/icons/check-in-box.svg" className="w-6 h-6 relative"/>
           )}
-          {currentSubmissionState === "Accepted" && (
+          {submissionState === "Accepted" && (
             <img src="/icons/check-in-box.svg" className="w-6 h-6 relative"/>
           )}
         </div>
@@ -130,6 +145,15 @@ const GenericTask = ({
               : "N/A"}
           </p>
         </div>
+        {showRejectionReason && (
+            <div className="mt-2 p-3 rounded-lg border border-red-500 bg-red-900 bg-opacity-20 text-red-300">
+              <p className="font-semibold text-red-200 mb-1">Rejected reason:</p>
+              <p className="break-words">
+                {reasonText}
+              </p>
+            </div>
+          )}
+
         {canSubmit && openSubmission && (
           <form onSubmit={handleSubmit(onSubmit)}>
             <div>
@@ -144,10 +168,11 @@ const GenericTask = ({
             </div>
           </form>
         )}
-        {canSubmit && !openSubmission && (
-          <div className="flex">
+        {canSubmit  && !openSubmission && (
+          <div className="flex py-2">
             <Button onClick={() => setSubmission(true)} className="text-[14px] px-2 py-1 rounded-xl">
-              {currentSubmissionState === "Rejected" ? "Re-submit message" : "Submit message"}
+              {submissionState === "Rejected" ? "Re-submit message" : "Submit message"}
+              
             </Button>
           </div>
         )}
