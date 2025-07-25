@@ -12,6 +12,7 @@ import { getAtlasSpace } from "../../../canisters/atlasSpace/api";
 import SpaceItem from "./SpaceItem";
 import { useNavigate } from "react-router-dom";
 import type { Spaces } from "../../../store/slices/spacesSlice";
+import LocalBlurOverlay from "../../Shared/LocalBlurOverlay";
 
 const SpacesList = () => {
   const dispatch = useDispatch();
@@ -53,13 +54,15 @@ const SpacesList = () => {
 
   if (!spaces) {
     if (!fetchingInProgress) navigate("/");
-    return <></>;
+    return (
+      <LocalBlurOverlay isLoading={true} />
+    )
   }
 
   const spacesEntries = Object.entries(spaces);
   if (spacesEntries.length > 0) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 container mx-2 sm:mx-auto my-4 mx-auto px-4">
+      <div className="grid grid-cols-3 gap-2 container mx-auto my-4">
         {spacesEntries.map(
           ([key, value]) =>
             value?.state && (
@@ -70,7 +73,6 @@ const SpacesList = () => {
                 description={value.state.space_description}
                 backgroundImg={value.state.space_background}
                 avatarImg={value.state.space_logo}
-
               />
             )
         )}

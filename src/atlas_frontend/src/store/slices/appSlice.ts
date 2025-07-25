@@ -9,17 +9,22 @@ export interface StorableConfig extends Omit<Config, "ckusdc_ledger"> {
 interface AppState {
   blockchainConfig: null | StorableConfig;
   isScreenBlur: boolean;
+  isLoading: boolean;
 }
 
 const initialState: AppState = {
   blockchainConfig: null,
   isScreenBlur: false,
+  isLoading: false,
 };
 
 export const appSlice = createSlice({
   name: "app",
   initialState,
   reducers: {
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.isLoading = action.payload;
+    },
     setScreenBlur: (state, action: PayloadAction<boolean>) => {
       state.isScreenBlur = action.payload;
     },
@@ -35,7 +40,7 @@ export const appSlice = createSlice({
   }
 });
 
-export const { setScreenBlur, setConfig } =
+export const { setScreenBlur, setConfig, setLoading } =
   appSlice.actions;
   export const { selectBlockchainConfig } = appSlice.selectors;
   

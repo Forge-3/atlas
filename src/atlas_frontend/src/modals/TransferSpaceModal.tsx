@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import Button from "../components/Shared/Button";
@@ -17,7 +17,7 @@ import { getAtlasUser, transferSpaceTo } from "../canisters/atlasMain/api";
 import { Principal } from "@dfinity/principal";
 import { getErrorWithInfoToast } from "../utils/errors";
 
-interface CreateNewTaskFormInput {
+interface TransferSpaceFormInput {
   principal: string;
 }
 
@@ -31,18 +31,19 @@ const schema = yup.object({
     .required("Principal is required"),
 });
 
-interface CreateNewTaskModalArgs {
+interface TransferSpaceModalArgs {
   callback: () => void;
 }
 
-const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
+const TransferSpaceModal = ({ callback }: TransferSpaceModalArgs) => {
   const { spacePrincipal } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const authAtlasMain = useAuthAtlasMainActor();
   const unAuthAtlasMain = useUnAuthAtlasMainActor();
-   const { user } = useAuth();
-   
+  const { user } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -54,36 +55,44 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     spacePrincipal,
     navigate,
   });
+
   if (!parsedSpacePrincipal) return <></>;
-  const onSubmit: SubmitHandler<CreateNewTaskFormInput> = async ({
+  const onSubmit: SubmitHandler<TransferSpaceFormInput> = async ({
     principal,
   }) => {
-    const toUserId = Principal.from(principal);
-    if (!authAtlasMain || !principal || !user) return;
+    setIsSubmitting(true);
+    try {
+      const toUserId = Principal.from(principal);
+      if (!authAtlasMain || !principal || !user) return;
 
-    const call = transferSpaceTo({
-      authAtlasMain,
-      toUserId,
-      spaceId: parsedSpacePrincipal,
-    });
+      const call = transferSpaceTo({
+        authAtlasMain,
+        toUserId,
+        spaceId: parsedSpacePrincipal,
+      });
 
-    await toast.promise(call, {
-      loading: "Trying to transfer space",
-      success: "Successfully transferred space",
-      error: getErrorWithInfoToast("Failed transfer space:"),
-    });
-    await getAtlasUser({
-      unAuthAtlasMain,
-      dispatch,
-      userId: user.principal,
-    });
-    callback();
+      await toast.promise(call, {
+        loading: "Trying to transfer space.",
+        success: "Successfully transferred space.",
+        error: getErrorWithInfoToast("Failed transfer space:"),
+      });
+      await getAtlasUser({
+        unAuthAtlasMain,
+        dispatch,
+        userId: user.principal,
+      });
+      callback();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center h-full"
+        className={`fixed inset-0 flex items-center justify-center h-full ${
+          isSubmitting ? "z-30" : "z-50"
+        }`}
         onClick={callback}
       >
         <div
@@ -111,4 +120,4 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   );
 };
 
-export default CreateNewTaskModal;
+export default TransferSpaceModal;

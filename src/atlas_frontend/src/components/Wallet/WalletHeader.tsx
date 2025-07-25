@@ -30,6 +30,7 @@ import { Principal } from "@dfinity/principal";
 import toast from "react-hot-toast";
 import { deserialize } from "../../store/store";
 import { getErrorWithInfoToast } from "../../utils/errors";
+import { runWithLoading } from "../../utils/loading";
 
 const WalletHeader = () => {
   const navigate = useNavigate();
@@ -96,25 +97,27 @@ const WalletHeader = () => {
     dispatch,
   });
 
-  const onSubmit: SubmitHandler<WithdrawalFormInput> = async (data) => {
-    const amount = parseUnits(data.withdrawalAmount.toString(), DECIMALS);
-    const userPrincipal = Principal.from(data.withdrawalPrincipal);
-    if (!authCkUsdc || !user?.principal) return;
-    const call = transferToPrincipal({
-      authCkUsdc,
-      userPrincipal,
-      amount,
-    });
-    await toast.promise(call, {
-      loading: "Withdrawing funds...",
-      success: "Funds Withdrawn successfully",
-      error: getErrorWithInfoToast("Insufficient funds."),
-    });
-    await getUserBalance({
-      unAuthCkUsdc: unAuthCkUsdcActor,
-      userPrincipal: user?.principal,
-      dispatch,
-    });
+  const handleWithdrawFunds: SubmitHandler<WithdrawalFormInput> = async (data) => {
+    await runWithLoading(async () => {
+      const userPrincipal = Principal.from(data.withdrawalPrincipal);
+      const amount = parseUnits(data.withdrawalAmount.toString(), DECIMALS);
+      if (!authCkUsdc || !user?.principal) return;
+      const call = transferToPrincipal({
+        authCkUsdc,
+        userPrincipal,
+        amount,
+      });
+      await toast.promise(call, {
+        loading: "Withdrawing funds...",
+        success: "Funds Withdrawn successfully.",
+        error: getErrorWithInfoToast("Insufficient funds."),
+      });
+      await getUserBalance({
+        unAuthCkUsdc: unAuthCkUsdcActor,
+        userPrincipal: user?.principal,
+        dispatch,
+      });
+    }, dispatch);
   };
 
   const setMax = () => {
@@ -123,27 +126,27 @@ const WalletHeader = () => {
 
   return (
     <div className="relative w-full rounded-xl overflow-hidden font-montserrat">
-  <div className="absolute inset-0 bg-[url(/reward-bg-img.png)] mix-blend-luminosity bg-cover bg-center z-0" />
-  <div className="relative px-4 py-6 sm:px-8 md:px-16 md:py-12 z-10 font-montserrat font-medium flex items-center justify-center">
-    <div className="w-full flex flex-col gap-6 max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl"> 
-      <form
-        className="flex flex-col gap-3 text-white"
-        onSubmit={handleSubmit(onSubmit)}
-      >
-        <div className="border-[#9173FF] border-[3px] py-4 px-6 flex gap-2 items-center justify-center w-fit mx-auto rounded-2xl">
-          <div className="text-white text-base sm:text-3xl">
-            Smart <br />
-            Wallet
-          </div>
-          <WalletIcon className="h-12 sm:h-16" />
-          <div className="bg-[#9173FF]/30 text-white px-2 py-1 text-[14px] sm:px-6 sm:py-4 sm:text-lg rounded-2xl backdrop-blur-sm text-center">
-            {parsedUserCkUsdc} XP
-          </div>
-        </div>
-        <div className="flex flex-col gap-3">
-          <div className="text-white text-base sm:text-3xl text-white text-center">
-            Withdraw
-          </div>
+      <div className="absolute inset-0 bg-[url(/reward-bg-img.png)] mix-blend-luminosity bg-cover bg-center z-0" />
+      <div className="relative px-4 py-6 sm:px-8 md:px-16 md:py-12 z-10 font-montserrat font-medium flex items-center justify-center">
+        <div className="w-full flex flex-col gap-6 max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl">
+          <form
+            className="flex flex-col gap-3 text-white"
+            onSubmit={handleSubmit(handleWithdrawFunds)}
+          >
+            <div className="border-[#9173FF] border-[3px] py-4 px-6 flex gap-2 items-center justify-center w-fit mx-auto rounded-2xl">
+              <div className="text-white text-base sm:text-3xl">
+                Smart <br />
+                Wallet
+              </div>
+              <WalletIcon className="h-12 sm:h-16" />
+              <div className="bg-[#9173FF]/30 text-white px-2 py-1 text-[14px] sm:px-6 sm:py-4 sm:text-lg rounded-2xl backdrop-blur-sm text-center">
+                {parsedUserCkUsdc} XP
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="text-white text-base sm:text-3xl text-white text-center">
+                Withdraw
+              </div>
 
               <WalletAddressInputForm
                 register={register}
@@ -170,23 +173,23 @@ const WalletHeader = () => {
                 </span>
               </div>
 
-          {parsedCkUsdcFee && (
-            <div className="text-white mx-auto bg-[#9173FF]/40 w-fit py-1 px-4 rounded-full font-normal">
-              Fee: {parsedCkUsdcFee} XP
+              {parsedCkUsdcFee && (
+                <div className="text-white mx-auto bg-[#9173FF]/40 w-fit py-1 px-4 rounded-full font-normal">
+                  Fee: {parsedCkUsdcFee} XP
+                </div>
+              )}
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                className="text-white border-2 w-fit mx-auto px-6 py-2 rounded-2xl"
+              >
+                Confirm
+              </motion.button>
             </div>
-          )}
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            className="text-white border-2 w-fit mx-auto px-6 py-2 rounded-2xl"
-          >
-            Confirm
-          </motion.button>
+          </form>
         </div>
-      </form>
+      </div>
     </div>
-  </div>
-</div>
   );
 };
 

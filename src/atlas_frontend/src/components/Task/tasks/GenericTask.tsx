@@ -20,6 +20,7 @@ import { useAuth } from "@nfid/identitykit/react";
 import { useDispatch } from "react-redux";
 import type { ActorSubclass } from "@dfinity/agent";
 import { getErrorWithInfoToast } from "../../../utils/errors";
+import { runWithLoading } from "../../../utils/loading";
 
 interface GenericTaskProps {
   genericTask: TaskType["GenericTask"];
@@ -66,28 +67,31 @@ const GenericTask = ({
   const { connect } = useAuth();
   const authAtlasSpace = useAuthAtlasSpaceActor(spacePrincipal);
 
-  const onSubmit: SubmitHandler<GenericTaskFormInput> = async ({
+  const handleSubmitResponse: SubmitHandler<GenericTaskFormInput> = async ({
     taskSubmission,
   }) => {
     if (!authAtlasSpace || !unAuthAtlasSpace) return;
-    const call = submitSubtaskSubmission({
-      authAtlasSpace,
-      taskId: BigInt(taskId),
-      subtaskId: BigInt(subtaskId),
-      submission: { Text: { content: taskSubmission } },
-    });
-    await toast.promise(call, {
-      loading: "Submitting response...",
-      success: "Submitted response",
-      error: getErrorWithInfoToast("Failed to submit response."),
-    });
+    
+    await runWithLoading(async () => {
+      const call = submitSubtaskSubmission({
+        authAtlasSpace,
+        taskId: BigInt(taskId),
+        subtaskId: BigInt(subtaskId),
+        submission: { Text: { content: taskSubmission } },
+      });
+      await toast.promise(call, {
+        loading: "Submitting response...",
+        success: "Submitted response.",
+        error: getErrorWithInfoToast("Failed to submit response."),
+      });
 
-    setSubmission(false);
-    getSpaceTasks({
-      spaceId: spacePrincipal.toString(),
-      unAuthAtlasSpace,
-      dispatch,
-    });
+      setSubmission(false);
+      getSpaceTasks({
+        spaceId: spacePrincipal.toString(),
+        unAuthAtlasSpace,
+        dispatch,
+      });
+    }, dispatch, () => setSubmission(false));
   };
 
   const [, submissionData] = user?.principal
@@ -153,9 +157,8 @@ const GenericTask = ({
               </p>
             </div>
           )}
-
         {canSubmit && openSubmission && (
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={handleSubmit(handleSubmitResponse)}>
             <div>
               <p className="text-xs md:text-base text-white font-semibold mb-1">Submit response:</p>
               <textarea
