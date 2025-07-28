@@ -6,7 +6,6 @@ import {
 import type {
   _SERVICE,
   Task,
-  TaskType,
 } from "../../../../declarations/atlas_space/atlas_space.did";
 import { deserialize, type RootState } from "../../store/store";
 import { useDispatch, useSelector } from "react-redux";
@@ -14,10 +13,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useSpaceId } from "../../hooks/space";
 import { useEffect, useState } from "react";
 import {
-  acceptSubtaskSubmission,
   getAtlasSpace,
   getSpaceTasks,
-  rejectSubtaskSubmission,
 } from "../../canisters/atlasSpace/api";
 import {
   getUsersSubmissions,
@@ -25,16 +22,13 @@ import {
 } from "../../canisters/atlasSpace/tasks";
 import { shortPrincipal } from "../../utils/icp";
 import { TiArrowSortedDown } from "react-icons/ti";
-import Button from "../Shared/Button";
 import type { ActorSubclass } from "@dfinity/agent";
-import { Principal } from "@dfinity/principal";
-import type { TaskData, TasksData } from "../../canisters/atlasSpace/types";
+import type { TasksData } from "../../canisters/atlasSpace/types";
 import type { Space } from "../../store/slices/spacesSlice";
-import { FaArrowLeftLong } from "react-icons/fa6";
 import { getTaskPath } from "../../router/paths";
-import { useForm, type SubmitHandler } from "react-hook-form";
-import toast from "react-hot-toast";
-import { runWithLoading } from "../../utils/loading";
+import Button from "../Shared/Button";
+import TaskSummation from "./TaskSummation";
+import { FaArrowLeftLong } from "react-icons/fa6";
 
 const Submissions = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -76,7 +70,11 @@ const Submissions = () => {
   const currentTask = taskId && tasks ? tasks[taskId] : null;
   const tasksCount = currentTask?.tasks?.length ?? 0;
   const usersSubmissions = currentTask?.tasks
-    ? getUsersSubmissions(currentTask.tasks)
+    ? getUsersSubmissions(
+        Object.fromEntries(
+          currentTask.tasks.map((task, idx) => [idx.toString(), task])
+        )
+      )
     : new UserSubmissions({});
 
   if (
@@ -90,7 +88,7 @@ const Submissions = () => {
   ) {
     return <></>;
   }
-
+  console.log(usersSubmissions.userSubmissionsData)
   return (
     <div className="container mx-auto my-4">
       <div className="w-full px-3">
@@ -211,7 +209,7 @@ const Summation = ({
   spaceId,
 }: SummationProps) => {
   const [isSummationOpen, setSummationOpen] = useState(false);
-  const submissionState = usersSubmissions.getSubmissionState(userPrincipal);
+  const submissionState = usersSubmissions.getSubmissionState(userPrincipal) as "Rejected" | "WaitingForReview" | "Accepted";
 
   return (
     <>
@@ -242,201 +240,41 @@ const Summation = ({
       </tr>
       {isSummationOpen && (
         <tr>
-          <td
-            colSpan={4}
-            className="bg-[#9173FF]/20 px-4 py-4 sm:px-6 rounded-b-lg"
-          >
-            {Object.entries(currentTaskData).map(([key]) => (
-              <GenericTaskSummation
-                key={key}
-                genericTask={currentTask.tasks[Number(key)].GenericTask}
-                usersSubmissions={usersSubmissions}
-                submission={usersSubmissions.getSubmission(userPrincipal, key)}
-                authAtlasSpace={authAtlasSpace}
-                taskId={taskId}
-                subtaskId={key}
-                unAuthAtlasSpace={unAuthAtlasSpace}
-                spaceId={spaceId}
-                submissionState={submissionState}
-                user={userPrincipal}
-              />
-            ))}
+          <td colSpan={4} className="bg-[#9173FF]/30 px-4 py-3">
+            {Object.entries(currentTaskData).map(([key]) => {
+              const subtask = currentTask.tasks[Number(key)];
+
+              const commonProps = {
+                usersSubmissions: usersSubmissions,
+                submission: usersSubmissions.getSubmission(userPrincipal, key),
+                authAtlasSpace: authAtlasSpace,
+                taskId: taskId,
+                subtaskId: key,
+                unAuthAtlasSpace: unAuthAtlasSpace,
+                spaceId: spaceId,
+                submissionState: submissionState,
+                user: userPrincipal,
+              };
+
+              const task = "GenericTask" in subtask ? subtask.GenericTask : subtask.DiscordTask;
+
+              if (task) {
+                return (
+                  <TaskSummation
+                    key={key}
+                    {...commonProps}
+                    task={task}
+                  />
+                );
+              }
+
+              console.warn(`Unknown task type for key ${key}:`, subtask);
+              return null;
+            })}
           </td>
         </tr>
       )}
     </>
   );
 };
-
-interface GenericTaskSummationProps {
-  genericTask: TaskType["GenericTask"];
-  usersSubmissions: UserSubmissions;
-  submission: TaskData;
-  authAtlasSpace: ActorSubclass<_SERVICE>;
-  taskId: string;
-  subtaskId: string;
-  unAuthAtlasSpace: ActorSubclass<_SERVICE>;
-  spaceId: string;
-  submissionState: "Rejected" | "WaitingForReview" | "Accepted";
-  user: string;
-}
-
-interface SubtaskSubmission {
-  authAtlasSpace: ActorSubclass<_SERVICE>;
-  userPrincipal: Principal;
-  taskId: bigint;
-  subtaskId: bigint;
-  reason: string | null;
-}
-
-const GenericTaskSummation = ({
-  genericTask,
-  submission,
-  authAtlasSpace,
-  taskId,
-  subtaskId,
-  unAuthAtlasSpace,
-  spaceId,
-  submissionState,
-  user,
-}: GenericTaskSummationProps) => {
-  const dispatch = useDispatch();
-  const userPrincipal = Principal.from(user);
-  const isLoading = useSelector((state: RootState) => state.app.isLoading);
-
-  const { register, handleSubmit } = useForm<SubtaskSubmission>();
-  const onSubmit: SubmitHandler<SubtaskSubmission> = async (data) => {
-    const rawReason = data.reason?.trim();
-    const trimmedRawReason = !rawReason || rawReason === "" ? null : rawReason;
-    await runWithLoading(
-      async () => {
-        await toast.promise(
-          rejectSubtaskSubmission({
-            authAtlasSpace,
-            userPrincipal,
-            taskId: BigInt(taskId),
-            subtaskId: BigInt(subtaskId),
-            reason: trimmedRawReason,
-          }),
-          {
-            loading: "Rejecting task...",
-            error: "Failed to reject task.",
-          }
-        );
-        setShowRejectPopup(false);
-        await getSpaceTasks({
-          spaceId,
-          unAuthAtlasSpace,
-          dispatch,
-        });
-      },
-      dispatch,
-      () => setShowRejectPopup(false)
-    );
-  };
-
-  const [showRejectPopup, setShowRejectPopup] = useState(false);
-
-  const acceptSubtask = async () => {
-    await runWithLoading(async () => {
-      await toast.promise(
-        acceptSubtaskSubmission({
-          authAtlasSpace,
-          userPrincipal,
-          taskId: BigInt(taskId),
-          subtaskId: BigInt(subtaskId),
-        }),
-        {
-          loading: "Accepting task...",
-          success: "Task accepted successfully.",
-          error: "Failed to accept task.",
-        }
-      );
-      await getSpaceTasks({
-        spaceId,
-        unAuthAtlasSpace,
-        dispatch,
-      });
-    }, dispatch);
-  };
-
-  const singleSubmissionState = Object.keys(submission.submissionData.state)[0];
-
-  return (
-    <div className="text-left pb-4 mt-4 p-4 rounded-lg bg-[#1E0F33]/40">
-      <p className="text-white text-xs font-semibold mb-2">
-        Subtask: {subtaskId} | Status: {singleSubmissionState}
-      </p>
-      <h3 className="text-xl font-bold text-white mb-2 break-words">
-        {genericTask.task_content.TitleAndDescription.task_title}
-      </h3>
-      <p className="text-wrap mb-4 break-words">
-        {genericTask.task_content.TitleAndDescription.task_description}
-      </p>
-      <div className="mt-4">
-        <p className="text-white font-semibold mb-1">Submitted response:</p>
-        <div className="border-2 border-[#9173FF]/20 p-3 rounded-xl w-full mb-4 bg-[#9173FF]/20 text-white break-words">
-          {submission.submissionData.submission.Text.content}
-        </div>
-        {submissionState === "Rejected" &&
-          submission.submissionData.rejection_reason[0] &&
-          submission.submissionData.rejection_reason[0].trim().length > 0 && (
-            <div className="mt-2 p-3 rounded-lg border border-red-500 bg-red-900 bg-opacity-20 text-red-300">
-              <p className="font-semibold text-red-200 mb-1">Reject Reason:</p>
-              <p className="break-words">
-                {submission.submissionData.rejection_reason[0]}
-              </p>
-            </div>
-          )}
-        <div className="flex flex-col justify-end gap-2">
-          {submissionState === "WaitingForReview" &&
-            singleSubmissionState === "WaitingForReview" && (
-              <>
-                <div className="flex gap-2 justify-end">
-                  <Button onClick={acceptSubtask}>Accept</Button>
-                  <Button
-                    onClick={() => setShowRejectPopup(true)}
-                    className="bg-red-500"
-                  >
-                    Reject
-                  </Button>
-                </div>
-              </>
-            )}
-        </div>
-      </div>
-      {showRejectPopup && (
-        <div
-          className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${isLoading ? "z-30 blur-sm" : "z-50"}`}
-        >
-          <div className="bg-[#402a5f] p-6 rounded-2xl shadow-lg w-96 text-black">
-            <h2 className="text-xl text-white font-bold mb-4">
-              Reason for Rejection
-            </h2>
-            <form onSubmit={handleSubmit(onSubmit)} className="my-3 rounded-lg">
-              <textarea
-                {...register("reason")}
-                className="w-full p-3 border border-[#8973FF]/20 bg-[#9173FF]/20 rounded-xl text-white mb-2 resize-none overflow-hidden"
-                placeholder="Enter reason here(optional)"
-                rows={5}
-              />
-              <div className="flex justify-end gap-2">
-                <Button
-                  onClick={() => {
-                    setShowRejectPopup(false);
-                  }}
-                  className=""
-                >
-                  Cancel
-                </Button>
-                <Button className="bg-red-500">Submit Rejection</Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
 export default Submissions;

@@ -101,6 +101,15 @@ export interface Task {
   'number_of_uses' : bigint,
 }
 export type TaskContent = {
+    'DiscordTask' : {
+      'task_description' : string,
+      'task_title' : string,
+      'invite_link' : string,
+      'guild_id' : string,
+      'allow_resubmit' : boolean,
+    }
+  } |
+  {
     'TitleAndDescription' : {
       'task_description' : string,
       'task_title' : string,
@@ -108,6 +117,12 @@ export type TaskContent = {
     }
   };
 export type TaskType = {
+    'DiscordTask' : {
+      'task_content' : TaskContent,
+      'submission' : Array<[Principal, SubmissionData]>,
+    }
+  } |
+  {
     'GenericTask' : {
       'task_content' : TaskContent,
       'submission' : Array<[Principal, SubmissionData]>,

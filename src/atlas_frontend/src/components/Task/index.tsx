@@ -15,7 +15,7 @@ import {
   getSpaceTasks,
   withdrawReward,
 } from "../../canisters/atlasSpace/api";
-import GenericTask from "./tasks/GenericTask";
+import TaskRenderer from "./TaskRenderer";
 import { FaWallet } from "react-icons/fa";
 import { useAuth } from "@nfid/identitykit/react";
 import {
@@ -63,6 +63,7 @@ const Task = () => {
   const spaceData = space?.state;
   const unAuthAtlasSpace = useUnAuthAtlasSpaceActor(parsedSpacePrincipal);
   const isUserInHub = inHub?.id.toString() === spacePrincipal;
+  console.log("principal space: ", spacePrincipal)
 
   useEffect(() => {
     if (!unAuthAtlasSpace || spaceData) return;
@@ -90,7 +91,11 @@ const Task = () => {
   }
 
   const usersSubmissions = currentTask?.tasks
-    ? getUsersSubmissions(currentTask.tasks)
+    ? getUsersSubmissions(
+        Object.fromEntries(
+          currentTask.tasks.map((task, idx) => [idx.toString(), task])
+        )
+      )
     : new UserSubmissions({});
 
   if (!user?.principal) return <></>;
@@ -197,17 +202,18 @@ const Task = () => {
                   {currentTask.task_title}
                 </h2>
                 <div className="mt-6">
-                  {currentTask.tasks.map((task, key) => (
-                    <GenericTask
-                      key={key}
-                      genericTask={task.GenericTask}
-                      spacePrincipal={parsedSpacePrincipal}
-                      taskId={taskId}
-                      subtaskId={key}
-                      unAuthAtlasSpace={unAuthAtlasSpace}
-                      isUserInHub={isUserInHub}
-                    />
-                  ))}
+                  {Object.entries(currentTask.tasks).map(
+                    ([subtaskId, taskData], i) => (
+                      <TaskRenderer
+                        key={i}
+                        task={[Number(subtaskId), taskData]}
+                        spacePrincipal={parsedSpacePrincipal}
+                        taskId={taskId}
+                        unAuthAtlasSpace={unAuthAtlasSpace}
+                        isUserInHub={isUserInHub}
+                      />
+                    )
+                  )}
                 </div>
                 <div className="flex mt-3 items-center justify-center">
                   <div className="mr-3 md:mr-4">

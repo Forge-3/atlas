@@ -80,7 +80,10 @@ export const useUnAuthCkUsdcIndexerActor = () => {
 
 export const useAuthAtlasSpaceActor = (canisterId: Principal) => {
   const agent = useAuthAgent();
-  return agent && atlasSpaceActor(agent, canisterId)
+  return useMemo(() => {
+    if (!agent) return null;
+    return atlasSpaceActor(agent, canisterId);
+  }, [agent, canisterId]);
 };
 
 export const useUnAuthAtlasSpaceActor = (canisterId: Principal)  => {

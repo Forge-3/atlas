@@ -22,8 +22,10 @@ import type { ActorSubclass } from "@dfinity/agent";
 import { getErrorWithInfoToast } from "../../../utils/errors";
 import { runWithLoading } from "../../../utils/loading";
 
+type GenericTaskType = Extract<TaskType, { GenericTask: unknown }>['GenericTask'];
+
 interface GenericTaskProps {
-  genericTask: TaskType["GenericTask"];
+  genericTask: GenericTaskType;
   spacePrincipal: Principal;
   taskId: string;
   subtaskId: number;
@@ -70,6 +72,9 @@ const GenericTask = ({
   const handleSubmitResponse: SubmitHandler<GenericTaskFormInput> = async ({
     taskSubmission,
   }) => {
+    console.log("onSubmit triggered!");
+    console.log("authAtlasSpace:", authAtlasSpace);
+    console.log("unAuthAtlasSpace:", unAuthAtlasSpace)
     if (!authAtlasSpace || !unAuthAtlasSpace) return;
     
     await runWithLoading(async () => {
@@ -106,7 +111,8 @@ const GenericTask = ({
 
   const canSubmit = user && isUserInHub && (
   currentSubmissionState === null ||
-  (currentSubmissionState === "Rejected" && genericTask.task_content.TitleAndDescription.allow_resubmit)
+  (currentSubmissionState === "Rejected" && ("TitleAndDescription" in genericTask.task_content
+     ? genericTask.task_content.TitleAndDescription.allow_resubmit : "N/A"))
   );
 
   const rawState = Object.keys(submissionData?.state || {})[0] ?? null;
@@ -138,16 +144,16 @@ const GenericTask = ({
       </div>
       <div className="bg-[#1E0F33] rounded-xl p-3 md:p-6 w-full">
         <div className="mb-4">
-          <h4 className="text-xl font-medium font-poppins text-white mb-1 text-wrap break-all">
-            {"TitleAndDescription" in genericTask.task_content 
-              ? genericTask.task_content.TitleAndDescription.task_title
-              : "N/A"}
-          </h4>
-          <p className="text-zinc-400 text-wrap break-all">
-            {"TitleAndDescription" in genericTask.task_content 
-              ? genericTask.task_content.TitleAndDescription.task_description
-              : "N/A"}
-          </p>
+           { 'TitleAndDescription' in genericTask.task_content && (
+             <>
+              <h4 className="text-xl font-medium font-poppins text-white mb-1 text-wrap break-all">
+                {genericTask.task_content.TitleAndDescription.task_title}
+              </h4>
+              <p className="text-zinc-400 text-wrap break-all">
+                {genericTask.task_content.TitleAndDescription.task_description}
+              </p>
+             </>
+            )}
         </div>
         {showRejectionReason && (
             <div className="mt-2 p-3 rounded-lg border border-red-500 bg-red-900 bg-opacity-20 text-red-300">
