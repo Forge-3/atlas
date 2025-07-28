@@ -1,14 +1,14 @@
 export function formatDate(timestamp: number) {
-    if (!timestamp || isNaN(timestamp)) throw new Error("Invalid date");
-    
-    const date = new Date(Number(timestamp));
-    if (isNaN(date.getTime())) throw new Error("Invalid date");
-    
-    const day = String(date.getUTCDate()).padStart(2, '0');
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Months are 0-based
-    const year = String(date.getUTCFullYear()).slice(-2); // Get last two digits of year
-    
-    return `${day}-${month}-${year}`;
+  if (!timestamp || isNaN(timestamp)) throw new Error("Invalid date");
+
+  const date = new Date(Number(timestamp));
+  if (isNaN(date.getTime())) throw new Error("Invalid date");
+
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0"); // Months are 0-based
+  const year = String(date.getUTCFullYear()).slice(-2); // Get last two digits of year
+
+  return `${day}-${month}-${year}`;
 }
 
 export function formatUtcDate(timestamp: string | number): string {
@@ -49,3 +49,49 @@ export function timeAgo(timestamp: string | number): string {
 
   return "just now";
 }
+
+export function formatDuration(seconds: number): string {
+  const days = Math.floor(seconds / (3600 * 24));
+  const hours = Math.floor((seconds % (3600 * 24)) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  const parts = [];
+  if (days) parts.push(`${days}d`);
+  if (hours) parts.push(`${hours}h`);
+  if (minutes) parts.push(`${minutes}m`);
+
+  return parts.length ? parts.join(" ") : "Less than a minute";
+}
+
+export function nowInSeconds(): number {
+  return Math.floor(Date.now() / 1000);
+}
+
+export function formatDateShortMonth(date: Date) {
+  const options: Intl.DateTimeFormatOptions = {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  };
+  return date
+    .toLocaleDateString("en-US", options)
+    .replace(",", "");
+}
+
+export function formatDateShortHour(date: Date) {
+  const timeOptions: Intl.DateTimeFormatOptions = {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  };
+  return date.toLocaleTimeString("en-US", timeOptions);
+}
+
+export function bigintToDate(date: bigint) {
+  return new Date(Number(date * 1000n));
+}
+
+export function toLocalISOString(date = new Date()) {
+  const offsetMs = date.getTimezoneOffset() * 60000;
+  const localDate = new Date(date.getTime() - offsetMs);
+  return localDate.toISOString().slice(0, -1);}

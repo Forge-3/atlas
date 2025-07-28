@@ -5,7 +5,6 @@ import {
 } from "../../hooks/identityKit";
 import type {
   _SERVICE,
-  Task,
   TaskType,
 } from "../../../../declarations/atlas_space/atlas_space.did";
 import { deserialize, type RootState } from "../../store/store";
@@ -18,6 +17,7 @@ import {
   getAtlasSpace,
   getSpaceTasks,
   rejectSubtaskSubmission,
+  type AnyTask,
 } from "../../canisters/atlasSpace/api";
 import {
   getUsersSubmissions,
@@ -74,7 +74,7 @@ const Submissions = () => {
   }, [dispatch, unAuthAtlasSpace, tasks, spaceId]);
 
   const currentTask = taskId && tasks ? tasks[taskId] : null;
-  const tasksCount = currentTask?.tasks?.length ?? 0;
+  const tasksCount = currentTask?.tasks.length ?? 0;
   const usersSubmissions = currentTask?.tasks
     ? getUsersSubmissions(currentTask.tasks)
     : new UserSubmissions({});
@@ -191,7 +191,7 @@ interface SummationProps {
   userPrincipal: string;
   tasksCount: number;
   usersSubmissions: UserSubmissions;
-  currentTask: Task;
+  currentTask: AnyTask;
   currentTaskData: TasksData;
   authAtlasSpace: ActorSubclass<_SERVICE>;
   taskId: string;
@@ -375,9 +375,11 @@ const GenericTaskSummation = ({
       </p>
       <div className="mt-4">
         <p className="text-white font-semibold mb-1">Submitted response:</p>
-        <div className="border-2 border-[#9173FF]/20 p-3 rounded-xl w-full mb-4 bg-[#9173FF]/20 text-white break-words">
-          {submission.submissionData.submission.Text.content}
-        </div>
+        {"Text" in submission.submissionData.submission && (
+          <div className="border-2 border-[#9173FF]/20 p-3 rounded-xl w-full mb-4 bg-[#9173FF]/20 text-white break-words">
+            {submission.submissionData.submission.Text.content}
+          </div>
+        )}
         {submissionState === "Rejected" &&
           submission.submissionData.rejection_reason[0] &&
           submission.submissionData.rejection_reason[0].trim().length > 0 && (
@@ -389,8 +391,7 @@ const GenericTaskSummation = ({
             </div>
           )}
         <div className="flex flex-col justify-end gap-2">
-          {submissionState === "WaitingForReview" &&
-            singleSubmissionState === "WaitingForReview" && (
+          {singleSubmissionState === "WaitingForReview" && (
               <>
                 <div className="flex gap-2 justify-end">
                   <Button onClick={acceptSubtask}>Accept</Button>

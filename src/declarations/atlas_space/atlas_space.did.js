@@ -20,23 +20,29 @@ export const idlFactory = ({ IDL }) => {
   });
   const Error = IDL.Variant({
     'BytecodeUpToDate' : IDL.Null,
+    'NotTaskCreator' : IDL.Null,
     'NotParent' : IDL.Null,
     'UsageLimitExceeded' : IDL.Null,
     'UserSubmissionNotFound' : IDL.Null,
     'FailedToUpdateConfig' : IDL.Text,
     'UserDoesNotBelongToSpace' : IDL.Null,
+    'TaskNotActive' : IDL.Null,
+    'AllRewardsClaimed' : IDL.Null,
     'TaskAlreadyExists' : IDL.Nat64,
     'FailedToCallMain' : IDL.Text,
     'ConfigNotSet' : IDL.Null,
     'UserAlreadyRewarded' : IDL.Null,
+    'TaskNotFound' : IDL.Nat64,
     'NotAdminNorOwnerNorParent' : IDL.Null,
     'UserAlreadySubmitted' : IDL.Null,
+    'RewardAlreadyRefunded' : IDL.Null,
     'NotAdmin' : IDL.Null,
     'IncorrectSubmission' : IDL.Text,
     'CountToHigh' : IDL.Record({ 'max' : IDL.Nat64, 'found' : IDL.Nat64 }),
     'SubtaskDoNotExists' : IDL.Nat64,
     'NotOwner' : IDL.Null,
     'FailedToTransfer' : IDL.Text,
+    'TaskExpired' : IDL.Null,
     'FailedToParse' : IDL.Text,
     'InvalidTaskContent' : IDL.Text,
     'TaskDoNotExists' : IDL.Nat64,
@@ -57,7 +63,9 @@ export const idlFactory = ({ IDL }) => {
   const CreateTaskArgs = IDL.Record({
     'task_title' : IDL.Text,
     'token_reward' : TokenReward,
+    'end_time' : IDL.Nat64,
     'task_content' : IDL.Vec(TaskContent),
+    'start_time' : IDL.Nat64,
     'number_of_uses' : IDL.Nat64,
   });
   const Result_1 = IDL.Variant({ 'Ok' : IDL.Nat64, 'Err' : Error });
@@ -75,6 +83,7 @@ export const idlFactory = ({ IDL }) => {
     'Accepted' : IDL.Null,
   });
   const Submission = IDL.Variant({
+    'Empty' : IDL.Null,
     'Text' : IDL.Record({ 'content' : IDL.Text }),
   });
   const SubmissionData = IDL.Record({
@@ -88,19 +97,22 @@ export const idlFactory = ({ IDL }) => {
       'submission' : IDL.Vec(IDL.Tuple(IDL.Principal, SubmissionData)),
     }),
   });
-  const Task = IDL.Record({
+  const ClosedTask = IDL.Record({
     'tasks' : IDL.Vec(TaskType),
     'creator' : IDL.Principal,
     'task_title' : IDL.Text,
+    'refunded' : IDL.Bool,
     'token_reward' : TokenReward,
+    'end_time' : IDL.Nat64,
+    'start_time' : IDL.Nat64,
     'rewarded' : IDL.Vec(IDL.Principal),
     'number_of_uses' : IDL.Nat64,
   });
-  const GetTasksRes = IDL.Record({
-    'tasks' : IDL.Vec(IDL.Tuple(IDL.Nat64, Task)),
+  const GetClosedTasksRes = IDL.Record({
+    'tasks' : IDL.Vec(IDL.Tuple(IDL.Nat64, ClosedTask)),
     'tasks_count' : IDL.Nat64,
   });
-  const Result_2 = IDL.Variant({ 'Ok' : GetTasksRes, 'Err' : Error });
+  const Result_2 = IDL.Variant({ 'Ok' : GetClosedTasksRes, 'Err' : Error });
   const CkUsdcLedger = IDL.Record({
     'fee' : IDL.Opt(IDL.Nat),
     'principal' : IDL.Principal,
@@ -111,6 +123,22 @@ export const idlFactory = ({ IDL }) => {
     'current_wasm_version' : IDL.Nat64,
     'parent' : IDL.Principal,
   });
+  const Task = IDL.Record({
+    'timer_id' : IDL.Opt(IDL.Nat64),
+    'tasks' : IDL.Vec(TaskType),
+    'creator' : IDL.Principal,
+    'task_title' : IDL.Text,
+    'token_reward' : TokenReward,
+    'end_time' : IDL.Nat64,
+    'start_time' : IDL.Nat64,
+    'rewarded' : IDL.Vec(IDL.Principal),
+    'number_of_uses' : IDL.Nat64,
+  });
+  const GetTasksRes = IDL.Record({
+    'tasks' : IDL.Vec(IDL.Tuple(IDL.Nat64, Task)),
+    'tasks_count' : IDL.Nat64,
+  });
+  const Result_3 = IDL.Variant({ 'Ok' : GetTasksRes, 'Err' : Error });
   const State = IDL.Record({
     'external_links' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     'space_symbol' : IDL.Opt(IDL.Text),
@@ -129,11 +157,13 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'create_task' : IDL.Func([CreateTaskArgs], [Result_1], []),
+    'delete_closed_task' : IDL.Func([IDL.Nat64], [Result], []),
     'edit_space' : IDL.Func([EditSpaceArgs], [Result], []),
+    'force_close_task' : IDL.Func([IDL.Nat64], [Result], []),
     'get_closed_tasks' : IDL.Func([GetTasksArgs], [Result_2], ['query']),
     'get_config' : IDL.Func([], [Config], ['query']),
     'get_current_bytecode_version' : IDL.Func([], [IDL.Nat64], ['query']),
-    'get_open_tasks' : IDL.Func([GetTasksArgs], [Result_2], ['query']),
+    'get_open_tasks' : IDL.Func([GetTasksArgs], [Result_3], ['query']),
     'get_space_info' : IDL.Func([], [SpaceInfo], ['query']),
     'get_state' : IDL.Func([], [State], ['query']),
     'reject_subtask_submission' : IDL.Func(

@@ -72,7 +72,7 @@ const SpacePage = () => {
       backgroundImg={spaceData.space_background}
       avatarImg={spaceData.space_logo}
       externalLinks={spaceData.external_links}
-      tasks={tasks === null ? undefined : tasks}
+      tasks={tasks || {}}
     />
   );
 };

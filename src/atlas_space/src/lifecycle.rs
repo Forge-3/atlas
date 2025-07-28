@@ -1,6 +1,7 @@
 use ic_cdk::{init, post_upgrade};
 use shared::SpaceArgs;
 
+use crate::tasks::timer_logic::reinitialize_task_timers_after_upgrade;
 use crate::{config::Config, guard::authenticated_guard, memory};
 
 #[init]
@@ -24,4 +25,6 @@ async fn post_upgrade(minter_arg: Option<SpaceArgs>) {
     if let Some(SpaceArgs::UpgradeArg { version }) = minter_arg {
         memory::mut_config(|config| config.current_wasm_version = version)
     }
+
+    reinitialize_task_timers_after_upgrade().await;
 }

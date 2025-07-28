@@ -28,7 +28,8 @@ interface GenericTaskProps {
   taskId: string;
   subtaskId: number;
   unAuthAtlasSpace: ActorSubclass<_SERVICE> | null;
-  isUserInHub: boolean
+  isUserInHub: boolean;
+  disabled?: boolean;
 }
 
 interface GenericTaskFormInput {
@@ -53,7 +54,8 @@ const GenericTask = ({
   taskId,
   subtaskId,
   unAuthAtlasSpace,
-  isUserInHub
+  isUserInHub,
+  disabled = false,
 }: GenericTaskProps) => {
   const dispatch = useDispatch();
   const { user } = useAuth();
@@ -157,7 +159,8 @@ const GenericTask = ({
               </p>
             </div>
           )}
-        {canSubmit && openSubmission && (
+
+        {canSubmit && openSubmission && !disabled && (
           <form onSubmit={handleSubmit(handleSubmitResponse)}>
             <div>
               <p className="text-xs md:text-base text-white font-semibold mb-1">Submit response:</p>
@@ -171,7 +174,7 @@ const GenericTask = ({
             </div>
           </form>
         )}
-        {canSubmit  && !openSubmission && (
+        {canSubmit  && !openSubmission && !disabled && (
           <div className="flex py-2">
             <Button onClick={() => setSubmission(true)} className="text-[14px] px-2 py-1 rounded-xl">
               {submissionState === "Rejected" ? "Re-submit message" : "Submit message"}

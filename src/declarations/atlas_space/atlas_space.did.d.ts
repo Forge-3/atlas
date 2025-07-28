@@ -7,6 +7,17 @@ export interface CkUsdcLedger_1 {
   'fee' : [] | [bigint],
   'principal' : Principal,
 }
+export interface ClosedTask {
+  'tasks' : Array<TaskType>,
+  'creator' : Principal,
+  'task_title' : string,
+  'refunded' : boolean,
+  'token_reward' : TokenReward,
+  'end_time' : bigint,
+  'start_time' : bigint,
+  'rewarded' : Array<Principal>,
+  'number_of_uses' : bigint,
+}
 export interface Config {
   'owner' : Principal,
   'ckusdc_ledger' : CkUsdcLedger,
@@ -16,7 +27,9 @@ export interface Config {
 export interface CreateTaskArgs {
   'task_title' : string,
   'token_reward' : TokenReward,
+  'end_time' : bigint,
   'task_content' : Array<TaskContent>,
+  'start_time' : bigint,
   'number_of_uses' : bigint,
 }
 export interface EditSpaceArgs {
@@ -27,28 +40,38 @@ export interface EditSpaceArgs {
   'space_description' : string,
 }
 export type Error = { 'BytecodeUpToDate' : null } |
+  { 'NotTaskCreator' : null } |
   { 'NotParent' : null } |
   { 'UsageLimitExceeded' : null } |
   { 'UserSubmissionNotFound' : null } |
   { 'FailedToUpdateConfig' : string } |
   { 'UserDoesNotBelongToSpace' : null } |
+  { 'TaskNotActive' : null } |
+  { 'AllRewardsClaimed' : null } |
   { 'TaskAlreadyExists' : bigint } |
   { 'FailedToCallMain' : string } |
   { 'ConfigNotSet' : null } |
   { 'UserAlreadyRewarded' : null } |
+  { 'TaskNotFound' : bigint } |
   { 'NotAdminNorOwnerNorParent' : null } |
   { 'UserAlreadySubmitted' : null } |
+  { 'RewardAlreadyRefunded' : null } |
   { 'NotAdmin' : null } |
   { 'IncorrectSubmission' : string } |
   { 'CountToHigh' : { 'max' : bigint, 'found' : bigint } } |
   { 'SubtaskDoNotExists' : bigint } |
   { 'NotOwner' : null } |
   { 'FailedToTransfer' : string } |
+  { 'TaskExpired' : null } |
   { 'FailedToParse' : string } |
   { 'InvalidTaskContent' : string } |
   { 'TaskDoNotExists' : bigint } |
   { 'AnonymousCaller' : null } |
   { 'SubmissionNotAccepted' : null };
+export interface GetClosedTasksRes {
+  'tasks' : Array<[bigint, ClosedTask]>,
+  'tasks_count' : bigint,
+}
 export interface GetTasksArgs { 'count' : bigint, 'start' : bigint }
 export interface GetTasksRes {
   'tasks' : Array<[bigint, Task]>,
@@ -58,7 +81,9 @@ export type Result = { 'Ok' : null } |
   { 'Err' : Error };
 export type Result_1 = { 'Ok' : bigint } |
   { 'Err' : Error };
-export type Result_2 = { 'Ok' : GetTasksRes } |
+export type Result_2 = { 'Ok' : GetClosedTasksRes } |
+  { 'Err' : Error };
+export type Result_3 = { 'Ok' : GetTasksRes } |
   { 'Err' : Error };
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
   { 'InitArg' : SpaceInitArg };
@@ -83,7 +108,8 @@ export interface State {
   'tasks_count' : bigint,
   'space_description' : string,
 }
-export type Submission = { 'Text' : { 'content' : string } };
+export type Submission = { 'Empty' : null } |
+  { 'Text' : { 'content' : string } };
 export interface SubmissionData {
   'state' : SubmissionState,
   'rejection_reason' : [] | [string],
@@ -93,10 +119,13 @@ export type SubmissionState = { 'Rejected' : null } |
   { 'WaitingForReview' : null } |
   { 'Accepted' : null };
 export interface Task {
+  'timer_id' : [] | [bigint],
   'tasks' : Array<TaskType>,
   'creator' : Principal,
   'task_title' : string,
   'token_reward' : TokenReward,
+  'end_time' : bigint,
+  'start_time' : bigint,
   'rewarded' : Array<Principal>,
   'number_of_uses' : bigint,
 }
@@ -121,11 +150,13 @@ export interface _SERVICE {
     Result
   >,
   'create_task' : ActorMethod<[CreateTaskArgs], Result_1>,
+  'delete_closed_task' : ActorMethod<[bigint], Result>,
   'edit_space' : ActorMethod<[EditSpaceArgs], Result>,
+  'force_close_task' : ActorMethod<[bigint], Result>,
   'get_closed_tasks' : ActorMethod<[GetTasksArgs], Result_2>,
   'get_config' : ActorMethod<[], Config>,
   'get_current_bytecode_version' : ActorMethod<[], bigint>,
-  'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_2>,
+  'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_3>,
   'get_space_info' : ActorMethod<[], SpaceInfo>,
   'get_state' : ActorMethod<[], State>,
   'reject_subtask_submission' : ActorMethod<

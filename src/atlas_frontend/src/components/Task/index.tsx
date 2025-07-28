@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSpaceId } from "../../hooks/space";
 import { useDispatch, useSelector } from "react-redux";
+import type { ClosedTask } from "../../../../declarations/atlas_space/atlas_space.did";
 import { deserialize, type RootState } from "../../store/store";
 import { useEffect } from "react";
 import {
@@ -11,9 +12,12 @@ import {
   useUnAuthAtlasSpaceActor,
 } from "../../hooks/identityKit";
 import {
+  deleteCloseTask,
+  forceCloseTask,
   getAtlasSpace,
   getSpaceTasks,
   withdrawReward,
+  type AnyTask,
 } from "../../canisters/atlasSpace/api";
 import GenericTask from "./tasks/GenericTask";
 import { FaWallet } from "react-icons/fa";
@@ -31,9 +35,19 @@ import {
 } from "../../canisters/atlasSpace/tasks";
 import toast from "react-hot-toast";
 import { getAtlasUser, joinAtlasSpace } from "../../canisters/atlasMain/api";
-import type { Space } from "../../store/slices/spacesSlice";
+import { deleteTask, type Space } from "../../store/slices/spacesSlice";
 import { FaArrowLeftLong } from "react-icons/fa6";
 import { getErrorWithInfoToast } from "../../utils/errors";
+import {
+  bigintToDate,
+  formatDateShortHour,
+  formatDateShortMonth,
+  nowInSeconds,
+} from "../../utils/date";
+import Calendar from "../../icons/calendar.svg?react";
+import { getStartingIn, getTaskType } from "../../utils/tasks";
+import InfoBox from "../Space/TaskCard/InfoBox";
+import { runWithLoading } from "../../utils/loading";
 
 const Task = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -43,6 +57,16 @@ const Task = () => {
   const userBlockchainData = deserialize<StorableUser>(
     useSelector(selectUserBlockchainData)
   );
+  const [time, setTime] = useState(nowInSeconds());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime(nowInSeconds());
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const userInfo = userBlockchainData
     ? new BlockchainUser(userBlockchainData)
     : null;
@@ -88,6 +112,13 @@ const Task = () => {
   if (!spaceData || !currentTask) {
     return <></>;
   }
+
+  function isClosedTask(task: AnyTask): task is ClosedTask {
+    return "refunded" in task;
+  }
+
+  const taskDisabled =
+    currentTask.start_time > BigInt(time) || isClosedTask(currentTask);
 
   const usersSubmissions = currentTask?.tasks
     ? getUsersSubmissions(currentTask.tasks)
@@ -140,6 +171,81 @@ const Task = () => {
     });
   };
 
+  const closeTask = async () => {
+    if (!authAtlasSpace || !taskId) return;
+
+    if (
+      !window.confirm(
+        "Are you sure you want to force close this task? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    await runWithLoading(async () => {
+      await toast.promise(
+        forceCloseTask({
+          authAtlasSpace,
+          taskId: BigInt(taskId),
+        }),
+        {
+          loading: "Closing task...",
+          success: "Task closed successfully.",
+          error: getErrorWithInfoToast("Failed to close task."),
+        }
+      );
+
+      await getSpaceTasks({
+        unAuthAtlasSpace,
+        spaceId,
+        dispatch,
+      });
+    }, dispatch);
+
+    navigate(getSpacePath(parsedSpacePrincipal));
+  };
+
+  const deleteClosedTask = async () => {
+    if (!authAtlasSpace || !taskId) return;
+
+    if (
+      !window.confirm(
+        "Are you sure you want to force close this task? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+    await runWithLoading(async () => {
+      await toast.promise(
+        deleteCloseTask({
+          authAtlasSpace,
+          taskId: BigInt(taskId),
+        }),
+        {
+          loading: "Closing task...",
+          success: "Task closed successfully.",
+          error: getErrorWithInfoToast("Failed to close task."),
+        }
+      );
+
+      dispatch(deleteTask({
+        spaceId,
+        taskId
+      }))
+      await getSpaceTasks({
+        unAuthAtlasSpace,
+        spaceId,
+        dispatch,
+      });
+    }, dispatch);
+
+    navigate(getSpacePath(parsedSpacePrincipal));
+  };
+
+  const startTime = bigintToDate(currentTask.start_time);
+  const endTime = bigintToDate(currentTask.end_time);
+  const type = getTaskType(currentTask, time);
+
   return (
     <div className="container mx-auto my-4">
       <div className="w-full px-3">
@@ -155,9 +261,11 @@ const Task = () => {
           </div>
           <div className="flex md:flex-none">
             {!didUserCanAdministrate && userBlockchainData && !inHub && (
-              <Button className="flex-1 md:flex-none" onClick={joinSpace}>Join space</Button>
+              <Button className="flex-1 md:flex-none" onClick={joinSpace}>
+                Join space
+              </Button>
             )}
-            {didUserCanAdministrate && (
+            {didUserCanAdministrate && !taskDisabled && (
               <Button
                 className="flex-1 md:flex-none"
                 onClick={() =>
@@ -167,6 +275,23 @@ const Task = () => {
                 Review submission
               </Button>
             )}
+            {didUserCanAdministrate && !taskDisabled && (
+              <Button
+                className="flex-1 md:flex-none ml-2 text-white bg-rose-800"
+                onClick={closeTask}
+              >
+                Force task close
+              </Button>
+            )}
+            {didUserCanAdministrate &&
+              (type === "closed" || type === "expired") && (
+                <Button
+                  className="flex-1 md:flex-none ml-2 text-white bg-rose-800"
+                  onClick={deleteClosedTask}
+                >
+                  Delete task
+                </Button>
+              )}
           </div>
         </div>
 
@@ -184,10 +309,13 @@ const Task = () => {
                   <div className="bg-[#4A0295] rounded-2xl m-0.5 w-12 h-12 md:w-16 md:h-16"></div>
                 )}
               </div>
-              <div>
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold font-montserrat flex text-white">
-                  {spaceData?.space_name}
-                </h2>
+
+              <div className="text-xl sm:text-2xl md:text-3xl font-semibold font-montserrat flex flex-1 text-white justify-between">
+                {spaceData?.space_name}
+                <InfoBox
+                  type={type}
+                  startingIn={getStartingIn(currentTask, time, type)}
+                />
               </div>
             </div>
             <div className="mx-2">
@@ -196,6 +324,29 @@ const Task = () => {
                 <h2 className="text-xl sm:text-3xl md:text-4xl font-semibold font-montserrat flex text-white">
                   {currentTask.task_title}
                 </h2>
+                <div className="bg-[#1E0F33] rounded-xl px-4 py-3 md:py-4 w-full text-white mt-4 flex flex-col md:flex-row items-center gap-4 font-montserrat">
+                  <Calendar className="h-4" />{" "}
+                  <div className="flex flex-col gap-2 md:flex-row md:justify-between flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium mr-2">Starts:</p>{" "}
+                      <div className="bg-[#9173FF] rounded-lg py-1 px-2">
+                        {formatDateShortMonth(startTime)}
+                      </div>
+                      <div className="bg-[#9173FF]/20 rounded-lg py-1 px-2">
+                        {formatDateShortHour(startTime)}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium mr-2">Ends:</p>{" "}
+                      <div className="bg-[#9173FF] rounded-lg py-1 px-2">
+                        {formatDateShortMonth(endTime)}
+                      </div>
+                      <div className="bg-[#9173FF]/20 rounded-lg py-1 px-2">
+                        {formatDateShortHour(endTime)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div className="mt-6">
                   {currentTask.tasks.map((task, key) => (
                     <GenericTask
@@ -206,6 +357,7 @@ const Task = () => {
                       subtaskId={key}
                       unAuthAtlasSpace={unAuthAtlasSpace}
                       isUserInHub={isUserInHub}
+                      disabled={taskDisabled}
                     />
                   ))}
                 </div>

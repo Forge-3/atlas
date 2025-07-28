@@ -1,7 +1,7 @@
 import React from "react";
 
 interface InfoBoxProps {
-  type: "ongoing" | "starting" | "expired" | "points" | "steps" | "uses";
+  type: "ongoing" | "starting" | "expired" | "points" | "steps" | "uses" | "closed";
   startingIn?: string;
   points?: string;
   steps?: number;
@@ -26,6 +26,12 @@ const InfoBox = ({ type, startingIn, points, steps, uses }: InfoBoxProps) => {
       return (
         <div className="bg-[#9173FF]/20 border border-white p-2 font-montserrat text-sm rounded-xl text-white w-fit">
           Expired
+        </div>
+      );
+    case "closed":
+      return (
+        <div className="bg-[#9173FF]/20 border border-white p-2 font-montserrat text-sm rounded-xl text-white w-fit">
+          Closed
         </div>
       );
     case "points":
