@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm, useFieldArray, type SubmitHandler } from "react-hook-form";
 import Button from "../components/Shared/Button";
@@ -12,6 +12,8 @@ import {
   useAuthAtlasSpaceActor,
   useAuthCkUsdcLedgerActor,
   useUnAuthCkUsdcLedgerActor,
+  getUnAuthAtlasSpaceActor,
+  useUnAuthAgent,
 } from "../hooks/identityKit";
 import { useSpaceId } from "../hooks/space";
 import toast from "react-hot-toast";
@@ -28,13 +30,15 @@ import { deserialize, type RootState } from "../store/store";
 import { getErrorWithInfoToast } from "../utils/errors";
 import { getTaskPath } from "../router/paths";
 import type { Space } from "../store/slices/spacesSlice";
+import { getAtlasSpace } from "../canisters/atlasSpace/api";
 import { RiCloseLargeLine } from "react-icons/ri";
 import { FaPlus } from "react-icons/fa6";
 import { FaCalendar } from "react-icons/fa";
 import NumericInputForm from "../components/Shared/NumericInputForm";
 import DecimalInputForm from "../components/Shared/DecimalInputForm";
 import { runWithLoading } from "../utils/loading";
-import { toLocalISOString } from "../utils/date";
+import { toLocalISOString, formatDateShortMonth, formatDateShortHour } from "../utils/date";
+import DateTimeDisplayPicker from "../components/Shared/DateTimeDisplayPicker";
 
 type TaskType = "generic";
 const allowedTaskTypes = ["generic"] as const;
@@ -74,69 +78,60 @@ const taskSchema = yup.object({
   allowresubmit: yup.boolean().required(),
 });
 
-interface CreateNewTaskModalArgs {
-  callback: () => void;
-}
-
-const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
-  const renderedAt = new Date();
-  const schema = yup.object({
-    taskTitle: yup
-      .string()
-      .trim()
-      .max(maxTitleLength)
-      .required()
-      .label("Task title"),
-    numberOfUses: yup
-      .number()
-      .typeError("Number of usages must be a number")
-      .min(1)
-      .integer()
-      .required()
-      .label("Number of usages"),
-    rewardPerUsage: yup
-      .number()
-      .typeError("Reward per user must be a number")
-      .min(0.1)
-      .required()
-      .label("Reward per user"),
-    startTime: yup
-      .string()
-      .required()
-      .label("Start time")
-      .test(
-        "is-after-now",
-        "Start time must be in the future",
-        function (value) {
-          return (
-            new Date(value).getTime() >=
-            new Date(renderedAt.toISOString().slice(0, 16)).getTime()
-          );
-        }
-      ),
-    endTime: yup
-      .string()
-      .required()
-      .label("End time")
-      .test(
-        "is-after-start",
-        "End time must be after start time",
-        function (value) {
-          const { startTime } = this.parent;
-          return new Date(value).getTime() > new Date(startTime).getTime();
-        }
-      )
-      .test("is-after-now", "End time must be in the future", function (value) {
-        return new Date(value).getTime() > Date.now();
-      }),
-    tasks: yup.array().of(taskSchema).min(1),
+const CreateNewTaskModal = () => {
+const renderedAt = new Date();
+const schema = yup.object({
+  taskTitle: yup
+    .string()
+    .trim()
+    .max(maxTitleLength)
+    .required()
+    .label("Task title"),
+  numberOfUses: yup
+    .number()
+    .typeError("Number of usages must be a number")
+    .min(1)
+    .integer()
+    .required()
+    .label("Number of usages"),
+  rewardPerUsage: yup
+    .number()
+    .typeError("Reward per user must be a number")
+    .min(0.1)
+    .required()
+    .label("Reward per user"),
+  startTime: yup
+    .string()
+    .required()
+    .label("Start time")
+    .test(
+      "is-after-now",
+      "Start time must be in the future",
+      function (value) {
+        return new Date(value).getTime() >= Date.now();
+      }
+    ),
+  endTime: yup
+    .string()
+    .required()
+    .label("End time")
+    .test(
+      "is-after-start",
+      "End time must be after start time",
+      function (value) {
+        const { startTime } = this.parent;
+        return new Date(value).getTime() > new Date(startTime).getTime();
+      }
+    )
+    .test("is-after-now", "End time must be in the future", function (value) {
+      return new Date(value).getTime() > Date.now();
+    }),
+  tasks: yup.array().of(taskSchema).min(1),
   });
 
-const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   const { spacePrincipal } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const isLoading = useSelector((state: RootState) => state.app.isLoading);
   const {
     register,
     handleSubmit,
@@ -157,6 +152,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
         },
       ],
       startTime: toLocalISOString(renderedAt).slice(0, 16),
+      endTime: '',
     },
   });
 
@@ -169,6 +165,8 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     navigate,
   });
   const { user } = useAuth();
+  const agent = useUnAuthAgent();
+  
   if (!principal) return <></>;
   const spaceId = principal.toString();
  
@@ -178,6 +176,25 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   });
 
   const avatarImg = space?.state?.space_logo;
+  const spaceName = space?.state?.space_name;
+  const spaceDescription = space?.state?.space_description;
+  const spaceBackground = space?.state?.space_background
+  const spaceData = space?.state;
+
+  useEffect(() => {
+    if (!agent || spaceData) return;
+    
+    const loadSpaceData = async () => {
+      const unAuthAtlasSpace = getUnAuthAtlasSpaceActor(agent, principal);
+      await getAtlasSpace({
+        spaceId,
+        unAuthAtlasSpace,
+        dispatch,
+      });
+    };
+
+    runWithLoading(loadSpaceData, dispatch);
+  }, [dispatch, agent, spaceData, principal, spaceId]);
 
   const authAtlasSpaceActor = useAuthAtlasSpaceActor(principal);
   const unAuthCkUsdcActor = useUnAuthCkUsdcLedgerActor();
@@ -249,10 +266,6 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
       return;
     }
 
-    const estimatedCost =
-      numberOfUsesBn * rewardPerUsageBn +
-      numberOfUsesBn * ckUsdcFee +
-      ckUsdcFee;
     const getOrSetAllowance = setUserSpaceAllowanceIfNeeded({
       unAuthCkUsd: unAuthCkUsdcActor,
       authCkUsdc: authCkUsdcActor,
@@ -295,69 +308,123 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     }, dispatch);
   };
 
+const formatDisplayDateTime = (dateTimeString: string | null | undefined) => {
+  if (!dateTimeString) return { date: 'N/A', time: 'N/A' };
+  const date = new Date(dateTimeString);
+  if (isNaN(date.getTime())) return { date: 'N/A', time: 'N/A' };
+  
+  return {
+    date: formatDateShortMonth(date),
+    time: formatDateShortHour(date)
+  };
+};
+
+  const currentStartTime = watch("startTime");
+  const currentEndTime = watch("endTime");
+
+  const formattedStartTime = formatDisplayDateTime(currentStartTime);
+  const formattedEndTime = formatDisplayDateTime(currentEndTime);
+
+  const startTimeInputRef = useRef<HTMLInputElement | null>(null);
+  const endTimeInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleStartTimeClick = () => {
+    startTimeInputRef.current?.showPicker();
+  };
+
+  const handleEndTimeClick = () => {
+    endTimeInputRef.current?.showPicker();
+  };
+
+  const {
+    ref: startTimeRegisterRef,
+    ...startTimeRest
+  } = register("startTime");
+
+  const {
+    ref: endTimeRegisterRef,
+    ...endTimeRest
+  } = register("endTime");
+
  return (
-  <form onSubmit={handleSubmit(onSubmit)} className="bg-[#9173ff] overflow-auto min-h-screen flex w-full items-center justify-center p-4 sm:p-8">
-    <div className="bg-[#9173ff] w-full rounded-3xl p-4 sm:p-8 relative flex flex-col">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3">
-        <div className="flex items-center gap-4 mb-4 sm:mb-0">
-          <div className="bg-white flex rounded-3xl w-fit h-fit flex-none">
+  <form onSubmit={handleSubmit(onSubmit)} className="bg-gradient-to-b from-[#7332F5] to-[#9173FF] overflow-auto min-h-screen flex flex-1 w-full items-center justify-center p-0">
+    <div className="flex-col flex-1">
+      <div className="relative w-full">
+      {spaceBackground ? (
+        <img
+        src={spaceBackground}
+        draggable="false"
+        className="w-full h-full object-contain"
+        />
+      ) : (
+        <div className="bg-[#4A0295] rounded-xl m-[3px] w-12 h-12 sm:w-14 sm:h-14"></div>
+      )}
+        <div className="absolute inset-x-0 bottom-[-60px] sm:bottom-[-90px] lg:bottom-[-110px] flex items-end justify-start px-3 sm:px-6 lg:px-10">
+          <div className="w-fit h-fit flex-none">
             {avatarImg ? (
               <img
                 src={avatarImg}
                 draggable="false"
-                className="rounded-xl m-[3px] w-12 h-12 sm:w-14 sm:h-14"
+                className="rounded-lg m-[3px] w-[80px] h-[80px] sm:w-[110px] sm:h-[110px] lg:w-[150px] lg:h-[150px]"
               />
             ) : (
               <div className="bg-[#4A0295] rounded-xl m-[3px] w-12 h-12 sm:w-14 sm:h-14"></div>
             )}
           </div>
-          <h1 className="text-white text-xl sm:text-2xl">
-            ICP HUB India
-          </h1>
+          <div className="flex flex-col justify-end ml-2 sm:ml-3 md:ml-4 w-full">
+            <h1 className="text-white font-montserrat font-semibold text-base sm:text-lg md:text-xl lg:text-3xl leading-tight mb-2">
+              {spaceName || "Space Name"}
+            </h1>
+            <div className="text-white bg-[#290C69]/20 shadow-md font-montserrat font-medium text-sm sm:text-base lg:text-2xl p-1 sm:p-2 md:p-3 rounded-lg w-full">
+              {spaceDescription}
+            </div>
+          </div>
         </div>
-
+    </div>
+    <div className="w-full rounded-3xl my-14 sm:my-20 lg:my-24 p-4 sm:p-8 lg:p-12 relative flex flex-col">
+      <div className="w-full h-[1px] bg-white/40 mb-3" />
+      <div className="flex flex-1 justify-end">
         <Button
+          variant="publish"
           onClick={() => navigate(-1)}
-          className="text-white font-montserrat bg-white/20 px-3 py-1 rounded text-sm sm:text-base"
+          className="px-2 py-1 font-montserrat font-semibold rounded text-sm sm:text-base"
         >
           <RiCloseLargeLine className="mr-2"/> Close
         </Button>
       </div>
-      <div className="w-full h-0.5 bg-white/40 mb-3" />
+      <div className="w-full h-[1px] bg-white/40 mb-3 my-3" />
 
       <h2 className="text-white font-medium font-montserrat text-xl sm:text-2xl mb-4">Create new mission</h2>
 
       <div className="flex flex-col lg:flex-row gap-6 mb-4 flex-grow">
         <div className="flex-1">
-          <div className="bg-[#6f55c2] p-2 rounded mb-6">
-            <div className="flex flex-col md:flex-row gap-2.5 px-2.5 py-2.5 justify-between items-start md:items-center text-white text-sm">
-              <div className="flex flex-col md:flex-row gap-2 font-montserrat mb-2 md:mb-0 items-start md:items-center">
-                <div className="flex gap-2 items-center">
-                  <FaCalendar className="w-5 h-4 sm:w-6 sm:h-5"/>
-                  <p className="text-base font-medium whitespace-nowrap">Starts:</p>
-                </div>
-                <div className="flex gap-2 items-center">
-                  <div className="bg-white/10 text-base px-3 py-2 rounded-md">
-                    Jun 10 2025
-                  </div>
-                  <div className="bg-[#4A0295] text-base px-2 py-2 rounded-md">
-                    10:20 AM
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col md:flex-row gap-2 font-montserrat items-start md:items-center">
-                <div className="flex gap-2 items-center">
-                  <p className="text-base font-medium whitespace-nowrap">Ends:</p>
-                </div>
-                <div className="flex gap-2 items-center">
-                  <div className="bg-white/10 text-base px-3 py-2 rounded-md">
-                    Sep 20 2025
-                  </div>
-                  <div className="bg-[#4A0295] text-base px-2 py-2 rounded-md">
-                    10:50 PM
-                  </div>
-                </div>
-              </div>
+          <div className="bg-[#290C69]/20 p-2 rounded mb-6">
+            <div className="flex flex-col md:flex-row gap-2.5 px-2.5 py-1 justify-between items-start md:items-center text-white text-sm">
+              <DateTimeDisplayPicker
+                label="Starts:"
+                icon={<FaCalendar className="w-5 h-4 sm:w-6 sm:h-5" />}
+                formatted={formattedStartTime}
+                onClick={handleStartTimeClick}
+                inputProps={startTimeRest}
+                ref={(el) => {
+                  startTimeRegisterRef(el);
+                  startTimeInputRef.current = el;
+                }}
+                errorMessage={errors?.startTime?.message?.toString()}
+                className="w-full"
+              />
+              <DateTimeDisplayPicker
+                label="Ends:"
+                formatted={formattedEndTime}
+                onClick={handleEndTimeClick}
+                inputProps={endTimeRest}
+                ref={(el) => {
+                  endTimeRegisterRef(el);
+                  endTimeInputRef.current = el;
+                }}
+                errorMessage={errors?.endTime?.message?.toString()}
+                className="w-full"
+              />
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-[max-content_1fr] md:gap-x-4">
@@ -368,7 +435,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                   type="text"
                   min="1"
                   max="256"
-                  className="flex-1 rounded p-2 bg-[#7a5fd6] text-white w-full"
+                  className="flex-1 rounded p-2 bg-[#290C69]/20 text-white w-full"
                   {...register("taskTitle")}
                 />
               </div>
@@ -379,7 +446,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
             <label className="text-white font-semibold font-montserrat w-32 md:pl-4 self-start mt-2 md:mt-6">
               Rewards:
             </label>
-            <div className="flex flex-col w-full gap-4 bg-[#7a5fd6] p-4 sm:p-6 rounded-2xl mb-6 mt-4 md:mt-0">
+            <div className="flex flex-col w-full gap-4 bg-[#290C69]/20 p-4 sm:p-6 rounded-2xl mb-6 mt-4 md:mt-0">
               <div className="flex-1">
                 <NumericInputForm
                   register={register}
@@ -410,9 +477,9 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
               {fields.map((field, index) => (
                 <div
                   key={field.id}
-                  className="bg-[#6f55c2] rounded-lg p-4 sm:p-6 mb-6 shadow-lg"
+                  className="bg-[#290C69]/20 rounded-lg p-4 sm:p-6 mb-6 shadow-lg"
                 >
-                  <h3 className="bg-[#4A0295] text-white text-base sm:text-lg font-montserrat font-medium py-1 px-3 sm:px-4 rounded-md inline-block mb-4">
+                  <h3 className="bg-[#290C69] text-white text-base sm:text-lg font-montserrat font-medium py-1 px-3 sm:px-4 rounded-md inline-block mb-4">
                     Task {index + 1}
                   </h3>
                   <div className="mb-4">
@@ -422,7 +489,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                     <input
                       type="text"
                       {...register(`tasks.${index}.title`)}
-                      className="w-full p-3 rounded-lg bg-[#7a5fd6] text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50"
+                      className="w-full p-3 rounded-lg bg-[#9173FF]/20 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50"
                       placeholder="Enter task title"
                     />
                     {errors?.tasks?.[index]?.title && (
@@ -437,7 +504,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                     </label>
                     <textarea
                       {...register(`tasks.${index}.description`)}
-                      className="w-full p-3 rounded-lg bg-[#7a5fd6] text-white h-24 resize-none placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50"
+                      className="w-full p-3 rounded-lg bg-[#9173FF]/20 text-white h-24 resize-none placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50"
                       placeholder="Mission description here."
                       rows={5}
                     />
@@ -519,8 +586,9 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
         </Button>
       </div>
     </div>
+    </div>
   </form>
-);
+  );
 };
-}
+
 export default CreateNewTaskModal;

@@ -44,7 +44,7 @@ const ConnectButton = (props: ConnectWalletButtonProps) => (
   <Button
     onClick={(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) =>
       props.onClick!(event)
-    } className="text-[18px] px-4 py-1 rounded-2xl"
+    } className="text-[18px] px-4 py-1 my-2 sm:my-0 rounded-2xl"
   >
     Join
   </Button>
@@ -222,7 +222,7 @@ const Navbar = () => {
 
   return (
     <div className="sticky top-2 z-30 w-full">
-      <div className=" py-1 sm:py-6 top-0 px-2 rounded-b-xl flex justify-between items-center mx-2 backdrop-blur-lg shadow-lg bg-[#1E0F33]/30">
+      <div className=" py-1 sm:py-3 md:py-6 top-0 px-2 rounded-b-xl flex justify-between items-center mx-2 backdrop-blur-lg shadow-lg bg-[#1E0F33]/30">
         <a className="flex items-center gap-5" onClick={() => navigate("/")}>
           <img
             src="/logos/logo.png"

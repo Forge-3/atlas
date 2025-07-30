@@ -23,8 +23,8 @@ const NumericInputForm = <TFormValues extends FieldValues>({
 }: NumericInputFormProps<TFormValues>) => {
   return (
     <div className="mb-4">
-      <div className="flex items-center mb-2">
-        {label && <p className="text-white mx-2 font-montserrat w-32">{label}</p>}
+      <div className="flex flex-col md:flex-row md:items-center mb-2">
+        {label && <p className="text-white mx-2 font-montserrat w-full md:w-32">{label}</p>}
         <small className="text-gray-600">{small}</small>
         <input
           type="number"
@@ -48,7 +48,7 @@ const NumericInputForm = <TFormValues extends FieldValues>({
               e.preventDefault();
             }
           }}
-          className={`flex-1 rounded p-2 bg-[#6f55c2] text-white ${
+          className={`flex-1 rounded p-2 bg-[#9173FF]/20 text-white ${
               errors?.[name]?.message && "border-red-500"
             }`}
         />

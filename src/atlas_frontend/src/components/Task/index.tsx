@@ -126,7 +126,9 @@ const Task = () => {
 
   if (!user?.principal) return <></>;
   const isAccepted = usersSubmissions.isAccepted(user.principal.toText());
-  const userAlreadyRewarded = currentTask.rewarded.includes(user.principal);
+  const userAlreadyRewarded = currentTask.rewarded
+      .map((p) => p.toText())
+      .includes(user.principal.toText());
 
   const withdraw = async () => {
     if (!authAtlasSpace) {
@@ -324,24 +326,24 @@ const Task = () => {
                 <h2 className="text-xl sm:text-3xl md:text-4xl font-semibold font-montserrat flex text-white">
                   {currentTask.task_title}
                 </h2>
-                <div className="bg-[#1E0F33] rounded-xl px-4 py-3 md:py-4 w-full text-white mt-4 flex flex-col md:flex-row items-center gap-4 font-montserrat">
+                <div className="bg-[#1E0F33] rounded-xl px-2 py-3 md:py-4 w-full text-white mt-4 flex flex-col md:flex-row items-center gap-4 font-montserrat">
                   <Calendar className="h-4" />{" "}
-                  <div className="flex flex-col gap-2 md:flex-row md:justify-between flex-1">
+                  <div className="flex flex-col w-full gap-2 md:flex-row md:justify-between">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium mr-2">Starts:</p>{" "}
-                      <div className="bg-[#9173FF] rounded-lg py-1 px-2">
+                      <p className="font-medium mr-2 flex-none w-12">Starts:</p>{" "}
+                      <div className="bg-[#9173FF] flex-1 rounded-lg py-1 px-2">
                         {formatDateShortMonth(startTime)}
                       </div>
-                      <div className="bg-[#9173FF]/20 rounded-lg py-1 px-2">
+                      <div className="bg-[#9173FF]/20 rounded-lg py-1 px-2 flex-none min-w-10">
                         {formatDateShortHour(startTime)}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <p className="font-medium mr-2">Ends:</p>{" "}
-                      <div className="bg-[#9173FF] rounded-lg py-1 px-2">
+                      <p className="font-medium mr-2 flex-none w-12">Ends:</p>{" "}
+                      <div className="bg-[#9173FF] rounded-lg py-1 px-2 flex-1 w-full">
                         {formatDateShortMonth(endTime)}
                       </div>
-                      <div className="bg-[#9173FF]/20 rounded-lg py-1 px-2">
+                      <div className="bg-[#9173FF]/20 rounded-lg py-1 px-2 flex-none min-w-10">
                         {formatDateShortHour(endTime)}
                       </div>
                     </div>

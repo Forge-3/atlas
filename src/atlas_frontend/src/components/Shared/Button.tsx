@@ -11,12 +11,12 @@ interface ButtonProps {
 }
 
 const Button = ({children, onClick, className, variant = 'primary'}: ButtonProps) => {
-  const baseClasses = "cursor-pointer flex justify-center rounded-xl px-2 py-2 items-center md:text-base font-medium md:px-6 md:py-2 md:rounded-2xl";
+  const baseClasses = "cursor-pointer flex justify-center rounded-xl px-2 py-1 items-center md:text-base font-medium md:px-6 md:py-2 md:rounded-2xl";
   const variantClasses = {
     primary: "bg-[#9173FF] text-white",
     light: "bg-[#9173FF]/20 text-white",
     publish: "text-[#290C69] bg-white",
-    saveDraft: "bg-[#4A0295]/90 text-white",
+    saveDraft: "bg-[#290C69] text-white",
   };
 
   return (

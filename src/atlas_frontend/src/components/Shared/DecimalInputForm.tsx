@@ -25,8 +25,8 @@ const DecimalInputForm = <TFormValues extends FieldValues>({
 }: DecimalInputFormProps<TFormValues>) => {
   return (
     <div className="mb-4">
-      <div className="flex items-center mb-2">
-        {label && <p className="text-white mx-2 font-montserrat w-32">{label}</p>}
+      <div className="flex flex-col md:flex-row md:items-center mb-2">
+        {label && <p className="text-white mx-2 font-montserrat w-full md:w-32">{label}</p>}
         <div className="flex flex-col flex-1">
           <input
             type="text"
@@ -64,7 +64,7 @@ const DecimalInputForm = <TFormValues extends FieldValues>({
               }
             }}
             inputMode="decimal"
-            className={`rounded p-2 bg-[#6f55c2] text-white  ${
+            className={`rounded p-2 bg-[#9173FF]/20 text-white  ${
               errors?.[name]?.message && "border-red-500"
             } ${className ?? ""}`}
           />
