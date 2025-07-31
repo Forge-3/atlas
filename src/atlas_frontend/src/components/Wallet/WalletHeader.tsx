@@ -151,7 +151,7 @@ const WalletHeader = () => {
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <div className="text-white text-base sm:text-3xl text-white text-center">
+              <div className="text-white text-base sm:text-3xl text-center">
                 Withdraw
               </div>
 

@@ -130,7 +130,10 @@ impl ClosedTask {
             .cloned()
             .collect();
 
-        let unused = self.number_of_uses - accepted_users.len() as u64;
+        let mut combined: HashSet<Principal> = accepted_users;
+        combined.extend(self.rewarded.iter().cloned());
+
+        let unused = self.number_of_uses - combined.len() as u64;
         if unused == 0 {
             return Err(Error::AllRewardsClaimed);
         }

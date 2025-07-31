@@ -25,6 +25,7 @@ export const idlFactory = ({ IDL }) => {
       'NotTaskCreator' : IDL.Null,
       'NotParent' : IDL.Null,
       'UsageLimitExceeded' : IDL.Null,
+      'FailedToQueryBalance' : IDL.Text,
       'UserSubmissionNotFound' : IDL.Null,
       'FailedToUpdateConfig' : IDL.Text,
       'UserDoesNotBelongToSpace' : IDL.Null,
@@ -38,6 +39,7 @@ export const idlFactory = ({ IDL }) => {
       'FailedToClaimRewards' : IDL.Vec(IDL.Tuple(IDL.Nat64, Error)),
       'NotAdminNorOwnerNorParent' : IDL.Null,
       'UserAlreadySubmitted' : IDL.Null,
+      'BalanceInconsistency' : IDL.Text,
       'RewardAlreadyRefunded' : IDL.Null,
       'NotAdmin' : IDL.Null,
       'IncorrectSubmission' : IDL.Text,
@@ -80,6 +82,15 @@ export const idlFactory = ({ IDL }) => {
     'space_logo' : IDL.Opt(IDL.Text),
     'space_name' : IDL.Text,
     'space_description' : IDL.Text,
+  });
+  const EditTaskArgs = IDL.Record({
+    'task_id' : IDL.Nat64,
+    'task_title' : IDL.Opt(IDL.Text),
+    'token_reward' : IDL.Opt(TokenReward),
+    'end_time' : IDL.Opt(IDL.Nat64),
+    'task_content' : IDL.Opt(IDL.Vec(IDL.Opt(TaskContent))),
+    'start_time' : IDL.Opt(IDL.Nat64),
+    'number_of_uses' : IDL.Opt(IDL.Nat64),
   });
   const GetTasksArgs = IDL.Record({ 'count' : IDL.Nat64, 'start' : IDL.Nat64 });
   const SubmissionState = IDL.Variant({
@@ -165,6 +176,7 @@ export const idlFactory = ({ IDL }) => {
     'create_task' : IDL.Func([CreateTaskArgs], [Result_2], []),
     'delete_closed_task' : IDL.Func([IDL.Nat64], [Result], []),
     'edit_space' : IDL.Func([EditSpaceArgs], [Result], []),
+    'edit_task' : IDL.Func([EditTaskArgs], [Result], []),
     'force_close_task' : IDL.Func([IDL.Nat64], [Result], []),
     'get_closed_tasks' : IDL.Func([GetTasksArgs], [Result_3], ['query']),
     'get_config' : IDL.Func([], [Config], ['query']),

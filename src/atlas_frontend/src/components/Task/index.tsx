@@ -48,6 +48,8 @@ import Calendar from "../../icons/calendar.svg?react";
 import { getStartingIn, getTaskType } from "../../utils/tasks";
 import InfoBox from "../Space/TaskCard/InfoBox";
 import { runWithLoading } from "../../utils/loading";
+import CreateNewTaskModal, { type EditableTask } from "../../modals/CreateNewTaskModal";
+import { setScreenBlur } from "../../store/slices/appSlice";
 
 const Task = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -58,6 +60,26 @@ const Task = () => {
     useSelector(selectUserBlockchainData)
   );
   const [time, setTime] = useState(nowInSeconds());
+  const [isEditTaskModal, setIsEditTaskModal] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<EditableTask | null>(null);
+
+  const isScreenBlur = useSelector(
+    (state: RootState) => state.app.isScreenBlur
+  );
+
+  const toggleEditTaskModal = () => {
+    if (!isEditTaskModal && taskId) {
+      setTaskToEdit({
+        ...currentTask,
+        task_id: BigInt(taskId),
+        timer_id: []
+      });
+    } else {
+      setTaskToEdit(null);
+    }
+    setIsEditTaskModal(!isEditTaskModal);
+    dispatch(setScreenBlur(!isScreenBlur));
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -126,8 +148,10 @@ const Task = () => {
 
   if (!user?.principal) return <></>;
   const isAccepted = usersSubmissions.isAccepted(user.principal.toText());
-  const userAlreadyRewarded = currentTask.rewarded.includes(user.principal);
-
+  const userAlreadyRewarded = currentTask.rewarded
+    .map((p) => p.toText())
+    .includes(user.principal.toText());
+  
   const withdraw = async () => {
     if (!authAtlasSpace) {
       navigate("/");
@@ -247,147 +271,161 @@ const Task = () => {
   const type = getTaskType(currentTask, time);
 
   return (
-    <div className="container mx-auto my-4">
-      <div className="w-full px-3">
-        <div className="w-full flex flex-col gap-2 md:flex-row md:flex-none md:w-auto md:gap-none my-4 md:justify-between">
-          <div className="flex">
-            <Button
-              light
-              className="flex-1 gap-2 md:flex-none"
-              onClick={() => navigate(getSpacePath(parsedSpacePrincipal))}
-            >
-              <FaArrowLeftLong /> Back
-            </Button>
-          </div>
-          <div className="flex md:flex-none">
-            {!didUserCanAdministrate && userBlockchainData && !inHub && (
-              <Button className="flex-1 md:flex-none" onClick={joinSpace}>
-                Join space
-              </Button>
-            )}
-            {didUserCanAdministrate && !taskDisabled && (
+    <>
+      <div className="container mx-auto my-4">
+        <div className="w-full px-3">
+          <div className="w-full flex flex-col gap-2 md:flex-row md:flex-none md:w-auto md:gap-none my-4 md:justify-between">
+            <div className="flex">
               <Button
-                className="flex-1 md:flex-none"
-                onClick={() =>
-                  navigate(getSubmissionsPath(parsedSpacePrincipal, taskId))
-                }
+                light
+                className="flex-1 gap-2 md:flex-none"
+                onClick={() => navigate(getSpacePath(parsedSpacePrincipal))}
               >
-                Review submission
+                <FaArrowLeftLong /> Back
               </Button>
-            )}
-            {didUserCanAdministrate && !taskDisabled && (
-              <Button
-                className="flex-1 md:flex-none ml-2 text-white bg-rose-800"
-                onClick={closeTask}
-              >
-                Force task close
-              </Button>
-            )}
-            {didUserCanAdministrate &&
-              (type === "closed" || type === "expired") && (
-                <Button
-                  className="flex-1 md:flex-none ml-2 text-white bg-rose-800"
-                  onClick={deleteClosedTask}
-                >
-                  Delete task
+            </div>
+            <div className="flex md:flex-none">
+              {!didUserCanAdministrate && userBlockchainData && !inHub && (
+                <Button className="flex-1 md:flex-none" onClick={joinSpace}>
+                  Join space
                 </Button>
               )}
-          </div>
-        </div>
-
-        <div className="relative w-full rounded-xl bg-[#1E0F33]/60 mb-1">
-          <div className=" px-2 py-2 md:px-16 md:py-12">
-            <div className="flex items-center gap-4">
-              <div className="bg-white flex rounded-2xl w-fit h-fit flex-none">
-                {spaceData.space_logo ? (
-                  <img
-                    src={spaceData.space_logo}
-                    draggable="false"
-                    className="rounded-2xl m-0.5 w-12 h-12 md:w-16 md:h-16"
-                  />
-                ) : (
-                  <div className="bg-[#4A0295] rounded-2xl m-0.5 w-12 h-12 md:w-16 md:h-16"></div>
-                )}
-              </div>
-
-              <div className="text-xl sm:text-2xl md:text-3xl font-semibold font-montserrat flex flex-1 text-white justify-between">
-                {spaceData?.space_name}
-                <InfoBox
-                  type={type}
-                  startingIn={getStartingIn(currentTask, time, type)}
-                />
-              </div>
+              {didUserCanAdministrate && !taskDisabled && (
+                <Button
+                  className="flex-1 md:flex-none"
+                  onClick={() =>
+                    navigate(getSubmissionsPath(parsedSpacePrincipal, taskId))
+                  }
+                >
+                  Review submission
+                </Button>
+              )}
+              {didUserCanAdministrate && (type === "starting" || type === "ongoing") && (
+                <Button
+                  className="flex-1 md:flex-none ml-2"
+                  onClick={() => toggleEditTaskModal()}
+                >
+                  Edit task
+                </Button>
+              )}
+              {didUserCanAdministrate && !taskDisabled && (
+                <Button
+                  className="flex-1 md:flex-none ml-2 text-white bg-rose-800"
+                  onClick={closeTask}
+                >
+                  Force task close
+                </Button>
+              )}
+              {didUserCanAdministrate &&
+                (type === "closed" || type === "expired") && (
+                  <Button
+                    className="flex-1 md:flex-none ml-2 text-white bg-rose-800"
+                    onClick={deleteClosedTask}
+                  >
+                    Delete task
+                  </Button>
+              )}
             </div>
-            <div className="mx-2">
-              <div className="h-1 w-full bg-white/20 mt-3 mb-4 md:mt-6 md:mb-8 rounded-full"></div>
-              <div>
-                <h2 className="text-xl sm:text-3xl md:text-4xl font-semibold font-montserrat flex text-white">
-                  {currentTask.task_title}
-                </h2>
-                <div className="bg-[#1E0F33] rounded-xl px-4 py-3 md:py-4 w-full text-white mt-4 flex flex-col md:flex-row items-center gap-4 font-montserrat">
-                  <Calendar className="h-4" />{" "}
-                  <div className="flex flex-col gap-2 md:flex-row md:justify-between flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium mr-2">Starts:</p>{" "}
-                      <div className="bg-[#9173FF] rounded-lg py-1 px-2">
-                        {formatDateShortMonth(startTime)}
-                      </div>
-                      <div className="bg-[#9173FF]/20 rounded-lg py-1 px-2">
-                        {formatDateShortHour(startTime)}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium mr-2">Ends:</p>{" "}
-                      <div className="bg-[#9173FF] rounded-lg py-1 px-2">
-                        {formatDateShortMonth(endTime)}
-                      </div>
-                      <div className="bg-[#9173FF]/20 rounded-lg py-1 px-2">
-                        {formatDateShortHour(endTime)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-6">
-                  {currentTask.tasks.map((task, key) => (
-                    <GenericTask
-                      key={key}
-                      genericTask={task.GenericTask}
-                      spacePrincipal={parsedSpacePrincipal}
-                      taskId={taskId}
-                      subtaskId={key}
-                      unAuthAtlasSpace={unAuthAtlasSpace}
-                      isUserInHub={isUserInHub}
-                      disabled={taskDisabled}
+          </div>
+
+          <div className="relative w-full rounded-xl bg-[#1E0F33]/60 mb-1">
+            <div className=" px-2 py-2 md:px-16 md:py-12">
+              <div className="flex items-center gap-4">
+                <div className="bg-white flex rounded-2xl w-fit h-fit flex-none">
+                  {spaceData.space_logo ? (
+                    <img
+                      src={spaceData.space_logo}
+                      draggable="false"
+                      className="rounded-2xl m-0.5 w-12 h-12 md:w-16 md:h-16"
                     />
-                  ))}
+                  ) : (
+                    <div className="bg-[#4A0295] rounded-2xl m-0.5 w-12 h-12 md:w-16 md:h-16"></div>
+                  )}
                 </div>
-                <div className="flex mt-3 items-center justify-center">
-                  <div className="mr-3 md:mr-4">
-                    <div className="bg-[#1E0F33] p-2 mx-[1px] md:mx-[0px] w-[16px] h-[16px] md:w-[32px] md:h-[32px] rounded md:rounded-lg relative">
-                      {isAccepted && (
-                        <img
-                          src="/icons/check-in-box.svg"
-                          className="w-6 h-6 relative"
-                        />
-                      )}
+
+                <div className="text-xl sm:text-2xl md:text-3xl font-semibold font-montserrat flex flex-1 text-white justify-between">
+                  {spaceData?.space_name}
+                  <InfoBox
+                    type={type}
+                    startingIn={getStartingIn(currentTask, time, type)}
+                  />
+                </div>
+              </div>
+              <div className="mx-2">
+                <div className="h-1 w-full bg-white/20 mt-3 mb-4 md:mt-6 md:mb-8 rounded-full"></div>
+                <div>
+                  <h2 className="text-xl sm:text-3xl md:text-4xl font-semibold font-montserrat flex text-white">
+                    {currentTask.task_title}
+                  </h2>
+                  <div className="bg-[#1E0F33] rounded-xl px-4 py-3 md:py-4 w-full text-white mt-4 flex flex-col md:flex-row items-center gap-4 font-montserrat">
+                    <Calendar className="h-4" />{" "}
+                    <div className="flex flex-col gap-2 md:flex-row md:justify-between flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium mr-2">Starts:</p>{" "}
+                        <div className="bg-[#9173FF] rounded-lg py-1 px-2">
+                          {formatDateShortMonth(startTime)}
+                        </div>
+                        <div className="bg-[#9173FF]/20 rounded-lg py-1 px-2">
+                          {formatDateShortHour(startTime)}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium mr-2">Ends:</p>{" "}
+                        <div className="bg-[#9173FF] rounded-lg py-1 px-2">
+                          {formatDateShortMonth(endTime)}
+                        </div>
+                        <div className="bg-[#9173FF]/20 rounded-lg py-1 px-2">
+                          {formatDateShortHour(endTime)}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="bg-[#9173FF] rounded-xl p-2 mb-2 md:p-6 sm:base md:text-lg md:font-medium font-poppins w-full flex items-center justify-between">
-                    <div>Reward</div>
-                    <FaWallet color="1E0F33" />
+                  <div className="mt-6">
+                    {currentTask.tasks.map((task, key) => (
+                      <GenericTask
+                        key={key}
+                        genericTask={task.GenericTask}
+                        spacePrincipal={parsedSpacePrincipal}
+                        taskId={taskId}
+                        subtaskId={key}
+                        unAuthAtlasSpace={unAuthAtlasSpace}
+                        isUserInHub={isUserInHub}
+                        disabled={taskDisabled}
+                      />
+                    ))}
                   </div>
+                  <div className="flex mt-3 items-center justify-center">
+                    <div className="mr-3 md:mr-4">
+                      <div className="bg-[#1E0F33] p-2 mx-[1px] md:mx-0 w-4 h-4 md:w-8 md:h-8 rounded md:rounded-lg relative">
+                        {isAccepted && (
+                          <img
+                            src="/icons/check-in-box.svg"
+                            className="w-6 h-6 relative"
+                          />
+                        )}
+                      </div>
+                    </div>
+                    <div className="bg-[#9173FF] rounded-xl p-2 mb-2 md:p-6 sm:base md:text-lg md:font-medium font-poppins w-full flex items-center justify-between">
+                      <div>Reward</div>
+                      <FaWallet color="1E0F33" />
+                    </div>
+                  </div>
+                  {isAccepted && !userAlreadyRewarded && (
+                    <div className="flex justify-end mt-4">
+                      <Button onClick={withdraw}>Withdraw reward</Button>
+                    </div>
+                  )}
                 </div>
-                {isAccepted && !userAlreadyRewarded && (
-                  <div className="flex justify-end mt-4">
-                    <Button onClick={withdraw}>Withdraw reward</Button>
-                  </div>
-                )}
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+      {isEditTaskModal && <CreateNewTaskModal
+        callback={toggleEditTaskModal}
+        taskToEdit={taskToEdit}
+      />}
+    </>
   );
 };
 

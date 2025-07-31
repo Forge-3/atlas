@@ -39,10 +39,20 @@ export interface EditSpaceArgs {
   'space_name' : string,
   'space_description' : string,
 }
+export interface EditTaskArgs {
+  'task_id' : bigint,
+  'task_title' : [] | [string],
+  'token_reward' : [] | [TokenReward],
+  'end_time' : [] | [bigint],
+  'task_content' : [] | [Array<[] | [TaskContent]>],
+  'start_time' : [] | [bigint],
+  'number_of_uses' : [] | [bigint],
+}
 export type Error = { 'BytecodeUpToDate' : null } |
   { 'NotTaskCreator' : null } |
   { 'NotParent' : null } |
   { 'UsageLimitExceeded' : null } |
+  { 'FailedToQueryBalance' : string } |
   { 'UserSubmissionNotFound' : null } |
   { 'FailedToUpdateConfig' : string } |
   { 'UserDoesNotBelongToSpace' : null } |
@@ -56,6 +66,7 @@ export type Error = { 'BytecodeUpToDate' : null } |
   { 'FailedToClaimRewards' : Array<[bigint, Error]> } |
   { 'NotAdminNorOwnerNorParent' : null } |
   { 'UserAlreadySubmitted' : null } |
+  { 'BalanceInconsistency' : string } |
   { 'RewardAlreadyRefunded' : null } |
   { 'NotAdmin' : null } |
   { 'IncorrectSubmission' : string } |
@@ -156,6 +167,7 @@ export interface _SERVICE {
   'create_task' : ActorMethod<[CreateTaskArgs], Result_2>,
   'delete_closed_task' : ActorMethod<[bigint], Result>,
   'edit_space' : ActorMethod<[EditSpaceArgs], Result>,
+  'edit_task' : ActorMethod<[EditTaskArgs], Result>,
   'force_close_task' : ActorMethod<[bigint], Result>,
   'get_closed_tasks' : ActorMethod<[GetTasksArgs], Result_3>,
   'get_config' : ActorMethod<[], Config>,

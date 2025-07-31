@@ -198,6 +198,12 @@ impl TaskType {
             TaskType::GenericTask { task_content, .. } => task_content.allow_resubmit(),
         }
     }
+
+    pub fn get_content(&self) -> &TaskContent {
+        match self {
+            TaskType::GenericTask { task_content, .. } => task_content,
+        }
+    }
 }
 
 #[derive(

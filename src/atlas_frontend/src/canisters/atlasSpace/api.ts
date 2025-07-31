@@ -2,6 +2,7 @@ import type { ActorSubclass } from "@dfinity/agent";
 import type {
   _SERVICE,
   ClosedTask,
+  EditTaskArgs,
   State,
   Submission,
   SubmissionData,
@@ -352,6 +353,23 @@ export const editSpace = async ({
   await unwrapCall<null>({
     call,
     errMsg: "Failed to edit space",
+  });
+};
+
+interface EditTaskCallArgs {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  args: EditTaskArgs;
+}
+
+export const editTask = async ({
+  authAtlasSpace,
+  args,
+}: EditTaskCallArgs) => {
+  const call = authAtlasSpace.edit_task(args);
+
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to edit task",
   });
 };
 

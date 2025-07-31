@@ -10,7 +10,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { DECIMALS } from "../canisters/ckUsdcLedger/constans";
 import GenericTask from "./tasks/GenericTask";
 import NumericInputForm from "../components/Shared/NumericInputForm";
-import { createNewTask, getSpaceTasks } from "../canisters/atlasSpace/api";
+import { createNewTask, editTask, getSpaceTasks } from "../canisters/atlasSpace/api";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   useAuthAtlasSpaceActor,
@@ -31,6 +31,8 @@ import {
 import { deserialize, type RootState } from "../store/store";
 import { getErrorWithInfoToast } from "../utils/errors";
 import { toLocalISOString } from "../utils/date";
+import type { Task } from "../../../declarations/atlas_space/atlas_space.did";
+import { mapTaskToForm } from "../utils/taskFormMapper";
 
 type TaskType = "generic";
 const allowedTaskTypes = ["generic"] as const;
@@ -41,13 +43,18 @@ interface CreateNewTaskFormInput {
   taskTitle: string;
   startTime: string;
   endTime: string;
-  tasks?: {
+  tasks: ({
     taskType: TaskType;
     title: string;
     description: string;
     allowresubmit: boolean;
-  }[];
+  } | { disabled: boolean })[];
 }
+
+type GenericTaskError = {
+  allowresubmit?: { message: string };
+};
+
 const maxSubtitleLength = 50;
 const maxTitleLength = 50;
 const maxDescriptionLength = 500;
@@ -70,11 +77,25 @@ const taskSchema = yup.object({
   allowresubmit: yup.boolean().required(),
 });
 
-interface CreateNewTaskModalArgs {
-  callback: () => void;
+const taskOrDisabledSchema = yup.lazy((value) => {
+  if (value && "disabled" in value) {
+    return yup.object({
+      disabled: yup.boolean().required(),
+    });
+  }
+  return taskSchema;
+});
+
+export interface EditableTask extends Task {
+  task_id: bigint;
 }
 
-const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
+interface CreateNewTaskModalArgs {
+  callback: () => void;
+  taskToEdit: EditableTask | null; 
+}
+
+const CreateNewTaskModal = ({ callback, taskToEdit }: CreateNewTaskModalArgs) => {
   const renderedAt = new Date();
   const schema = yup.object({
     taskTitle: yup
@@ -104,12 +125,13 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
         "is-after-now",
         "Start time must be in the future",
         function (value) {
+          if (taskToEdit) return true;
           return (
             new Date(value).getTime() >=
             new Date(renderedAt.toISOString().slice(0, 16)).getTime()
           );
         }
-      ),
+    ),
     endTime: yup
       .string()
       .required()
@@ -125,7 +147,11 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
       .test("is-after-now", "End time must be in the future", function (value) {
         return new Date(value).getTime() > Date.now();
       }),
-    tasks: yup.array().of(taskSchema).min(1),
+    tasks: yup
+      .array()
+      .of(taskOrDisabledSchema)
+      .min(1)
+      .required(),
   });
 
   const { spacePrincipal } = useParams();
@@ -138,25 +164,29 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     handleSubmit,
     control,
     watch,
+    setValue,
     formState: { errors },
-  } = useForm({
+  } = useForm<CreateNewTaskFormInput>({
     resolver: yupResolver(schema),
-    defaultValues: {
-      numberOfUses: 1,
-      rewardPerUsage: 0.1,
-      tasks: [
-        {
-          taskType: "generic",
-          title: "",
-          description: "",
-          allowresubmit: false,
-        },
-      ],
-      startTime: toLocalISOString(renderedAt).slice(0, 16),
-    },
+    defaultValues: taskToEdit
+    ? mapTaskToForm(taskToEdit)
+    : {
+        numberOfUses: 1,
+        rewardPerUsage: 0.1,
+        taskTitle: "",
+        startTime: toLocalISOString(renderedAt),
+        tasks: [
+          {
+            taskType: "generic",
+            title: "",
+            description: "",
+            allowresubmit: false,
+          },
+        ],
+      },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append } = useFieldArray({
     control,
     name: "tasks",
   });
@@ -175,6 +205,11 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
   const blockchainConfig = deserialize<StorableConfig>(
     useSelector(selectBlockchainConfig)
   );
+
+  const calculateDepositAmount = (amount: bigint, fee: bigint, numberOfUses: bigint) => {
+    return amount * numberOfUses + fee * numberOfUses + fee;
+  };
+
   const ckUsdcFee = blockchainConfig
     ? (blockchainConfig.ckusdc_ledger.fee ?? 0n)
     : 0n;
@@ -192,8 +227,14 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
     DECIMALS
   );
   const numberOfUsesBn = BigInt(numberOfUsesNormalized);
-  const estimatedCost =
-    numberOfUsesBn * rewardPerUsageBn + numberOfUsesBn * ckUsdcFee + ckUsdcFee;
+  const estimatedCost = calculateDepositAmount(rewardPerUsageBn, ckUsdcFee, numberOfUsesBn);
+
+  const hasAnySubmissions = !!taskToEdit && taskToEdit.tasks.some(t => {
+    if ("GenericTask" in t) {
+      return t.GenericTask.submission.length > 0;
+    }
+    return false;
+  });
 
   const onSubmit: SubmitHandler<CreateNewTaskFormInput> = async ({
     numberOfUses,
@@ -220,55 +261,154 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
       return;
     }
 
-    const taskContent = tasks
-      ?.map((task) => {
-        if (task.taskType === "generic") {
-          return {
-            task_type: "generic",
-            title: task.title,
-            description: task.description,
-            allow_resubmit: task.allowresubmit,
-          };
-        }
-      })
-      .filter((item) => item !== undefined);
+    const taskContent = tasks.map((task) => {
+      if ("disabled" in task) {
+        return null;
+      }
+      return {
+        task_type: "generic",
+        title: task.title,
+        description: task.description,
+        allow_resubmit: task.allowresubmit,
+      };
+    });
 
     if (!taskContent || taskContent.length === 0) {
       toast.error("Invalid subtasks: the minimum number of subtasks is one.");
       return;
     }
 
-    const estimatedCost =
-      numberOfUsesBn * rewardPerUsageBn +
-      numberOfUsesBn * ckUsdcFee +
-      ckUsdcFee;
-    const getOrSetAllowance = setUserSpaceAllowanceIfNeeded({
-      unAuthCkUsd: unAuthCkUsdcActor,
-      authCkUsdc: authCkUsdcActor,
-      spacePrincipal: principal,
-      amount: estimatedCost,
-      userPrincipal: user.principal,
-    });
-    await toast.promise(getOrSetAllowance, {
-      loading: "Checking available funds...",
-      success: "Funds allowance granted successfully.",
-      error: getErrorWithInfoToast("Failed to allocate funds:"),
-    });
+    let taskId: bigint;
+    if (taskToEdit) {
+      const oldTaskData = {
+        task_title: taskToEdit.task_title,
+        start_time: taskToEdit.start_time.toString(),
+        end_time: taskToEdit.end_time.toString(),
+        number_of_uses: taskToEdit.number_of_uses.toString(),
+        token_reward: taskToEdit.token_reward.CkUsdc.amount.toString(),
+        tasks: taskToEdit.tasks
+          .map(t => {
+            if ("GenericTask" in t) {
+              return {
+                task_content: t.GenericTask.task_content.TitleAndDescription,
+              };
+            }
+            return null;
+          })
+          .filter(Boolean),
+      };
 
-    const createNewTaskCall = createNewTask({
-      authAtlasSpaceActor,
-      numberOfUses: numberOfUsesBn,
-      rewardPerUsage: rewardPerUsageBn,
-      tasks: taskContent,
-      taskTitle,
-      startTime: BigInt(startTimeUnixSec),
-      endTime: BigInt(endTimeUnixSec),
-    });
-    const taskId = await toast.promise(createNewTaskCall, {
-      loading: "Creating new task...",
-      success: "Task created successfully.",
-      error: getErrorWithInfoToast("Failed to create task:"),
-    });
+      const newTaskData = {
+        task_title: taskTitle,
+        start_time: startTimeUnixSec.toString(),
+        end_time: endTimeUnixSec.toString(),
+        number_of_uses: numberOfUsesBn.toString(),
+        token_reward: rewardPerUsageBn.toString(),
+        tasks: taskContent.map(task => 
+          task
+            ? {
+                task_content: {
+                  task_description: task.description,
+                  task_title: task.title,
+                  allow_resubmit: task.allow_resubmit,
+                },
+              }
+            : null
+        ),
+      };
+
+      const isSameTask = JSON.stringify(oldTaskData) === JSON.stringify(newTaskData);
+      if (isSameTask) {
+        toast.success("No changes detected, task not updated.");
+        callback();
+        return;
+      }
+
+      const currentDepositAndFee = calculateDepositAmount(
+        taskToEdit.token_reward.CkUsdc.amount,
+        BigInt(ckUsdcFee),
+        BigInt(taskToEdit.number_of_uses)
+      );
+
+      const newDepositAndFee = calculateDepositAmount(
+        rewardPerUsageBn,
+        BigInt(ckUsdcFee),
+        numberOfUsesBn
+      );
+
+      if (newDepositAndFee > currentDepositAndFee) {
+        const extraCost = newDepositAndFee - currentDepositAndFee + BigInt(ckUsdcFee);
+        const allowanceCheck = setUserSpaceAllowanceIfNeeded({
+          unAuthCkUsd: unAuthCkUsdcActor,
+          authCkUsdc: authCkUsdcActor,
+          spacePrincipal: principal,
+          amount: extraCost,
+          userPrincipal: user.principal,
+        });
+        await toast.promise(allowanceCheck, {
+          loading: "Checking available funds...",
+          success: "Funds allowance granted successfully.",
+          error: getErrorWithInfoToast("Failed to allocate funds:"),
+        });
+      }
+
+      taskId = taskToEdit.task_id;
+      const editedCall = editTask({
+        authAtlasSpace: authAtlasSpaceActor,
+        args: {
+          task_id: taskId,
+          task_title: taskTitle !== taskToEdit.task_title ? [taskTitle] : [],
+          token_reward: rewardPerUsageBn !== taskToEdit.token_reward.CkUsdc.amount ? [{ CkUsdc: { amount: rewardPerUsageBn } }]: [],
+          start_time: startTimeUnixSec !== Number(taskToEdit.start_time) ? [BigInt(startTimeUnixSec)] : [],
+          end_time: endTimeUnixSec !== Number(taskToEdit.end_time) ? [BigInt(endTimeUnixSec)] : [],
+          number_of_uses: numberOfUsesBn !== taskToEdit.number_of_uses ? [numberOfUsesBn] : [],
+          task_content: [
+            taskContent.map(task => task
+              ? [{ TitleAndDescription: {
+                  task_title: task.title,
+                  task_description: task.description,
+                  allow_resubmit: task.allow_resubmit
+                }}]
+              : []
+            )
+          ],
+        }
+      });
+      await toast.promise(editedCall, {
+        loading: "Saving changes...",
+        success: "Task updated successfully.",
+        error: getErrorWithInfoToast("Failed to update task:"),
+      });
+    } else {
+      const estimatedCost = calculateDepositAmount(rewardPerUsageBn, ckUsdcFee, numberOfUsesBn);
+      const getOrSetAllowance = setUserSpaceAllowanceIfNeeded({
+        unAuthCkUsd: unAuthCkUsdcActor,
+        authCkUsdc: authCkUsdcActor,
+        spacePrincipal: principal,
+        amount: estimatedCost,
+        userPrincipal: user.principal,
+      });
+      await toast.promise(getOrSetAllowance, {
+        loading: "Checking available funds...",
+        success: "Funds allowance granted successfully.",
+        error: getErrorWithInfoToast("Failed to allocate funds:"),
+      });
+
+      const createNewTaskCall = createNewTask({
+        authAtlasSpaceActor,
+        numberOfUses: numberOfUsesBn,
+        rewardPerUsage: rewardPerUsageBn,
+        tasks: taskContent.filter((task) => task !== null),
+        taskTitle,
+        startTime: BigInt(startTimeUnixSec),
+        endTime: BigInt(endTimeUnixSec),
+      });
+      taskId = await toast.promise(createNewTaskCall, {
+        loading: "Creating new task...",
+        success: "Task created successfully.",
+        error: getErrorWithInfoToast("Failed to create task:"),
+      });
+    }
     callback();
     await getSpaceTasks({
       spaceId,
@@ -280,7 +420,11 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
       userPrincipal: user?.principal,
       dispatch,
     });
-    navigate(`${location.pathname}/${taskId}`);
+    if (taskToEdit) {
+      navigate(location.pathname);
+    } else {
+      navigate(`${location.pathname}/${taskId}`);
+    }
   };
 
   return (
@@ -298,7 +442,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
           }}
         >
           <h2 className="flex items-center justify-between font-semibold mb-4">
-            Create new tasks
+              {taskToEdit ? "Edit task" : "Create new task"}
             <Button
               onClick={() =>
                 append({
@@ -342,7 +486,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
               maxDecimalPlaces={DECIMALS}
               name="rewardPerUsage"
               errors={errors}
-              className="mb-2"
+              className={`mb-2 ${hasAnySubmissions ? "pointer-events-none opacity-50" : ""}`}
             />
 
             <label className="text-gray-600">Start time:</label>
@@ -370,7 +514,14 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
             )}
 
             {fields.map((field, index) => {
-              const taskType = watch(`tasks.${index}.taskType`);
+              const currentTask = watch(`tasks.${index}`);
+              if ("disabled" in currentTask) {
+                return (
+                  <div key={field.id} className="border p-4 rounded-xl mb-4 bg-gray-100 text-gray-400">
+                    Subtask #{index + 1} (deleted)
+                  </div>
+                );
+              }
 
               return (
                 <div
@@ -383,7 +534,11 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                     </p>
                     <button
                       type="button"
-                      onClick={() => remove(index)}
+                      onClick={() => {
+                        const currentTasks = [...(watch("tasks") ?? [])];
+                        currentTasks[index] = { disabled: true };
+                        setValue("tasks", currentTasks);
+                      }}
                       className="text-red-500 hover:underline"
                     >
                       Remove
@@ -398,7 +553,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                       <option value="generic">Generic text task</option>
                     </select>
 
-                    {taskType === "generic" && (
+                    {currentTask.taskType === "generic" && (
                       <GenericTask
                         register={register}
                         index={index}
@@ -420,9 +575,9 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                       >
                         Allow re-submission for this subtask if rejected
                       </label>
-                      {errors?.tasks?.[index]?.allowresubmit?.message && (
+                      {!("disabled" in currentTask) && errors?.tasks?.[index] && (
                         <span className="text-red-500">
-                          {errors.tasks[index].allowresubmit.message.toString()}
+                          {(errors.tasks[index] as GenericTaskError).allowresubmit?.message.toString()}
                         </span>
                       )}
                     </div>
@@ -436,7 +591,9 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
               Estimated cost: {formatUnits(estimatedCost, DECIMALS)}
               <img src="/icons/ckUSDC.svg" className="w-6" />
             </div>
-            <Button>Create task!</Button>
+            <Button>
+              {taskToEdit ? "Save changes" : "Create task!"}
+            </Button>
           </div>
         </div>
       </div>
@@ -445,3 +602,4 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
 };
 
 export default CreateNewTaskModal;
+

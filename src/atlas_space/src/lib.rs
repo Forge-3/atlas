@@ -16,7 +16,11 @@ use crate::cycles::WalletReceiveResult;
 use crate::errors::Error;
 use crate::methods::query::{GetClosedTasksRes, GetTasksArgs, GetTasksRes, SpaceInfo};
 use crate::state::{EditSpaceArgs, State};
-use crate::tasks::{submission::Submission, task::CreateTaskArgs, task_types::TaskId};
+use crate::tasks::{
+    submission::Submission,
+    task::{CreateTaskArgs, EditTaskArgs},
+    task_types::TaskId,
+};
 
 use candid::{Nat, Principal};
 use shared::SpaceArgs;

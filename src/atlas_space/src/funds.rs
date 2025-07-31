@@ -74,3 +74,20 @@ pub async fn withdraw_ckusdc(
 
     Ok(())
 }
+
+pub async fn get_account_balance(
+    account_owner: Principal,
+    subaccount: Option<[u8; 32]>,
+) -> Result<Nat, Error> {
+    let ckusdc_ledger = memory::read_config(|config| config.ckusdc_ledger.clone());
+    let account = Account {
+        owner: account_owner,
+        subaccount,
+    };
+    Call::bounded_wait(ckusdc_ledger.principal, "icrc1_balance_of")
+        .with_args(&(account,))
+        .await
+        .map_err(|err| Error::FailedToQueryBalance(err.to_string()))?
+        .candid::<Nat>()
+        .map_err(|err| Error::FailedToParse(err.to_string()))
+}

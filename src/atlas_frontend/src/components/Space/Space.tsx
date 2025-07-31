@@ -348,7 +348,7 @@ const Space = ({
           </div>
         </div>
       </div>
-      {isCreateTaskModal && <CreateNewTaskModal callback={toggleTaskModal} />}
+      {isCreateTaskModal && <CreateNewTaskModal callback={toggleTaskModal} taskToEdit={null}/>}
       {isTransferModal && <TransferSpaceModal callback={toggleTransferModal} />}
     </>
   );
