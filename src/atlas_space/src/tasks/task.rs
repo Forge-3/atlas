@@ -174,13 +174,14 @@ impl Task {
         user: Principal,
         subaccount: [u8; 32],
     ) -> Result<(), Error> {
-        let subtask = self.tasks.iter().all(|task| {
-            let state = task.get_submission(user).unwrap().get_state();
-            state == &SubmissionState::Accepted
-        });
-        if !subtask {
-            return Err(Error::SubmissionNotAccepted);
-        }
+        self.tasks.iter().try_for_each(|task| {
+            let state = task.get_submission(user)?.get_state();
+            if state == &SubmissionState::Accepted {
+                Ok(())
+            } else {
+                Err(Error::SubmissionNotAccepted)
+            }
+        })?;
         if Nat::from(self.rewarded.len()) >= self.number_of_uses {
             return Err(Error::UsageLimitExceeded);
         }
