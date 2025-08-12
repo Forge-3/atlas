@@ -143,6 +143,10 @@ pub fn get_open_task(task_id: &TaskId) -> Option<Task> {
     OPEN_TASKS_MAP.with_borrow_mut(|tasks| tasks.get(task_id))
 }
 
+pub fn get_all_open_tasks() -> Vec<(TaskId, Task)> {
+    OPEN_TASKS_MAP.with_borrow(|tasks| tasks.iter().collect())
+}
+
 pub fn get_open_tasks_len() -> u64 {
     OPEN_TASKS_MAP.with_borrow(|tasks| tasks.len())
 }
@@ -184,6 +188,10 @@ where
 
 pub fn get_closed_task(task_id: &TaskId) -> Option<ClosedTask> {
     CLOSED_TASKS_MAP.with_borrow_mut(|tasks| tasks.get(task_id))
+}
+
+pub fn get_all_closed_tasks() -> Vec<(TaskId, ClosedTask)> {
+    CLOSED_TASKS_MAP.with_borrow(|tasks| tasks.iter().collect())
 }
 
 pub fn get_closed_tasks_len() -> u64 {

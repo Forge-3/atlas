@@ -39,6 +39,9 @@ pub enum Error {
     #[error("Failed to push new space to stable vec (Error: {0})")]
     FailedToSaveSpace(String),
 
+    #[error("Failed to reset stable vec and init new one (Error: {0})")]
+    FailedToResetSpaceVec(String),
+
     #[error("User do not exist")]
     UserDoNotExist,
 
@@ -74,4 +77,7 @@ pub enum Error {
 
     #[error("Not enough cycles")]
     NotEnoughCycles { expected: u128, owned: u128 },
+
+    #[error("Failed to clean up space {principal}: {err}")]
+    FailedToCleanSpace { principal: Principal, err: String },
 }

@@ -32,9 +32,11 @@ import { nowInSeconds } from "../../utils/date.ts";
 import LocalBlurOverlay from "../Shared/LocalBlurOverlay.tsx";
 import { runWithLoading } from "../../utils/loading.ts";
 import { getStartingIn, getTaskType } from "../../utils/tasks.ts";
+import { deleteSpace } from "../../canisters/atlasMain/api.ts";
+import { deleteSpace as deleteSpaceFromStore } from "../../store/slices/spacesSlice.ts";
 
 interface TasksListProps {
-  tasks?: Tasks;
+  tasks: Tasks;
   spaceId: Principal;
 }
 
@@ -161,17 +163,44 @@ const Space = ({
         }),
         {
           loading: "Trying to join space...",
-          success: "Successfully joined to space.",
+          success: "Successfully joined to space",
           error: getErrorWithInfoToast("Failed to join to space."),
         }
       );
-      getAtlasUser({
+      await getAtlasUser({
         unAuthAtlasMain,
         dispatch,
         userId: user.principal,
       });
     }, dispatch);
   };
+
+  const handleDeleteSpace = async () => {
+    if (!authAtlasMain) return;
+    
+    const confirmed = window.confirm("Are you sure you want to delete this space? This action cannot be undone.");
+    if (!confirmed) return;
+    
+    await runWithLoading(async () => {
+      await toast.promise(
+        deleteSpace({
+          authAtlasMain,
+          spaceId: parsedSpacePrincipal,
+        }),
+        {
+          loading: "Deleting space...",
+          success: "Space deleted",
+          error: getErrorWithInfoToast("Failed to delete space."),
+        }
+      );
+
+      dispatch(deleteSpaceFromStore({
+        spaceId: parsedSpacePrincipal.toText()
+      }));
+      navigate(SPACES_PATH);
+    }, dispatch);
+  };
+
 
   return (
     <>
@@ -220,6 +249,15 @@ const Space = ({
                 )}
                 {didUserCanAdministrate && (
                   <Button
+                    light
+                    className="!text-red-400 hover:!bg-red-900/20"
+                    onClick={handleDeleteSpace}
+                  >
+                    Delete space
+                  </Button>
+                )}
+                {didUserCanAdministrate && (
+                  <Button
                     className="flex-1 md:flex-none"
                     onClick={toggleTaskModal}
                   >
@@ -227,7 +265,8 @@ const Space = ({
                   </Button>
                 )}
               </div>
-            )}
+              )
+            }
           </div>
           <div className="relative w-full rounded-t-xl bg-[#1E0F33] mb-1">
             <div className="relative p-5 md:p-8 md:static">
@@ -305,8 +344,8 @@ const Space = ({
                 </div>
               </div>
             </div>
+          <TasksList tasks={tasks} spaceId={spaceId} />
           </div>
-          {<TasksList tasks={tasks} spaceId={spaceId} />}
         </div>
       </div>
       {isCreateTaskModal && <CreateNewTaskModal callback={toggleTaskModal} />}
@@ -316,3 +355,4 @@ const Space = ({
 };
 
 export default Space;
+

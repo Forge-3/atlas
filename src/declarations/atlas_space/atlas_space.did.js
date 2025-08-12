@@ -1,4 +1,5 @@
 export const idlFactory = ({ IDL }) => {
+  const Error = IDL.Rec();
   const CkUsdcLedger_1 = IDL.Record({
     'fee' : IDL.Opt(IDL.Nat),
     'principal' : IDL.Principal,
@@ -18,38 +19,42 @@ export const idlFactory = ({ IDL }) => {
     'UpgradeArg' : IDL.Record({ 'version' : IDL.Nat64 }),
     'InitArg' : SpaceInitArg,
   });
-  const Error = IDL.Variant({
-    'BytecodeUpToDate' : IDL.Null,
-    'NotTaskCreator' : IDL.Null,
-    'NotParent' : IDL.Null,
-    'UsageLimitExceeded' : IDL.Null,
-    'UserSubmissionNotFound' : IDL.Null,
-    'FailedToUpdateConfig' : IDL.Text,
-    'UserDoesNotBelongToSpace' : IDL.Null,
-    'TaskNotActive' : IDL.Null,
-    'AllRewardsClaimed' : IDL.Null,
-    'TaskAlreadyExists' : IDL.Nat64,
-    'FailedToCallMain' : IDL.Text,
-    'ConfigNotSet' : IDL.Null,
-    'UserAlreadyRewarded' : IDL.Null,
-    'TaskNotFound' : IDL.Nat64,
-    'NotAdminNorOwnerNorParent' : IDL.Null,
-    'UserAlreadySubmitted' : IDL.Null,
-    'RewardAlreadyRefunded' : IDL.Null,
-    'NotAdmin' : IDL.Null,
-    'IncorrectSubmission' : IDL.Text,
-    'CountToHigh' : IDL.Record({ 'max' : IDL.Nat64, 'found' : IDL.Nat64 }),
-    'SubtaskDoNotExists' : IDL.Nat64,
-    'NotOwner' : IDL.Null,
-    'FailedToTransfer' : IDL.Text,
-    'TaskExpired' : IDL.Null,
-    'FailedToParse' : IDL.Text,
-    'InvalidTaskContent' : IDL.Text,
-    'TaskDoNotExists' : IDL.Nat64,
-    'AnonymousCaller' : IDL.Null,
-    'SubmissionNotAccepted' : IDL.Null,
-  });
+  Error.fill(
+    IDL.Variant({
+      'BytecodeUpToDate' : IDL.Null,
+      'NotTaskCreator' : IDL.Null,
+      'NotParent' : IDL.Null,
+      'UsageLimitExceeded' : IDL.Null,
+      'UserSubmissionNotFound' : IDL.Null,
+      'FailedToUpdateConfig' : IDL.Text,
+      'UserDoesNotBelongToSpace' : IDL.Null,
+      'TaskNotActive' : IDL.Null,
+      'AllRewardsClaimed' : IDL.Null,
+      'TaskAlreadyExists' : IDL.Nat64,
+      'FailedToCallMain' : IDL.Text,
+      'ConfigNotSet' : IDL.Null,
+      'UserAlreadyRewarded' : IDL.Null,
+      'TaskNotFound' : IDL.Nat64,
+      'FailedToClaimRewards' : IDL.Vec(IDL.Tuple(IDL.Nat64, Error)),
+      'NotAdminNorOwnerNorParent' : IDL.Null,
+      'UserAlreadySubmitted' : IDL.Null,
+      'RewardAlreadyRefunded' : IDL.Null,
+      'NotAdmin' : IDL.Null,
+      'IncorrectSubmission' : IDL.Text,
+      'CountToHigh' : IDL.Record({ 'max' : IDL.Nat64, 'found' : IDL.Nat64 }),
+      'SubtaskDoNotExists' : IDL.Nat64,
+      'NotOwner' : IDL.Null,
+      'FailedToTransfer' : IDL.Text,
+      'TaskExpired' : IDL.Null,
+      'FailedToParse' : IDL.Text,
+      'InvalidTaskContent' : IDL.Text,
+      'TaskDoNotExists' : IDL.Nat64,
+      'AnonymousCaller' : IDL.Null,
+      'SubmissionNotAccepted' : IDL.Null,
+    })
+  );
   const Result = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });
+  const Result_1 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : IDL.Text });
   const TokenReward = IDL.Variant({
     'CkUsdc' : IDL.Record({ 'amount' : IDL.Nat }),
   });
@@ -68,7 +73,7 @@ export const idlFactory = ({ IDL }) => {
     'start_time' : IDL.Nat64,
     'number_of_uses' : IDL.Nat64,
   });
-  const Result_1 = IDL.Variant({ 'Ok' : IDL.Nat64, 'Err' : Error });
+  const Result_2 = IDL.Variant({ 'Ok' : IDL.Nat64, 'Err' : Error });
   const EditSpaceArgs = IDL.Record({
     'external_links' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     'space_background' : IDL.Opt(IDL.Text),
@@ -112,7 +117,7 @@ export const idlFactory = ({ IDL }) => {
     'tasks' : IDL.Vec(IDL.Tuple(IDL.Nat64, ClosedTask)),
     'tasks_count' : IDL.Nat64,
   });
-  const Result_2 = IDL.Variant({ 'Ok' : GetClosedTasksRes, 'Err' : Error });
+  const Result_3 = IDL.Variant({ 'Ok' : GetClosedTasksRes, 'Err' : Error });
   const CkUsdcLedger = IDL.Record({
     'fee' : IDL.Opt(IDL.Nat),
     'principal' : IDL.Principal,
@@ -138,7 +143,7 @@ export const idlFactory = ({ IDL }) => {
     'tasks' : IDL.Vec(IDL.Tuple(IDL.Nat64, Task)),
     'tasks_count' : IDL.Nat64,
   });
-  const Result_3 = IDL.Variant({ 'Ok' : GetTasksRes, 'Err' : Error });
+  const Result_4 = IDL.Variant({ 'Ok' : GetTasksRes, 'Err' : Error });
   const State = IDL.Record({
     'external_links' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     'space_symbol' : IDL.Opt(IDL.Text),
@@ -156,14 +161,15 @@ export const idlFactory = ({ IDL }) => {
         [Result],
         [],
       ),
-    'create_task' : IDL.Func([CreateTaskArgs], [Result_1], []),
+    'clean_up_space_before_deletion' : IDL.Func([], [Result_1], []),
+    'create_task' : IDL.Func([CreateTaskArgs], [Result_2], []),
     'delete_closed_task' : IDL.Func([IDL.Nat64], [Result], []),
     'edit_space' : IDL.Func([EditSpaceArgs], [Result], []),
     'force_close_task' : IDL.Func([IDL.Nat64], [Result], []),
-    'get_closed_tasks' : IDL.Func([GetTasksArgs], [Result_2], ['query']),
+    'get_closed_tasks' : IDL.Func([GetTasksArgs], [Result_3], ['query']),
     'get_config' : IDL.Func([], [Config], ['query']),
     'get_current_bytecode_version' : IDL.Func([], [IDL.Nat64], ['query']),
-    'get_open_tasks' : IDL.Func([GetTasksArgs], [Result_3], ['query']),
+    'get_open_tasks' : IDL.Func([GetTasksArgs], [Result_4], ['query']),
     'get_space_info' : IDL.Func([], [SpaceInfo], ['query']),
     'get_state' : IDL.Func([], [State], ['query']),
     'reject_subtask_submission' : IDL.Func(

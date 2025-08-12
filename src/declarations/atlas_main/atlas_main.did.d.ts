@@ -32,6 +32,8 @@ export type Error = { 'UserRankNoMatch' : Array<Rank> } |
   { 'FailedToSaveSpace' : string } |
   { 'UserNotOwner' : null } |
   { 'FailedToUpdateConfig' : string } |
+  { 'FailedToResetSpaceVec' : string } |
+  { 'FailedToCleanSpace' : { 'err' : string, 'principal' : Principal } } |
   { 'UserRichSpaceLimit' : { 'found' : bigint, 'expected' : bigint } } |
   { 'FailedToDecodeArgs' : string } |
   { 'UserRankToHigh' : { 'found' : Rank, 'expected' : Rank } } |
@@ -63,9 +65,9 @@ export type Rank = { 'SpaceLead' : null } |
   { 'Admin' : null };
 export type Result = { 'Ok' : Space } |
   { 'Err' : Error };
-export type Result_1 = { 'Ok' : GetSpacesRes } |
+export type Result_1 = { 'Ok' : null } |
   { 'Err' : Error };
-export type Result_2 = { 'Ok' : null } |
+export type Result_2 = { 'Ok' : GetSpacesRes } |
   { 'Err' : Error };
 export interface Space { 'id' : Principal, 'space_type' : SpaceType }
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
@@ -102,19 +104,20 @@ export interface _SERVICE {
     ],
     Result
   >,
+  'delete_space' : ActorMethod<[Principal], Result_1>,
   'get_current_space_bytecode_version' : ActorMethod<[], bigint>,
   'get_space_bytecode_by_version' : ActorMethod<
     [bigint],
     [] | [Uint8Array | number[]]
   >,
-  'get_spaces' : ActorMethod<[GetSpacesArgs], Result_1>,
+  'get_spaces' : ActorMethod<[GetSpacesArgs], Result_2>,
   'get_user' : ActorMethod<[GetUserBy], CandidUser>,
   'get_user_hub' : ActorMethod<[Principal], [] | [Space]>,
-  'join_space' : ActorMethod<[Principal], Result_2>,
-  'set_user_admin' : ActorMethod<[Principal], Result_2>,
-  'set_user_space_lead' : ActorMethod<[Principal], Result_2>,
-  'transfer_space' : ActorMethod<[TransferSpace], Result_2>,
-  'upgrade_space' : ActorMethod<[Principal], Result_2>,
+  'join_space' : ActorMethod<[Principal], Result_1>,
+  'set_user_admin' : ActorMethod<[Principal], Result_1>,
+  'set_user_space_lead' : ActorMethod<[Principal], Result_1>,
+  'transfer_space' : ActorMethod<[TransferSpace], Result_1>,
+  'upgrade_space' : ActorMethod<[Principal], Result_1>,
   'user_is_admin' : ActorMethod<[Principal], boolean>,
   'user_is_in_hub' : ActorMethod<[Principal], boolean>,
   'user_is_in_space' : ActorMethod<[Principal, Principal], boolean>,

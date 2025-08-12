@@ -59,6 +59,14 @@ export const spaceSlice = createSlice({
         };
       }
     },
+    deleteSpace: (
+      state,
+      action: PayloadAction<{ spaceId: string }>
+    ) => {
+      if (state.spaces && state.spaces[action.payload.spaceId]) {
+        delete state.spaces[action.payload.spaceId];
+      }
+    },
     deleteTask: (
       state,
       action: PayloadAction<{
@@ -76,7 +84,7 @@ export const spaceSlice = createSlice({
   },
 });
 
-export const { setSpaces, setSpace, setTasks, deleteTask } = spaceSlice.actions;
+export const { setSpaces, setSpace, setTasks, deleteTask, deleteSpace } = spaceSlice.actions;
 export const { getSpace } = spaceSlice.selectors;
 
 export default spaceSlice.reducer;
