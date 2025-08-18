@@ -4,8 +4,16 @@ use ic_cdk::call::Call;
 use crate::memory;
 
 pub async fn migrate_to_v4(space_id: Principal) {
-    let space_index = memory::with_space_vec_iter(|mut spaces| {
-        spaces.position(|space| space.principal() == space_id)
+    let space_index = memory::with_space_vec_iter(|spaces| {
+        spaces
+            .enumerate()
+            .find(|(_, maybe_space)| {
+                maybe_space
+                    .as_ref()
+                    .map(|s| s.principal() == space_id)
+                    .unwrap_or(false)
+            })
+            .map(|(idx, _)| idx as u64)
     })
     .expect("Space do not exist");
 
