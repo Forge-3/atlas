@@ -84,7 +84,7 @@ pub fn get_spaces(args: GetSpacesArgs) -> Result<GetSpacesRes, Error> {
         });
     }
 
-    let spaces = memory::with_space_vec_iter(|spaces| {
+    let spaces = memory::with_some_space_vec_iter(|spaces| {
         spaces
             .skip(args.start)
             .take(args.count.min(MAX_SPACES_PER_RESPONSE as usize))
@@ -93,7 +93,7 @@ pub fn get_spaces(args: GetSpacesArgs) -> Result<GetSpacesRes, Error> {
 
     Ok(GetSpacesRes {
         spaces,
-        spaces_count: memory::get_space_vec_len() as usize,
+        spaces_count: memory::get_existing_space_count() as usize,
     })
 }
 
@@ -115,14 +115,20 @@ pub fn user_is_admin(user: Principal) -> bool {
 #[query]
 pub fn user_is_in_space(user: Principal, space_id: Principal) -> bool {
     let user = memory::get_user(&user).unwrap_or_default();
-    let (space_index, _) = memory::with_space_vec_iter(|spaces| {
+    let space_index = memory::with_space_vec_iter(|spaces| {
         spaces
             .enumerate()
-            .find(|(_, space)| space.principal() == space_id)
+            .find(|(_, opt_space)| {
+                opt_space
+                    .as_ref()
+                    .map(|space| space.principal() == space_id)
+                    .unwrap_or(false)
+            })
+            .map(|(i, _)| i as u64)
     })
     .expect("Space do not exist");
-    user.belonging_to_spaces()
-        .contains(&space_index.try_into().unwrap())
+
+    user.belonging_to_spaces().contains(&space_index)
 }
 
 #[query]
@@ -139,14 +145,11 @@ pub fn user_is_in_hub(user: Principal) -> bool {
 pub fn get_user_hub(user: Principal) -> Option<Space> {
     let user = memory::get_user(&user).unwrap_or_default();
     let belonging_to_spaces = user.belonging_to_spaces();
-    let maybe_space = memory::with_space_vec_iter(|spaces| {
-        spaces.enumerate().find(|(index, space)| {
-            space.space_type() == SpaceType::HUB
-                && belonging_to_spaces.contains(&(*index).try_into().unwrap())
+    memory::with_space_vec_iter(|spaces| {
+        spaces.enumerate().find_map(|(i, opt_space)| {
+            opt_space.filter(|space| {
+                space.space_type() == SpaceType::HUB && belonging_to_spaces.contains(&(i as u64))
+            })
         })
-    });
-    if let Some((_, space)) = maybe_space {
-        return Some(space);
-    }
-    None
+    })
 }
