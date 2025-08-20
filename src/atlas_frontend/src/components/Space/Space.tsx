@@ -215,7 +215,7 @@ const Space = ({
               >
                 <FaArrowLeftLong /> Back
               </Button>
-              {userInfo?.ownSpaces(parsedSpacePrincipal) ? (
+              {didUserCanAdministrate ? (
                 <Button
                   light
                   className="flex-1 md:flex-none md:justify-end md:gap-2"

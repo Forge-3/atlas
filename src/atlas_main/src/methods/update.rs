@@ -247,7 +247,23 @@ pub async fn transfer_space(args: TransferSpace) -> Result<(), Error> {
     })
     .ok_or(Error::SpaceNotExist)?;
 
-    memory::mut_user(caller, |maybe_user| {
+    let space_owner = if memory::user_rank_match(&caller, &[Rank::Admin, Rank::SuperAdmin]).is_ok()
+    {
+        memory::with_users_iter(|mut users| {
+            users
+                .find(|(_, user)| user.owned_spaces.contains(&(space_index as u64)))
+                .map(|(id, _)| id)
+        })
+        .ok_or(Error::SpaceNotExist)?
+    } else {
+        caller
+    };
+
+    if args.to == space_owner {
+        return Ok(());
+    }
+
+    memory::mut_user(space_owner, |maybe_user| {
         let mut user = maybe_user.expect("User do not exist?!");
         let space_index = user
             .owned_spaces
