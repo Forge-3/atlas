@@ -6,57 +6,93 @@ import {
   useUnAuthAtlasMainActor,
 } from "../../../hooks/identityKit";
 import { getAllSpaces } from "../../../canisters/atlasMain/api";
-import { deserialize, type RootState } from "../../../store/store";
+import { customSerify, deserialize, type RootState } from "../../../store/store";
 import { Principal } from "@dfinity/principal";
 import { getAtlasSpace } from "../../../canisters/atlasSpace/api";
 import SpaceItem from "./SpaceItem";
 import { useNavigate } from "react-router-dom";
 import type { Spaces } from "../../../store/slices/spacesSlice";
 import LocalBlurOverlay from "../../Shared/LocalBlurOverlay";
+import { serify } from "@karmaniverous/serify-deserify";
+import { setSpaces } from "../../../store/slices/spacesSlice";
+import type { StorableState } from "../../../canisters/atlasSpace/types";
 
 const SpacesList = () => {
   const dispatch = useDispatch();
   const unAuthAtlasMain = useUnAuthAtlasMainActor();
-  const spaces = deserialize<Spaces>(useSelector((state: RootState) => state.spaces.spaces));
-  const [fetchedSpacesData, setFetchedSpacesData] = useState(false);
+  const spaces = deserialize<Spaces>(
+    useSelector((state: RootState) => state.spaces.spaces)
+  );
+
   const [fetchingInProgress, setFetchingInProgress] = useState(true);
   const agent = useUnAuthAgent();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchSpaces = async () => {
-      if (unAuthAtlasMain && !spaces) {
-        await getAllSpaces({
+    const loadAndFetchSpaces = async () => {
+      if (spaces && Object.keys(spaces).length > 1) {
+        setFetchingInProgress(false);
+        return;
+      }
+      try {
+        const savedData = localStorage.getItem("atlasSpaces");
+        if (savedData) {
+          const loadedSpaces = JSON.parse(savedData);
+          if (loadedSpaces && Object.keys(loadedSpaces).length > 0) {
+            dispatch(setSpaces(loadedSpaces));
+            setFetchingInProgress(false);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load spaces data from localStorage:", error);
+      }
+
+      if (unAuthAtlasMain && agent) {
+        setFetchingInProgress(true);
+        const spacesIDs = await getAllSpaces({
           dispatch,
           unAuthAtlasMain,
         });
+        const updatedSpacesData: { [key: string]: { state: StorableState | null; tasks: null } } = {};
+        const spaceIds = Object.keys(spacesIDs);
+
+        for (const spaceId of spaceIds) {
+          const spacePrincipal = Principal.from(spaceId);
+          const unAuthAtlasSpace = getUnAuthAtlasSpaceActor(agent, spacePrincipal);
+          if (!unAuthAtlasSpace) continue;
+
+          const spaceData = await getAtlasSpace({
+            spaceId,
+            unAuthAtlasSpace,
+            dispatch,
+          });
+
+          if (spaceData) {
+            updatedSpacesData[spaceId] = {
+              state: spaceData.state,
+              tasks: null
+            };
+          }
+        }
+
+        if (Object.keys(updatedSpacesData).length > 0) {
+          dispatch(setSpaces(updatedSpacesData));
+          try {
+            const serializedData = JSON.stringify(serify(updatedSpacesData, customSerify));
+            localStorage.setItem("atlasSpaces", serializedData);
+          } catch (error) {
+            console.error("Failed to save spaces data to localStorage:", error);
+          }
+        }
         setFetchingInProgress(false);
       }
     };
-    fetchSpaces();
-  }, [dispatch, unAuthAtlasMain]);
-
-  useEffect(() => {
-    if (!spaces || fetchedSpacesData || !agent) return;
-    Object.keys(spaces).map(async (spaceId) => {
-      const spacePrincipal = Principal.from(spaceId);
-      getUnAuthAtlasSpaceActor(agent, spacePrincipal);
-      const unAuthAtlasSpace = getUnAuthAtlasSpaceActor(agent, spacePrincipal);
-      if (!unAuthAtlasSpace) return;
-      await getAtlasSpace({
-        spaceId,
-        unAuthAtlasSpace,
-        dispatch,
-      });
-    });
-    setFetchedSpacesData(true);
-  }, [dispatch, spaces, fetchedSpacesData]);
+    loadAndFetchSpaces();
+  }, [dispatch, unAuthAtlasMain, spaces, agent]);
 
   if (!spaces) {
     if (!fetchingInProgress) navigate("/");
-    return (
-      <LocalBlurOverlay isLoading={true} />
-    )
+    return <LocalBlurOverlay isLoading={true} />;
   }
 
   const spacesEntries = Object.entries(spaces);
