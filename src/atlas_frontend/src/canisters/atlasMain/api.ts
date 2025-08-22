@@ -13,6 +13,26 @@ import { setConfig } from "../../store/slices/appSlice.js";
 import { setSpaces } from "../../store/slices/spacesSlice.js";
 import type { ExternalLinks } from "../atlasSpace/types.js";
 
+const saveLastFetchTime = () => {
+  const now = new Date().toISOString();
+  localStorage.setItem("last_fetch_time", now);
+};
+
+const getLastFetchTime = (): Date | null => {
+  const lastFetch = localStorage.getItem("last_fetch_time");
+  return lastFetch ? new Date(lastFetch) : null;
+};
+
+const shouldFetchSpaces = (): boolean => {
+  const lastFetchTime = getLastFetchTime();
+  if (!lastFetchTime) return true;
+
+  const now = new Date();
+  const diffMinutes = (now.getTime() - lastFetchTime.getTime()) / (1000 * 60);
+  return diffMinutes >= 5;
+};
+
+export { shouldFetchSpaces };
 interface CreateNewSpaceArgs {
   authAtlasMain: ActorSubclass<_SERVICE_MAIN>;
   name: string;
@@ -84,6 +104,8 @@ export const getAllSpaces = async ({
   unAuthAtlasMain,
   dispatch,
 }: GetAtlasData) => {
+  saveLastFetchTime();
+
   let spacesCount = 0n;
   let start = 0n;
   const count = 200n;

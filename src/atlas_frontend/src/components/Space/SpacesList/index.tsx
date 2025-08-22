@@ -5,17 +5,41 @@ import {
   useUnAuthAgent,
   useUnAuthAtlasMainActor,
 } from "../../../hooks/identityKit";
-import { getAllSpaces } from "../../../canisters/atlasMain/api";
-import { customSerify, deserialize, type RootState } from "../../../store/store";
+import {
+  getAllSpaces,
+  shouldFetchSpaces,
+} from "../../../canisters/atlasMain/api";
+import {
+  customSerify,
+  deserialize,
+  type RootState,
+} from "../../../store/store";
 import { Principal } from "@dfinity/principal";
 import { getAtlasSpace } from "../../../canisters/atlasSpace/api";
 import SpaceItem from "./SpaceItem";
-import { useNavigate } from "react-router-dom";
 import type { Spaces } from "../../../store/slices/spacesSlice";
 import LocalBlurOverlay from "../../Shared/LocalBlurOverlay";
 import { serify } from "@karmaniverous/serify-deserify";
 import { setSpaces } from "../../../store/slices/spacesSlice";
 import type { StorableState } from "../../../canisters/atlasSpace/types";
+
+const syncSpacesWithLocalStorage = (reduxSpaces: Spaces) => {
+  try {
+    const savedData = localStorage.getItem("atlasSpaces");
+    const localSpaces = savedData ? JSON.parse(savedData) : {};
+    const reduxKeys = Object.keys(reduxSpaces || {});
+    const localKeys = Object.keys(localSpaces || {});
+
+    if (reduxKeys.length !== localKeys.length) {
+      const serializedData = JSON.stringify(
+        serify(reduxSpaces, customSerify)
+      );
+      localStorage.setItem("atlasSpaces", serializedData);
+    }
+  } catch (err) {
+    console.error("Failed to sync Redux spaces with localStorage:", err);
+  }
+};
 
 const SpacesList = () => {
   const dispatch = useDispatch();
@@ -24,9 +48,8 @@ const SpacesList = () => {
     useSelector((state: RootState) => state.spaces.spaces)
   );
 
-  const [fetchingInProgress, setFetchingInProgress] = useState(true);
+  const [, setFetchingInProgress] = useState(true);
   const agent = useUnAuthAgent();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const loadAndFetchSpaces = async () => {
@@ -34,6 +57,8 @@ const SpacesList = () => {
         setFetchingInProgress(false);
         return;
       }
+
+      setFetchingInProgress(true);
       try {
         const savedData = localStorage.getItem("atlasSpaces");
         if (savedData) {
@@ -41,24 +66,28 @@ const SpacesList = () => {
           if (loadedSpaces && Object.keys(loadedSpaces).length > 0) {
             dispatch(setSpaces(loadedSpaces));
             setFetchingInProgress(false);
+            return;
           }
         }
       } catch (error) {
         console.error("Failed to load spaces data from localStorage:", error);
       }
-
-      if (unAuthAtlasMain && agent) {
-        setFetchingInProgress(true);
+      if (unAuthAtlasMain && agent && shouldFetchSpaces()) {
         const spacesIDs = await getAllSpaces({
           dispatch,
           unAuthAtlasMain,
         });
-        const updatedSpacesData: { [key: string]: { state: StorableState | null; tasks: null } } = {};
+        const updatedSpacesData: {
+          [key: string]: { state: StorableState | null; tasks: null };
+        } = {};
         const spaceIds = Object.keys(spacesIDs);
 
         for (const spaceId of spaceIds) {
           const spacePrincipal = Principal.from(spaceId);
-          const unAuthAtlasSpace = getUnAuthAtlasSpaceActor(agent, spacePrincipal);
+          const unAuthAtlasSpace = getUnAuthAtlasSpaceActor(
+            agent,
+            spacePrincipal
+          );
           if (!unAuthAtlasSpace) continue;
 
           const spaceData = await getAtlasSpace({
@@ -70,7 +99,7 @@ const SpacesList = () => {
           if (spaceData) {
             updatedSpacesData[spaceId] = {
               state: spaceData.state,
-              tasks: null
+              tasks: null,
             };
           }
         }
@@ -78,20 +107,26 @@ const SpacesList = () => {
         if (Object.keys(updatedSpacesData).length > 0) {
           dispatch(setSpaces(updatedSpacesData));
           try {
-            const serializedData = JSON.stringify(serify(updatedSpacesData, customSerify));
+            const serializedData = JSON.stringify(
+              serify(updatedSpacesData, customSerify)
+            );
             localStorage.setItem("atlasSpaces", serializedData);
           } catch (error) {
             console.error("Failed to save spaces data to localStorage:", error);
           }
         }
-        setFetchingInProgress(false);
       }
+      setFetchingInProgress(false);
     };
+
     loadAndFetchSpaces();
-  }, [dispatch, unAuthAtlasMain, spaces, agent]);
+
+    if (spaces && Object.keys(spaces).length > 0) {
+        syncSpacesWithLocalStorage(spaces);
+    }
+  }, [dispatch, unAuthAtlasMain, agent]);
 
   if (!spaces) {
-    if (!fetchingInProgress) navigate("/");
     return <LocalBlurOverlay isLoading={true} />;
   }
 
