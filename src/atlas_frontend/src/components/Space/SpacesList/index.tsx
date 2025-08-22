@@ -47,6 +47,7 @@ const SpacesList = () => {
   const spaces = deserialize<Spaces>(
     useSelector((state: RootState) => state.spaces.spaces)
   );
+  const lastFetchTime = useSelector((state: RootState) => state.app.lastFetchTime);
 
   const [, setFetchingInProgress] = useState(true);
   const agent = useUnAuthAgent();
@@ -65,14 +66,12 @@ const SpacesList = () => {
           const loadedSpaces = JSON.parse(savedData);
           if (loadedSpaces && Object.keys(loadedSpaces).length > 0) {
             dispatch(setSpaces(loadedSpaces));
-            setFetchingInProgress(false);
-            return;
           }
         }
       } catch (error) {
         console.error("Failed to load spaces data from localStorage:", error);
       }
-      if (unAuthAtlasMain && agent && shouldFetchSpaces()) {
+      if (unAuthAtlasMain && agent && shouldFetchSpaces(lastFetchTime)) {
         const spacesIDs = await getAllSpaces({
           dispatch,
           unAuthAtlasMain,
@@ -124,7 +123,7 @@ const SpacesList = () => {
     if (spaces && Object.keys(spaces).length > 0) {
         syncSpacesWithLocalStorage(spaces);
     }
-  }, [dispatch, unAuthAtlasMain, agent]);
+  }, [dispatch, unAuthAtlasMain, agent, lastFetchTime]);
 
   if (!spaces) {
     return <LocalBlurOverlay isLoading={true} />;
