@@ -12,12 +12,14 @@ import {
   useUnAuthAtlasSpaceActor,
 } from "../../hooks/identityKit";
 import {
+  closeTask,
   deleteCloseTask,
-  forceCloseTask,
+  forceExpireTask,
   getAtlasSpace,
   getSpaceTasks,
   withdrawReward,
   type AnyTask,
+  type ExpiredTask,
 } from "../../canisters/atlasSpace/api";
 import GenericTask from "./tasks/GenericTask";
 import { FaWallet } from "react-icons/fa";
@@ -117,8 +119,15 @@ const Task = () => {
     return "refunded" in task;
   }
 
+  function isExpiredTask(task: AnyTask): task is ExpiredTask {
+    return "expired" in task;
+  }
+
   const taskDisabled =
     currentTask.start_time > BigInt(time) || isClosedTask(currentTask);
+
+  const taskExpired = isExpiredTask(currentTask);
+  const taskClosed = isClosedTask(currentTask);
 
   const usersSubmissions = currentTask?.tasks
     ? getUsersSubmissions(currentTask.tasks)
@@ -126,8 +135,11 @@ const Task = () => {
 
   if (!user?.principal) return <></>;
   const isAccepted = usersSubmissions.isAccepted(user.principal.toText());
-  const userAlreadyRewarded = currentTask.rewarded.includes(user.principal);
+  const userAlreadyRewarded = currentTask.rewarded
+        .map((p) => p.toText())
+        .includes(user.principal.toText());
 
+  
   const withdraw = async () => {
     if (!authAtlasSpace) {
       navigate("/");
@@ -171,12 +183,12 @@ const Task = () => {
     });
   };
 
-  const closeTask = async () => {
+  const expireTask = async () => {
     if (!authAtlasSpace || !taskId) return;
 
     if (
       !window.confirm(
-        "Are you sure you want to force close this task? This action cannot be undone."
+        "Are you sure you want to forcefully expire this task? This action cannot be undone."
       )
     ) {
       return;
@@ -184,7 +196,41 @@ const Task = () => {
 
     await runWithLoading(async () => {
       await toast.promise(
-        forceCloseTask({
+        forceExpireTask({
+          authAtlasSpace,
+          taskId: BigInt(taskId),
+        }),
+        {
+          loading: "Expiring task...",
+          success: "Task expired successfully.",
+          error: getErrorWithInfoToast("Failed to expire task."),
+        }
+      );
+
+      await getSpaceTasks({
+        unAuthAtlasSpace,
+        spaceId,
+        dispatch,
+      });
+    }, dispatch);
+
+    navigate(getSpacePath(parsedSpacePrincipal));
+  };
+
+  const closeExpiredTask = async () => {
+    if (!authAtlasSpace || !taskId) return;
+
+    if (
+      !window.confirm(
+        "Are you sure you want to close this task? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    await runWithLoading(async () => {
+      await toast.promise(
+        closeTask({
           authAtlasSpace,
           taskId: BigInt(taskId),
         }),
@@ -275,16 +321,23 @@ const Task = () => {
                 Review submission
               </Button>
             )}
-            {didUserCanAdministrate && !taskDisabled && (
+            {didUserCanAdministrate && !taskDisabled && !taskExpired && (
               <Button
                 className="flex-1 md:flex-none ml-2 text-white bg-rose-800"
-                onClick={closeTask}
+                onClick={expireTask}
               >
-                Force task close
+                Force task expire
               </Button>
             )}
-            {didUserCanAdministrate &&
-              (type === "closed" || type === "expired") && (
+            {didUserCanAdministrate && !taskDisabled && taskExpired && (
+              <Button
+                className="flex-1 md:flex-none ml-2 text-white bg-rose-800"
+                onClick={closeExpiredTask}
+              >
+                Close task
+              </Button>
+            )}
+            {didUserCanAdministrate && taskClosed && (
                 <Button
                   className="flex-1 md:flex-none ml-2 text-white bg-rose-800"
                   onClick={deleteClosedTask}
@@ -357,7 +410,7 @@ const Task = () => {
                       subtaskId={key}
                       unAuthAtlasSpace={unAuthAtlasSpace}
                       isUserInHub={isUserInHub}
-                      disabled={taskDisabled}
+                      disabled={taskDisabled || taskExpired}
                     />
                   ))}
                 </div>
