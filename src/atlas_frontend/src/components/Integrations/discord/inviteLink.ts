@@ -1,4 +1,5 @@
 import type { DiscordInviteApiResponse } from "./types";
+import axios, { AxiosError } from "axios";
 
 export const validateDiscordInvite = async (
   inviteCode: string,
@@ -10,16 +11,17 @@ export const validateDiscordInvite = async (
 
   const url = `https://discord.com/api/v10/invites/${inviteCode}?with_counts=false`;
 
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    const errorText = await response.text();
+  let response;
+  try {
+    response = await axios.get(url);
+  } catch (err: unknown) {
     throw new Error(
-      `Discord API returned status ${response.status}: ${errorText}`
+      `The invite link is invalid.`
     );
+    
   }
 
-  const inviteData: DiscordInviteApiResponse = await response.json();
+  const inviteData: DiscordInviteApiResponse = response.data;
 
   const guild = inviteData.guild;
 
@@ -27,7 +29,7 @@ export const validateDiscordInvite = async (
     return inviteData;
   } else if (guild) {
     throw new Error(
-      `Invite is for a different server/`
+      `Invite is for a different server`
     );
   } else {
     throw new Error("Invite is not for a valid server.");

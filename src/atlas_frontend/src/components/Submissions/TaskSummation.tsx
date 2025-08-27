@@ -43,15 +43,6 @@ interface SubtaskSubmission {
   reason: string | null;
 }
 
-const parseSubmissionContent = (submissionContent: string): { username: string | null; userId: string | null } => {
-  const usernameMatch = submissionContent.match(/User: (.*?) UserID:/);
-  const userIdMatch = submissionContent.match(/UserID: (\d+)/);
-  return {
-    username: usernameMatch ? usernameMatch[1] : null,
-    userId: userIdMatch ? userIdMatch[1] : null,
-  };
-};
-
 const getDiscordAccountCreationDate = (userId: string): Date => {
   const discordEpoch = 1420070400000;
   const timestamp = (BigInt(userId) >> 22n) + BigInt(discordEpoch);
@@ -158,19 +149,15 @@ const TaskSummation = ({
   };
 
   const renderSubmissionContent = () => {
-    if ('DiscordTask' in task.task_content) {
-      const { username, userId } = parseSubmissionContent(submission.submissionData.submission.Text.content);
-      const creationDate = userId ? getDiscordAccountCreationDate(userId) : null;
+    if ('Discord' in submission.submissionData.submission) {
+      const { username, user_id } = submission.submissionData.submission.Discord;
+      const creationDate = getDiscordAccountCreationDate(user_id.toString());
       return (
         <div>
-          {username && creationDate ? (
             <div>
               <p>Username: {username}</p>
               <p>Account Creation Date: {creationDate.toLocaleDateString()}</p>
             </div>
-          ) : (
-            <p>{submission.submissionData.submission.Text.content}</p>
-          )}
         </div>
       );
     }

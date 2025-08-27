@@ -88,7 +88,6 @@ const Task = () => {
   const spaceData = space?.state;
   const unAuthAtlasSpace = useUnAuthAtlasSpaceActor(parsedSpacePrincipal);
   const isUserInHub = inHub?.id.toString() === spacePrincipal;
-  console.log("principal space: ", spacePrincipal)
 
   useEffect(() => {
     if (!unAuthAtlasSpace || spaceData) return;
