@@ -12,6 +12,7 @@ import { unwrapCall } from "../delegatedCall.js";
 import { setConfig } from "../../store/slices/appSlice.js";
 import { setSpaces } from "../../store/slices/spacesSlice.js";
 import type { ExternalLinks } from "../atlasSpace/types.js";
+import { setSpaceUsersCount, setUsersCount } from "../../store/slices/statsSlice.js";
 
 interface CreateNewSpaceArgs {
   authAtlasMain: ActorSubclass<_SERVICE_MAIN>;
@@ -221,13 +222,35 @@ interface DeleteSpace {
   spaceId: Principal;
 }
 
-export const deleteSpace = async ({
-  authAtlasMain,
-  spaceId,
-}: DeleteSpace) => {
+export const deleteSpace = async ({ authAtlasMain, spaceId }: DeleteSpace) => {
   const call = authAtlasMain.delete_space(spaceId);
   await unwrapCall<null>({
     call,
     errMsg: "Failed to delete space",
   });
+};
+
+export const getUsersCount = async ({
+  unAuthAtlasMain,
+  dispatch,
+}: GetAtlasData) => {
+  const call = unAuthAtlasMain.get_users_count();
+  const count = await unwrapCall<bigint>({
+    call,
+    errMsg: "Failed to get user count",
+  });
+  dispatch(setUsersCount(count));
+};
+
+export const getSpaceUsersCount = async ({
+  spaceId,
+  unAuthAtlasMain,
+  dispatch,
+}: { spaceId: Principal } & GetAtlasData) => {
+  const call = unAuthAtlasMain.get_space_users_count(spaceId);
+  const count = await unwrapCall<bigint>({
+    call,
+    errMsg: "Failed to get user count",
+  });
+  dispatch(setSpaceUsersCount({spaceId: spaceId.toString(), count}));
 };

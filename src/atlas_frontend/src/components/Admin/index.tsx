@@ -2,35 +2,48 @@ import React, { useEffect, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import GradientBox from "../layouts/GradientBox";
-import Button from "./Shared/Button";
-import WalletAddressInputForm from "./Shared/WalletAddressInputForm";
-import {
-  getAllSpaces,
-  promoteUserToSpaceLead,
-  upgradeSpace,
-} from "../canisters/atlasMain/api";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import {
   getUnAuthAtlasSpaceActor,
   useAuthAtlasMainActor,
   useUnAuthAgent,
   useUnAuthAtlasMainActor,
-} from "../hooks/identityKit";
-import { Principal } from "@dfinity/principal";
-import toast from "react-hot-toast";
-import { authGuard } from "../hooks/guard";
-import { useNavigate } from "react-router-dom";
+} from "../../hooks/identityKit";
 import { useAuth } from "@nfid/identitykit/react";
-import { useDispatch, useSelector } from "react-redux";
-import { deserialize, type RootState } from "../store/store";
-import type { StorableConfig } from "../store/slices/appSlice";
-import { shortPrincipal } from "../utils/icp";
-import { getAtlasSpace } from "../canisters/atlasSpace/api";
-import type { Spaces } from "../store/slices/spacesSlice";
-import { copy } from "../utils/shared";
+import { deserialize, type RootState } from "../../store/store";
+import type { StorableConfig } from "../../store/slices/appSlice";
+import type { Spaces } from "../../store/slices/spacesSlice";
+import {
+  getAllSpaces,
+  getSpaceUsersCount,
+  getUsersCount,
+  promoteUserToSpaceLead,
+  upgradeSpace,
+} from "../../canisters/atlasMain/api";
+import { authGuard } from "../../hooks/guard";
+import { getAtlasSpace } from "../../canisters/atlasSpace/api";
+import { Principal } from "@dfinity/principal";
+import { runWithLoading } from "../../utils/loading";
+import toast from "react-hot-toast";
+import { getErrorWithInfoToast } from "../../utils/errors";
+import { copy } from "../../utils/shared";
+import GradientBox from "../../layouts/GradientBox";
+import WalletAddressInputForm from "../Shared/WalletAddressInputForm";
+import { shortPrincipal } from "../../utils/icp";
 import { FiCopy } from "react-icons/fi";
-import { getErrorWithInfoToast } from "../utils/errors";
-import { runWithLoading } from "../utils/loading";
+import Button from "../Shared/Button";
+import type { UsersCountPerSpace } from "../../store/slices/statsSlice";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+} from "recharts";
+import { resolveSpaceName } from "../../utils/spaces";
 
 interface AdminFormInput {
   principal: string;
@@ -50,12 +63,38 @@ const Admin = () => {
   const spaces = deserialize<Spaces>(
     useSelector((state: RootState) => state.spaces.spaces)
   );
+  const usersCount = deserialize<bigint>(
+    useSelector((state: RootState) => state.stats.usersCount)
+  );
+  const usersPerSpaceCount = deserialize<UsersCountPerSpace>(
+    useSelector((state: RootState) => state.stats.usersPerSpace)
+  );
 
   useEffect(() => {
-    if (unAuthAtlasMain && !spaces) {
+    if (!unAuthAtlasMain) return;
+    if (typeof usersCount !== "bigint") {
+      getUsersCount({
+        dispatch,
+        unAuthAtlasMain,
+      });
+    }
+    if (!spaces) {
       getAllSpaces({
         dispatch,
         unAuthAtlasMain,
+      });
+    }
+    if (
+      spaces &&
+      (!usersPerSpaceCount || Object.keys(usersPerSpaceCount).length === 0)
+    ) {
+      Object.keys(spaces).map(async (spaceId) => {
+        const spacePrincipal = Principal.from(spaceId);
+        await getSpaceUsersCount({
+          spaceId: spacePrincipal,
+          unAuthAtlasMain,
+          dispatch,
+        });
       });
     }
   }, [dispatch, unAuthAtlasMain]);
@@ -100,7 +139,9 @@ const Admin = () => {
     resolver: yupResolver(schema),
   });
 
-  const handlePromoteUser: SubmitHandler<AdminFormInput> = async ({ principal }) => {
+  const handlePromoteUser: SubmitHandler<AdminFormInput> = async ({
+    principal,
+  }) => {
     const userId = Principal.from(principal);
     if (!authAtlasMain) return;
 
@@ -155,6 +196,59 @@ const Admin = () => {
           <GradientBox>
             <div className="px-8 font-montserrat text-white pt-8">
               <div className="flex gap-2 flex-col">
+                <h3 className="text-xl font-medium">Statistics</h3>
+                <p>Basic application statistics</p>
+                <br />
+                {spaces && (
+                  <p>
+                    Spaces count: <b>{Object.keys(spaces).length}</b>
+                  </p>
+                )}
+                {typeof usersCount === "bigint" && (
+                  <p>
+                    Users count: <b>{usersCount.toString()}</b>
+                  </p>
+                )}
+                {usersPerSpaceCount && (
+                  <div className="w-full h-64 py-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={Object.entries(usersPerSpaceCount).map(
+                          ([key, value]) => ({
+                            name: resolveSpaceName(spaces, key),
+                            value: Number(value),
+                          })
+                        )}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fill: "#fff", fontSize: 12 }}
+                          label={{
+                            value: "Users per space",
+                            fill: "#fff",
+                            position: "insideBottom",
+                            dy: 8,
+                            fontWeight: "bold",
+                          }}
+                        />
+                        <YAxis tick={{ fill: "#fff", fontSize: 14 }} />
+                        <Tooltip
+                          formatter={(value) => [
+                            `Users count: ${value}`,
+                          ]}
+                        />
+                        <Bar dataKey="value" fill="#9173FF" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+            </div>
+          </GradientBox>
+          <GradientBox>
+            <div className="px-8 font-montserrat text-white pt-8">
+              <div className="flex gap-2 flex-col">
                 <h3 className="text-xl font-medium">Set space leader</h3>
                 <p>Promote user to space lead</p>
                 <WalletAddressInputForm
@@ -189,6 +283,7 @@ const Admin = () => {
                 <th scope="col" className="px-4 py-3">
                   Principal
                 </th>
+
                 <th scope="col" className="px-4 py-3">
                   Space name
                 </th>
@@ -204,9 +299,11 @@ const Admin = () => {
               {Object.entries(spaces ?? {}).map(
                 ([spacePrincipal, spaceData]) => (
                   <tr key={spacePrincipal}>
-                    <td className="flex items-center justify-center gap-2" onClick={() => copyAccount(spacePrincipal)}>
-                      {shortPrincipal(spacePrincipal)}{" "}
-                      <FiCopy />
+                    <td
+                      className="flex items-center justify-center gap-2"
+                      onClick={() => copyAccount(spacePrincipal)}
+                    >
+                      {shortPrincipal(spacePrincipal)} <FiCopy />
                     </td>
                     <td>
                       {spaceData?.state ? spaceData.state.space_name : "N/A"}

@@ -15,6 +15,7 @@ import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { Principal } from "@dfinity/principal";
 import type { ExternalLinks } from "./types.js";
+import { setSpaceUsersCount } from "../../store/slices/statsSlice.js";
 
 interface CreateSubtaskArg {
   task_type: string;
@@ -383,5 +384,3 @@ export const deleteCloseTask = async ({
     errMsg: "Failed to delete closed task",
   });
 };
-
-

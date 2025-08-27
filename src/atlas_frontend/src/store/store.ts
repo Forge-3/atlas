@@ -7,6 +7,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import appSliceReducer from "./slices/appSlice";
 import userSliceReducer from "./slices/userSlice";
 import spacesSliceReducer from "./slices/spacesSlice";
+import statsSliceReducer from "./slices/statsSlice";
 import { Principal } from "@dfinity/principal";
 
 const serifyPrincipal = {
@@ -36,6 +37,7 @@ export const store = configureStore({
     app: appSliceReducer,
     user: userSliceReducer,
     spaces: spacesSliceReducer,
+    stats: statsSliceReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(serifyMiddleware),
