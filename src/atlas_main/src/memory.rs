@@ -159,6 +159,20 @@ pub fn remove_space(index: u64) -> Result<(), Error> {
     })
 }
 
+pub fn space_principal_to_index(space_id: Principal) -> Option<u64> {
+    with_space_vec_iter(|spaces| {
+        spaces
+            .enumerate()
+            .find(|(_, opt_space)| {
+                opt_space
+                    .as_ref()
+                    .map(|space| space.principal() == space_id)
+                    .unwrap_or(false)
+            })
+            .map(|(i, _)| i as u64)
+    })
+}
+
 // Spaces WASM
 
 pub fn insert_new_version(version: u64, bytecode: Vec<u8>) {

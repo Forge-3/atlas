@@ -115,18 +115,7 @@ pub fn user_is_admin(user: Principal) -> bool {
 #[query]
 pub fn user_is_in_space(user: Principal, space_id: Principal) -> bool {
     let user = memory::get_user(&user).unwrap_or_default();
-    let space_index = memory::with_space_vec_iter(|spaces| {
-        spaces
-            .enumerate()
-            .find(|(_, opt_space)| {
-                opt_space
-                    .as_ref()
-                    .map(|space| space.principal() == space_id)
-                    .unwrap_or(false)
-            })
-            .map(|(i, _)| i as u64)
-    })
-    .expect("Space do not exist");
+    let space_index = memory::space_principal_to_index(space_id).expect("Space do not exist");
 
     user.belonging_to_spaces().contains(&space_index)
 }
@@ -152,4 +141,23 @@ pub fn get_user_hub(user: Principal) -> Option<Space> {
             })
         })
     })
+}
+
+#[query]
+pub fn get_space_users_count(space_id: Principal) -> Result<usize, Error> {
+    let space_index = memory::space_principal_to_index(space_id).ok_or(Error::SpaceNotExist)?;
+    let count = memory::with_users_iter(|users_iter| {
+        users_iter
+            .filter(|(_, user)| user.belonging_to_spaces.contains(&space_index))
+            .count()
+    });
+
+    Ok(count)
+}
+
+#[query]
+pub fn get_users_count() -> Result<usize, Error> {
+    let count = memory::with_users_iter(|users_iter| users_iter.count());
+
+    Ok(count)
 }
