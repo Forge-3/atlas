@@ -18,25 +18,11 @@ import type { ExternalLinks } from "./types.js";
 import { getUserGuilds } from "../../components/Integrations/discord/userGuilds.js";
 import { validateDiscordInvite as validateInvite } from "../../components/Integrations/discord/inviteLink.js";
 import type { DiscordGuild, DiscordInviteApiResponse } from "../../components/Integrations/discord/types.js";
-import { string } from "yup";
+import type { DiscordTaskContent, GenericTaskContent } from "../../utils/taskMapper.js";
 
-interface GenericSubtaskArg {
-  task_type: "generic";
-  title: string;
-  description: string;
-  allow_resubmit: boolean;
-}
 
-interface DiscordSubtaskArg {
-  task_type: "discord";
-  title: string;
-  description: string;
-  allow_resubmit: boolean;
-  guild_id: string;
-  invite_link: string;
-}
 
-type CreateSubtaskArg = GenericSubtaskArg | DiscordSubtaskArg;
+type CreateSubtaskArg = GenericTaskContent | DiscordTaskContent;
 
 interface GetAtlasSpaceArgs {
   unAuthAtlasSpace: ActorSubclass<_SERVICE>;

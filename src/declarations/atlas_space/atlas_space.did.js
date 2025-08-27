@@ -83,6 +83,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const Submission = IDL.Variant({
     'Text' : IDL.Record({ 'content' : IDL.Text }),
+    'Discord' : IDL.Record({ 'username' : IDL.Text, 'user_id' : IDL.Nat64 }),
   });
   const SubmissionData = IDL.Record({
     'state' : SubmissionState,

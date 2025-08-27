@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { getDiscordGuilds, validateDiscordInvite } from "../canisters/atlasSpace/api";
 import type { DiscordGuild as DiscordGuildType } from "../components/Integrations/discord/types";
 import { useDiscordAuth } from "./useDiscordAuth";
+import { validateDiscordInviteLink } from "../utils/discord";
 
 export type ValidationStatus = "idle" | "validating" | "valid" | "invalid";
 
@@ -70,48 +71,17 @@ export const useDiscordAdmin = (
     const validate = async () => {
       setValidationState({ status: "validating" });
 
-      try {
-        const inviteCodeMatch = inviteLink.match(
-          /(?:https?:\/\/)?(?:discord\.(?:gg|com\/invite)\/)?([a-zA-Z0-9-]+)/
-        );
-        const inviteCode = inviteCodeMatch ? inviteCodeMatch[1] : null;
+      const result = await validateDiscordInviteLink(
+        inviteLink,
+        guildId,
+        validateDiscordInvite
+      );
 
-        if (!inviteCode) {
-          throw new Error("Invalid invite link.");
-        }
-
-        const validationPromise = validateDiscordInvite(inviteCode, guildId);
-
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(
-            () => reject(new Error("Validation timed out.")),
-            10000
-          )
-        );
-
-        const result = await Promise.race([validationPromise, timeoutPromise]);
-
-        if (result && result.expires_at && result.expires_at.length > 0) {
-          setValidationState({
-            status: "valid",
-            expiresAt: result.expires_at,
-          });
-        } else {
-          setValidationState({ status: "valid" });
-        }
-      } catch (err) {
-        console.error("Validation error:", err);
-        let message = "An unknown error occurred during validation.";
-        if (err instanceof Error) {
-          message = err.message || "Invalid invite link or guild ID.";
-        } else if (typeof err === "string") {
-          message = err;
-        }
-        setValidationState({
-          status: "invalid",
-          error: message,
-        });
-      }
+      setValidationState({
+        status: result.status,
+        expiresAt: result.expiresAt,
+        error: result.error,
+      });
     };
 
     const timeoutId = setTimeout(validate, 500);

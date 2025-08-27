@@ -196,39 +196,54 @@ pub enum TaskType {
 impl TaskType {
     pub fn submit(&mut self, user: Principal, submission: Submission) -> Result<(), Error> {
         let allow_resubmit = self.get_allow_resubmit();
+
         match self {
-            TaskType::GenericTask {
-                task_content: _,
-                submission: submissions_map,
-            }
-            | TaskType::DiscordTask {
-                task_content: _,
-                submission: submissions_map,
-            } => {
-                if let Some(existing_submission) = submissions_map.get(&user) {
-                    if existing_submission.get_state() == &SubmissionState::Rejected
-                        && allow_resubmit
-                    {
-                        submissions_map.remove(&user);
-                    } else {
-                        return Err(Error::UserAlreadySubmitted);
+            TaskType::GenericTask { .. } => {
+                if let Submission::Text { content } = &submission {
+                    if content.trim().is_empty() {
+                        return Err(Error::InvalidTaskContent(
+                            "Submission cannot be empty".into(),
+                        ));
                     }
-                }
-                if !submission.is_text() {
+                } else {
                     return Err(Error::IncorrectSubmission("Text".to_string()));
                 }
-                match &submission {
-                    Submission::Text { content } => content.trim().len(),
-                };
+            }
+            TaskType::DiscordTask { .. } => {
+                if let Submission::Discord { username, user_id } = &submission {
+                    if username.trim().is_empty() || *user_id == 0 {
+                        return Err(Error::InvalidTaskContent(
+                            "Submission cannot be empty".into(),
+                        ));
+                    }
+                } else {
+                    return Err(Error::IncorrectSubmission("Discord".to_string()));
+                }
+            }
+        };
 
-                submissions_map.insert(
-                    user,
-                    SubmissionData::new(submission, SubmissionState::default()),
-                );
-                Ok(())
+        let submissions_map = match self {
+            TaskType::GenericTask { submission, .. } | TaskType::DiscordTask { submission, .. } => {
+                submission
+            }
+        };
+
+        if let Some(existing_submission) = submissions_map.get(&user) {
+            if existing_submission.get_state() == &SubmissionState::Rejected && allow_resubmit {
+                submissions_map.remove(&user);
+            } else {
+                return Err(Error::UserAlreadySubmitted);
             }
         }
+
+        submissions_map.insert(
+            user,
+            SubmissionData::new(submission, SubmissionState::default()),
+        );
+
+        Ok(())
     }
+
     pub fn accept(&mut self, user: Principal) -> Result<(), Error> {
         match self {
             TaskType::GenericTask {

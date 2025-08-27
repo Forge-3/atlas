@@ -77,7 +77,10 @@ type State = record {
   tasks_count : nat64;
   space_description : text;
 };
-type Submission = variant { Text : record { content : text } };
+type Submission = variant {
+  Text : record { content : text };
+  Discord : record { username : text; user_id : nat64 };
+};
 type SubmissionData = record {
   state : SubmissionState;
   rejection_reason : opt text;

@@ -83,7 +83,8 @@ export interface State {
   'tasks_count' : bigint,
   'space_description' : string,
 }
-export type Submission = { 'Text' : { 'content' : string } };
+export type Submission = { 'Text' : { 'content' : string } } |
+  { 'Discord' : { 'username' : string, 'user_id' : bigint } };
 export interface SubmissionData {
   'state' : SubmissionState,
   'rejection_reason' : [] | [string],

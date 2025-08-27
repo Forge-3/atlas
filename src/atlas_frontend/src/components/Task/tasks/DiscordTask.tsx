@@ -53,13 +53,12 @@ const DiscordTask = ({
     const isMember = await checkGuildMembership(requiredGuildId);
 
     if (isMember && authAtlasSpace) {
-      const taskSubmission = `User: ${discordUser?.username} UserID: ${discordUser?.id}`;
       await runWithLoading(async () => {
         const call = submitSubtaskSubmission({
           authAtlasSpace,
           taskId: BigInt(taskId),
           subtaskId: BigInt(subtaskId),
-          submission: { Text: { content: taskSubmission } },
+          submission: { Discord: { username: discordUser?.username ?? "", user_id: BigInt(discordUser?.id ?? "0") } },
         });
 
         await toast.promise(call, {

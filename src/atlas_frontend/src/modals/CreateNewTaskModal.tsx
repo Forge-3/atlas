@@ -31,11 +31,9 @@ import {
 import { deserialize, type RootState } from "../store/store";
 import { getErrorWithInfoToast } from "../utils/errors";
 import DiscordTask from "./tasks/DiscordTask";
+import { mapTasks, TaskType } from "../utils/taskMapper";
 
-export enum TaskType {
-  Generic = "generic",
-  Discord = "discord",
-}
+
 
 interface CreateNewTaskFormInput {
   numberOfUses: number;
@@ -210,27 +208,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
       return;
     }
 
-    const taskContent = tasks
-    ?.map((task) => {
-        if (task.taskType === "generic") {
-          return {
-            task_type: "generic" as const,
-            title: task.title,
-            description: task.description,
-            allow_resubmit: task.allowresubmit,
-          };
-        } else if (task.taskType === "discord") {
-          return {
-            task_type: "discord" as const,
-            title: task.title,
-            description: task.description,
-            invite_link: task.inviteLink!,
-            guild_id: task.guildId!,
-            allow_resubmit: task.allowresubmit,
-          }
-        }
-      })
-      .filter((item) => item !== undefined);
+    const taskContent = mapTasks(tasks ?? []);
 
     if (!taskContent || taskContent.length === 0) {
       toast.error("Invalid subtasks: the minimum number of subtasks is one.");

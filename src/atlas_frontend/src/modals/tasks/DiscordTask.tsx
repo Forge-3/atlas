@@ -159,9 +159,6 @@ const DiscordTask = <TFormValues extends FieldValues>({
     `tasks.${index}.inviteLink` as Path<TFormValues>
   );
 
-  console.log('expiresAt:', validationState.expiresAt);
-
-
   return (
     <div className="flex flex-col ml-4 mt-2">
       <p className="text-gray-600">Title:</p>

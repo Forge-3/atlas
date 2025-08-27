@@ -72,9 +72,6 @@ const GenericTask = ({
   const handleSubmitResponse: SubmitHandler<GenericTaskFormInput> = async ({
     taskSubmission,
   }) => {
-    console.log("onSubmit triggered!");
-    console.log("authAtlasSpace:", authAtlasSpace);
-    console.log("unAuthAtlasSpace:", unAuthAtlasSpace)
     if (!authAtlasSpace || !unAuthAtlasSpace) return;
     
     await runWithLoading(async () => {

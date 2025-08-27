@@ -6,6 +6,7 @@ import { DECIMALS } from "../../../canisters/ckUsdcLedger/constans.ts";
 import type { Principal } from "@dfinity/principal";
 import { getTaskPath } from "../../../router/paths.ts";
 import type { Task } from "../../../../../declarations/atlas_space/atlas_space.did";
+import { BlockchainTask } from "../../../utils/tasks.ts";
 
 interface TaskCardProps {
   type: "ongoing" | "starting" | "expired";
@@ -15,27 +16,13 @@ interface TaskCardProps {
   spaceId: Principal
 }
 
-const getAcceptedSubmissions = (task: Task) => {
-  const last = task.tasks.at(-1);
-  if (!last) {
-    return 0;
-  }
-  const submissions =
-    "GenericTask" in last
-      ? last.GenericTask.submission
-      : "DiscordTask" in last
-      ? last.DiscordTask.submission
-      : [];
-  return submissions.filter(([, submission]) => "Accepted" in submission.state)
-  .length;
-};
-
 const TaskCard = ({ startingIn, task, id, type, spaceId }: TaskCardProps) => {
   const navigate = useNavigate();
 
   const reward = formatUnits(task.token_reward.CkUsdc.amount, DECIMALS);
 
-  const acceptedCount = getAcceptedSubmissions(task);
+  const taskWrapper = new BlockchainTask(task);
+  const acceptedCount = taskWrapper.getAcceptedSubmissions();
 
   return (
     <div className="w-[20rem]">

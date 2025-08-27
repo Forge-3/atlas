@@ -88,7 +88,6 @@ const Submissions = () => {
   ) {
     return <></>;
   }
-  console.log(usersSubmissions.userSubmissionsData)
   return (
     <div className="container mx-auto my-4">
       <div className="w-full px-3">
@@ -261,8 +260,8 @@ const Summation = ({
               if (task) {
                 return (
                   <TaskSummation
-                    key={key}
                     {...commonProps}
+                    key={key}
                     task={task}
                   />
                 );
