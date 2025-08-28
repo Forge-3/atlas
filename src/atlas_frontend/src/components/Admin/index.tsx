@@ -223,7 +223,7 @@ const Admin = () => {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
                           dataKey="name"
-                          tick={{ fill: "#fff", fontSize: 12 }}
+                          tick={{ fill: "#fff", fontSize: 0 }}
                           label={{
                             value: "Users per space",
                             fill: "#fff",
@@ -234,9 +234,17 @@ const Admin = () => {
                         />
                         <YAxis tick={{ fill: "#fff", fontSize: 14 }} />
                         <Tooltip
-                          formatter={(value) => [
-                            `Users count: ${value}`,
-                          ]}
+                          formatter={(value, name, { payload }) => {
+                            return [
+                              <p
+                                className="font-montserrat font-medium"
+                                key="0"
+                              >
+                                <b>{payload.name}</b> <br /> Users count:{" "}
+                                <b>{value}</b>
+                              </p>,
+                            ];
+                          }}
                         />
                         <Bar dataKey="value" fill="#9173FF" />
                       </BarChart>
@@ -277,61 +285,65 @@ const Admin = () => {
               </b>
             </p>
           </div>
-          <table className="table-auto mt-6 w-full text-white text-center rtl:text-right border-separate border-spacing-x-2 font-montserrat">
-            <thead>
-              <tr>
-                <th scope="col" className="px-4 py-3">
-                  Principal
-                </th>
+          <div className="overflow-x-auto">
+            <table className="table-auto mt-6 w-full text-white text-center rtl:text-right border-separate border-spacing-x-2 font-montserrat">
+              <thead>
+                <tr>
+                  <th scope="col" className="px-4 py-3">
+                    Principal
+                  </th>
 
-                <th scope="col" className="px-4 py-3">
-                  Space name
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  Space version
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  Upgrade
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(spaces ?? {}).map(
-                ([spacePrincipal, spaceData]) => (
-                  <tr key={spacePrincipal}>
-                    <td
-                      className="flex items-center justify-center gap-2"
-                      onClick={() => copyAccount(spacePrincipal)}
-                    >
-                      {shortPrincipal(spacePrincipal)} <FiCopy />
-                    </td>
-                    <td>
-                      {spaceData?.state ? spaceData.state.space_name : "N/A"}
-                    </td>
-                    <td>
-                      {spaceData?.state
-                        ? spaceData.state.version.toString()
-                        : "N/A"}
-                    </td>
-                    <td className="flex items-center justify-center">
-                      {(spaceData?.state?.version ?? 0n) <
-                      (appConfig?.current_space_version ?? 0n) ? (
-                        <Button
-                          onClick={() =>
-                            upgradeSpecificSpace(Principal.from(spacePrincipal))
-                          }
-                        >
-                          Upgrade
-                        </Button>
-                      ) : (
-                        "Up to date"
-                      )}
-                    </td>
-                  </tr>
-                )
-              )}
-            </tbody>
-          </table>
+                  <th scope="col" className="px-4 py-3">
+                    Space name
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Space version
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    Upgrade
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(spaces ?? {}).map(
+                  ([spacePrincipal, spaceData]) => (
+                    <tr key={spacePrincipal}>
+                      <td
+                        className="flex items-center justify-center gap-2 text-nowrap"
+                        onClick={() => copyAccount(spacePrincipal)}
+                      >
+                        {shortPrincipal(spacePrincipal)} <FiCopy />
+                      </td>
+                      <td>
+                        {spaceData?.state ? spaceData.state.space_name : "N/A"}
+                      </td>
+                      <td>
+                        {spaceData?.state
+                          ? spaceData.state.version.toString()
+                          : "N/A"}
+                      </td>
+                      <td className="flex items-center justify-center">
+                        {(spaceData?.state?.version ?? 0n) <
+                        (appConfig?.current_space_version ?? 0n) ? (
+                          <Button
+                            onClick={() =>
+                              upgradeSpecificSpace(
+                                Principal.from(spacePrincipal)
+                              )
+                            }
+                          >
+                            Upgrade
+                          </Button>
+                        ) : (
+                          <span className="font-medium">Up to date</span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
         </GradientBox>
       </div>
     </div>
