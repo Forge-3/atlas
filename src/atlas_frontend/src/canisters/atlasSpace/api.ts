@@ -49,24 +49,26 @@ export const getAtlasSpace = async ({
   }
   const externalLinksObj = Object.fromEntries(state.external_links);
 
-  dispatch(
-    setSpace({
-      spaceId,
-      state: {
-        ...state,
-        version,
-        space_symbol: state.space_symbol.pop() ?? null,
-        space_background: state.space_background.pop() ?? null,
-        space_logo: state.space_logo.pop() ?? null,
-        external_links: {
-          x: externalLinksObj?.x ?? null,
-          telegram: externalLinksObj?.telegram ?? null,
-          discord: externalLinksObj?.discord ?? null,
-          linkedIn: externalLinksObj?.linkedIn ?? null,
-        },
+  const spaceData = {
+    spaceId,
+    state: {
+      ...state,
+      version,
+      space_symbol: state.space_symbol.pop() ?? null,
+      space_background: state.space_background.pop() ?? null,
+      space_logo: state.space_logo.pop() ?? null,
+      external_links: {
+        x: externalLinksObj?.x ?? null,
+        telegram: externalLinksObj?.telegram ?? null,
+        discord: externalLinksObj?.discord ?? null,
+        linkedIn: externalLinksObj?.linkedIn ?? null,
       },
-    })
-  );
+    },
+  };
+
+  dispatch(setSpace(spaceData));
+
+  return spaceData;
 };
 
 interface CreateNewSpaceTaskArgs {

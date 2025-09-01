@@ -9,11 +9,22 @@ import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import { setUserBlockchainData } from "../../store/slices/userSlice.js";
 import { unwrapCall } from "../delegatedCall.js";
-import { setConfig } from "../../store/slices/appSlice.js";
+import { setConfig, setLastFetchTime } from "../../store/slices/appSlice.js";
 import { setSpaces } from "../../store/slices/spacesSlice.js";
 import type { ExternalLinks } from "../atlasSpace/types.js";
 import { setSpaceUsersCount, setUsersCount } from "../../store/slices/statsSlice.js";
 
+const FETCH_INTERVAL_MINUTES = parseInt(process.env.FETCH_INTERVAL_MINUTES!)
+
+const shouldFetchSpaces = (lastFetchTime: string | null): boolean => {
+  if (!lastFetchTime) return true;
+  const lastFetch = new Date(lastFetchTime);
+  const now = new Date();
+  const diffMinutes = (now.getTime() - lastFetch.getTime()) / (1000 * 60);
+  return diffMinutes >= FETCH_INTERVAL_MINUTES;
+};
+
+export { shouldFetchSpaces };
 interface CreateNewSpaceArgs {
   authAtlasMain: ActorSubclass<_SERVICE_MAIN>;
   name: string;
@@ -85,6 +96,9 @@ export const getAllSpaces = async ({
   unAuthAtlasMain,
   dispatch,
 }: GetAtlasData) => {
+  const now = new Date().toISOString();
+  dispatch(setLastFetchTime(now));
+
   let spacesCount = 0n;
   let start = 0n;
   const count = 200n;
