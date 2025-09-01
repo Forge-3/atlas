@@ -13,12 +13,14 @@ import { setConfig, setLastFetchTime } from "../../store/slices/appSlice.js";
 import { setSpaces } from "../../store/slices/spacesSlice.js";
 import type { ExternalLinks } from "../atlasSpace/types.js";
 
+const FETCH_INTERVAL_MINUTES = parseInt(process.env.FETCH_INTERVAL_MINUTES!)
+
 const shouldFetchSpaces = (lastFetchTime: string | null): boolean => {
   if (!lastFetchTime) return true;
   const lastFetch = new Date(lastFetchTime);
   const now = new Date();
   const diffMinutes = (now.getTime() - lastFetch.getTime()) / (1000 * 60);
-  return diffMinutes >= 5;
+  return diffMinutes >= FETCH_INTERVAL_MINUTES;
 };
 
 export { shouldFetchSpaces };

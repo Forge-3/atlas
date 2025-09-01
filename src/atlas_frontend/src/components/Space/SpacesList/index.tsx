@@ -1,139 +1,124 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   getUnAuthAtlasSpaceActor,
   useUnAuthAgent,
   useUnAuthAtlasMainActor,
 } from "../../../hooks/identityKit";
-import {
-  getAllSpaces,
-  shouldFetchSpaces,
-} from "../../../canisters/atlasMain/api";
-import {
-  customSerify,
-  deserialize,
-  type RootState,
-} from "../../../store/store";
+import { getAllSpaces } from "../../../canisters/atlasMain/api";
+import { deserialize, type AppDispatch, type RootState } from "../../../store/store";
 import { Principal } from "@dfinity/principal";
 import { getAtlasSpace } from "../../../canisters/atlasSpace/api";
 import SpaceItem from "./SpaceItem";
 import type { Spaces } from "../../../store/slices/spacesSlice";
 import LocalBlurOverlay from "../../Shared/LocalBlurOverlay";
-import { serify } from "@karmaniverous/serify-deserify";
-import { setSpaces } from "../../../store/slices/spacesSlice";
-import type { StorableState } from "../../../canisters/atlasSpace/types";
+import {
+  loadSpacesFromLocalStorage,
+  saveSpacesToLocalStorage,
+} from "../../../store/slices/spacesSlice";
 
-const syncSpacesWithLocalStorage = (reduxSpaces: Spaces) => {
+const withLoading = async (fn: () => Promise<void>, set: (b: boolean) => void) => {
+  set(true);
   try {
-    const savedData = localStorage.getItem("atlasSpaces");
-    const localSpaces = savedData ? JSON.parse(savedData) : {};
-    const reduxKeys = Object.keys(reduxSpaces || {});
-    const localKeys = Object.keys(localSpaces || {});
-
-    if (reduxKeys.length !== localKeys.length) {
-      const serializedData = JSON.stringify(
-        serify(reduxSpaces, customSerify)
-      );
-      localStorage.setItem("atlasSpaces", serializedData);
-    }
-  } catch (err) {
-    console.error("Failed to sync Redux spaces with localStorage:", err);
+    await fn();
+  } finally {
+    set(false);
   }
 };
 
 const SpacesList = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const unAuthAtlasMain = useUnAuthAtlasMainActor();
+  const agent = useUnAuthAgent();
+
   const spaces = deserialize<Spaces>(
     useSelector((state: RootState) => state.spaces.spaces)
   );
-  const lastFetchTime = useSelector((state: RootState) => state.app.lastFetchTime);
 
-  const [, setFetchingInProgress] = useState(true);
-  const agent = useUnAuthAgent();
+  const actorsReady = Boolean(unAuthAtlasMain && agent);
+  const hasData = Object.keys(spaces ?? {}).length > 0;
+
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    if (hasData) return false;
+    try {
+      return localStorage.getItem("atlasSpaces") == null;
+    } catch {
+      return true;
+    }
+  });
+
+  const bootedRef = useRef(false);
+  const fetchedOnceRef = useRef(false);
+
+  const fetchFromApi = async () => {
+    if (!actorsReady) return;
+    try {
+      const spacesIDs = await getAllSpaces({ dispatch, unAuthAtlasMain: unAuthAtlasMain! });
+      const ids = Object.keys(spacesIDs);
+
+      await Promise.all(
+        ids.map(async (spaceId) => {
+          const principal = Principal.from(spaceId);
+          const actor = getUnAuthAtlasSpaceActor(agent!, principal);
+          if (!actor) return;
+          await getAtlasSpace({ spaceId, unAuthAtlasSpace: actor, dispatch });
+        })
+      );
+    } catch(error){
+      console.error("Failed to load spaces data from localStorage:", error);    }
+  };
 
   useEffect(() => {
-    const loadAndFetchSpaces = async () => {
-      if (spaces && Object.keys(spaces).length > 1) {
-        setFetchingInProgress(false);
-        return;
-      }
+    (async () => {
+      if (!bootedRef.current) {
+        bootedRef.current = true;
 
-      setFetchingInProgress(true);
-      try {
-        const savedData = localStorage.getItem("atlasSpaces");
-        if (savedData) {
-          const loadedSpaces = JSON.parse(savedData);
-          if (loadedSpaces && Object.keys(loadedSpaces).length > 0) {
-            dispatch(setSpaces(loadedSpaces));
-          }
-        }
-      } catch (error) {
-        console.error("Failed to load spaces data from localStorage:", error);
-      }
-      if (unAuthAtlasMain && agent && shouldFetchSpaces(lastFetchTime)) {
-        const spacesIDs = await getAllSpaces({
-          dispatch,
-          unAuthAtlasMain,
-        });
-        const updatedSpacesData: {
-          [key: string]: { state: StorableState | null; tasks: null };
-        } = {};
-        const spaceIds = Object.keys(spacesIDs);
-
-        for (const spaceId of spaceIds) {
-          const spacePrincipal = Principal.from(spaceId);
-          const unAuthAtlasSpace = getUnAuthAtlasSpaceActor(
-            agent,
-            spacePrincipal
-          );
-          if (!unAuthAtlasSpace) continue;
-
-          const spaceData = await getAtlasSpace({
-            spaceId,
-            unAuthAtlasSpace,
-            dispatch,
-          });
-
-          if (spaceData) {
-            updatedSpacesData[spaceId] = {
-              state: spaceData.state,
-              tasks: null,
-            };
-          }
+        let ls = { hasEntry: false, hasData: false };
+        if (!hasData) {
+          ls = await dispatch(loadSpacesFromLocalStorage());
         }
 
-        if (Object.keys(updatedSpacesData).length > 0) {
-          dispatch(setSpaces(updatedSpacesData));
+        const showNow  = hasData || ls.hasData || (ls.hasEntry && !ls.hasData);
+        const fetchNow = !showNow && actorsReady;
+
+        setIsLoading(!showNow);
+
+        if (fetchNow) {
+          fetchedOnceRef.current = true;
+          await withLoading(fetchFromApi, setIsLoading);
+          return;
+        }
+      }
+
+      if (actorsReady && !fetchedOnceRef.current) {
+        fetchedOnceRef.current = true;
+
+        const hasLS = (() => {
           try {
-            const serializedData = JSON.stringify(
-              serify(updatedSpacesData, customSerify)
-            );
-            localStorage.setItem("atlasSpaces", serializedData);
-          } catch (error) {
-            console.error("Failed to save spaces data to localStorage:", error);
+            return localStorage.getItem("atlasSpaces") !== null;
+          } catch {
+            return false;
           }
-        }
+        })();
+
+        const block = !hasData && !hasLS;
+        if (block) await withLoading(fetchFromApi, setIsLoading);
+        else await fetchFromApi();
       }
-      setFetchingInProgress(false);
-    };
+    })();
+  }, [actorsReady]);
 
-    loadAndFetchSpaces();
+  useEffect(() => {
+    dispatch(saveSpacesToLocalStorage());
+  }, [spaces, dispatch]);
 
-    if (spaces && Object.keys(spaces).length > 0) {
-        syncSpacesWithLocalStorage(spaces);
-    }
-  }, [dispatch, unAuthAtlasMain, agent, lastFetchTime]);
+  if (isLoading) return <LocalBlurOverlay isLoading={true} />;
 
-  if (!spaces) {
-    return <LocalBlurOverlay isLoading={true} />;
-  }
-
-  const spacesEntries = Object.entries(spaces);
-  if (spacesEntries.length > 0) {
+  const entries = Object.entries(spaces ?? {});
+  if (entries.length > 0) {
     return (
       <div className="grid grid-cols-3 gap-2 container mx-auto my-4">
-        {spacesEntries.map(
+        {entries.map(
           ([key, value]) =>
             value?.state && (
               <SpaceItem
@@ -148,15 +133,15 @@ const SpacesList = () => {
         )}
       </div>
     );
-  } else {
-    return (
-      <div className="flex items-center justify-center">
-        <h1 className="text-white font-montserrat font-medium text-2xl mt-16">
-          No spaces found
-        </h1>
-      </div>
-    );
   }
+
+  return (
+    <div className="flex items-center justify-center">
+      <h1 className="text-white font-montserrat font-medium text-2xl mt-16">
+        No spaces found
+      </h1>
+    </div>
+  );
 };
 
 export default SpacesList;
