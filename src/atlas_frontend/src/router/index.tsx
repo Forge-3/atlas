@@ -10,6 +10,7 @@ import {
   ADMIN_PATH,
   DISCORD_CALLBACK_PATH,
   HELP_PATH,
+  REFERRALS_PATH,
   SPACE_BUILDER_PATH,
   SPACE_EDIT_PATH,
   SPACE_PATH,
@@ -22,7 +23,8 @@ import {
 import Wallet from "../components/Wallet/index.tsx";
 import Help from "../components/Help/index.tsx";
 import CreateNewTaskModal from "../modals/CreateNewTaskModal.tsx";
-import Admin from "../components/Admin/index.tsx";
+import Admin from "../components/Admin/index.tsx/index.tsx";
+import Referrals from "../components/Referrals/index.tsx";
 
 const Router = () => {
   return (
@@ -39,6 +41,7 @@ const Router = () => {
       <Route path={ADMIN_PATH} element={<Admin />} />
       <Route path={CREATE_TASK_PATH} element={<CreateNewTaskModal />} />
       <Route path={EDIT_TASK_PATH} element={<CreateNewTaskModal />}/>
+      <Route path={REFERRALS_PATH} element={<Referrals />} />
     </Routes>
   );
 };

@@ -8,10 +8,12 @@ type AtlasArgs = variant {
 type CandidUser = record {
   integrations : Integrations;
   rank : Rank;
+  deci_xp_points : nat64;
   in_hub : opt Space;
   space_creation_in_progress : bool;
   belonging_to_spaces : vec Space;
   owned_spaces : vec Space;
+  referral_rewards : vec ReferralReward;
 };
 type CkUsdcLedger = record { fee : opt nat; "principal" : principal };
 type CkUsdcLedger_1 = record { fee : opt nat; "principal" : principal };
@@ -47,16 +49,24 @@ type Error = variant {
   FailedToParse : text;
   NotEnoughCycles : record { owned : nat; expected : nat };
   AnonymousCaller;
+  NotASpace;
 };
 type GetSpacesArgs = record { count : nat64; start : nat64 };
 type GetSpacesRes = record { spaces : vec Space; spaces_count : nat64 };
 type GetUserBy = variant { Principal : principal };
 type Integrations = record { discord_id : opt text };
 type Rank = variant { SpaceLead; User; SuperAdmin; Admin };
-type Result = variant { Ok : Space; Err : Error };
-type Result_1 = variant { Ok; Err : Error };
+type ReferralReward = record {
+  task_id : nat64;
+  invitee : principal;
+  space_id : nat64;
+  points : nat64;
+};
+type Result = variant { Ok; Err : Error };
+type Result_1 = variant { Ok : Space; Err : Error };
 type Result_2 = variant { Ok : nat64; Err : Error };
 type Result_3 = variant { Ok : GetSpacesRes; Err : Error };
+type Result_4 = variant { Ok : nat16; Err : Error };
 type Space = record { id : principal; space_type : SpaceType };
 type SpaceArgs = variant {
   UpgradeArg : record { version : nat64 };
@@ -81,6 +91,7 @@ type UpdateConfig = record {
 };
 type WalletReceiveResult = record { accepted : nat64 };
 service : (AtlasArgs) -> {
+  add_task_reward_xp : (principal, nat64) -> (Result);
   app_config : () -> (Config) query;
   create_new_space : (
       text,
@@ -90,8 +101,8 @@ service : (AtlasArgs) -> {
       opt text,
       SpaceType,
       vec record { text; text },
-    ) -> (Result);
-  delete_space : (principal) -> (Result_1);
+    ) -> (Result_1);
+  delete_space : (principal) -> (Result);
   get_bytecode_hash_by_version : (nat64) -> (opt text) query;
   get_current_space_bytecode_version : () -> (nat64) query;
   get_space_bytecode_by_version : (nat64) -> (opt blob) query;
@@ -99,13 +110,23 @@ service : (AtlasArgs) -> {
   get_spaces : (GetSpacesArgs) -> (Result_3) query;
   get_user : (GetUserBy) -> (CandidUser) query;
   get_user_hub : (principal) -> (opt Space) query;
+  get_user_remaining_referrals : (principal, principal, nat64) -> (
+      Result_4,
+    ) query;
   get_users_count : () -> (Result_2) query;
-  join_space : (principal) -> (Result_1);
+  join_space : (principal) -> (Result);
+  register_referral_reward : (
+      principal,
+      principal,
+      nat64,
+      principal,
+      nat64,
+    ) -> (Result);
   remove_space_bytecode : (nat64) -> (Result_1);
-  set_user_admin : (principal) -> (Result_1);
-  set_user_space_lead : (principal) -> (Result_1);
-  transfer_space : (TransferSpace) -> (Result_1);
-  upgrade_space : (principal) -> (Result_1);
+  set_user_admin : (principal) -> (Result);
+  set_user_space_lead : (principal) -> (Result);
+  transfer_space : (TransferSpace) -> (Result);
+  upgrade_space : (principal) -> (Result);
   user_is_admin : (principal) -> (bool) query;
   user_is_in_hub : (principal) -> (bool) query;
   user_is_in_space : (principal, principal) -> (bool) query;

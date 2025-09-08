@@ -1,9 +1,12 @@
 use crate::tasks::task::validate_task_time_edit;
 use crate::tasks::task::EditTaskArgs;
+use crate::guard::user_has_available_referrals;
 use crate::tasks::task::Task;
 use crate::tasks::task_types::TaskType;
 use crate::tasks::timer_logic;
 use crate::update_helpers::{accept_expired_subtask_submission, accept_open_subtask_submission};
+use crate::tasks::token_reward::TokenReward;
+use crate::tasks::token_reward::SINGLE_AFFILIATION_REWARD;
 use crate::CreateTaskArgs;
 use crate::Submission;
 use crate::TaskId;
@@ -15,9 +18,11 @@ use crate::{
     tasks::closed_task::ClosedTask,
 };
 use candid::Principal;
+use ic_cdk::call::Call;
 use ic_cdk::update;
 use ic_cdk_timers::TimerId;
 use ic_stable_structures::Storable;
+use num_traits::cast::ToPrimitive;
 use sha2::Digest;
 use std::collections::BTreeMap;
 
@@ -398,6 +403,19 @@ pub async fn clean_up_space_before_deletion() -> Result<(), String> {
             errors
         ));
     }
+
+    Ok(())
+}
+
+#[update]
+pub async fn register_task_referral(task_id: TaskId, inviter: Principal) -> Result<(), Error> {
+    let invitee: Principal = user_is_in_space().await?;
+    user_has_available_referrals(task_id.u64(), inviter).await?;
+    memory::mut_open_task(task_id, |maybe_task| {
+        let task = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
+        task.register_referral(inviter, invitee)?;
+        Ok(())
+    })??;
 
     Ok(())
 }

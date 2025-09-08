@@ -12,6 +12,7 @@ export const DISCORD_CALLBACK_PATH = "/auth/discord/callback";
 export const WALLET_PATH = "/wallet";
 export const HELP_PATH = "/help";
 export const ADMIN_PATH = "/admin";
+export const REFERRALS_PATH = "/referrals";
 
 export const getSpacePath = (principal: Principal) =>
   SPACE_PATH.replace(":spacePrincipal", principal.toText());

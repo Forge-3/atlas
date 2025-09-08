@@ -1,6 +1,7 @@
 use crate::errors::Error;
 use std::borrow::Cow;
 use std::collections::HashSet;
+use std::collections::BTreeMap;
 
 use crate::tasks::submission::{Submission, SubmissionState};
 use crate::tasks::task_types::*;
@@ -82,6 +83,10 @@ pub struct Task {
     pub(crate) end_time: u64, // in seconds
     #[n(8)]
     pub(crate) timer_id: Option<TimerKeyData>,
+    #[cbor(n(9), with = "shared::cbor::principal::b_tree_map")]
+    pub(crate) referrals: BTreeMap<Principal, ReferralEntry>, // <invitee → (inviter, reward_claimed: bool)>
+    #[n(10)]
+    pub(crate) affiliate_uses: u64,
 }
 
 impl Task {
@@ -95,6 +100,10 @@ impl Task {
             .token_reward
             .deposit_reward(creator, subaccount, create_task_args.number_of_uses)
             .await?;
+
+        let affiliate_uses = create_task_args
+            .token_reward
+            .get_affiliate_uses(create_task_args.number_of_uses);
 
         Ok(Self {
             creator,
@@ -110,6 +119,8 @@ impl Task {
             start_time: create_task_args.start_time,
             end_time: create_task_args.end_time,
             timer_id: Some(timer_id),
+            referrals: BTreeMap::new(),
+            affiliate_uses,
         })
     }
 
@@ -255,6 +266,69 @@ impl Task {
             let subaccount = sha2::Sha256::digest(task_id.u64().to_bytes()).into();
             self.claim_reward(*principal, subaccount).await?;
         }
+
+        Ok(())
+    }
+
+    pub fn register_referral(
+        &mut self,
+        inviter: Principal,
+        invitee: Principal,
+    ) -> Result<(), Error> {
+        if inviter == invitee {
+            return Err(Error::InvalidReferral(
+                "Inviter and invitee cannot be the same".into(),
+            ));
+        }
+
+        if self.referrals.contains_key(&invitee) {
+            return Err(Error::ReferralAlreadyExists);
+        }
+
+        self.referrals.insert(
+            invitee,
+            ReferralEntry {
+                inviter,
+                reward_claimed: false,
+            },
+        );
+
+        Ok(())
+    }
+
+    pub async fn claim_affiliate_reward(
+        &mut self,
+        user: Principal,
+        subaccount: [u8; 32],
+    ) -> Result<(), Error> {
+        let referral_entry = self
+            .referrals
+            .get(&user)
+            .ok_or(Error::InvalidReferral("User is not an invitee".into()))?;
+
+        if referral_entry.reward_claimed {
+            return Err(Error::UserAlreadyRewarded);
+        }
+
+        let claimed_count = self
+            .referrals
+            .values()
+            .filter(|entry| entry.reward_claimed)
+            .count() as u64;
+
+        if claimed_count >= self.affiliate_uses {
+            return Err(Error::UsageLimitExceeded);
+        }
+
+        let inviter = referral_entry.inviter;
+        self.token_reward
+            .withdraw_affiliate_reward(inviter, subaccount)
+            .await?;
+
+        self.referrals
+            .get_mut(&user)
+            .expect("User has to exist at this point")
+            .reward_claimed = true;
 
         Ok(())
     }

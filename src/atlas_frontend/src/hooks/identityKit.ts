@@ -1,13 +1,14 @@
 import { useAgent as useIdentityKitAgent } from "@nfid/identitykit/react";
 import { useQuery } from "@tanstack/react-query";
 import { ICP_HOST, IS_LOCAL } from "../utils/icp.ts";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { atlasMainActor } from "../canisters/atlasMain/actors.ts";
-import { HttpAgent } from "@dfinity/agent";
+import { HttpAgent, type ActorSubclass } from "@dfinity/agent";
 import { atlasSpaceActor } from "../canisters/atlasSpace/actors.ts";
 import type { Principal } from "@dfinity/principal";
 import { ckUsdcActor } from "../canisters/ckUsdcLedger/actors.ts";
 import { ckUsdcIndexActor } from "../canisters/ckUsdcIndex/actors.ts";
+import type { _SERVICE } from "../../../declarations/atlas_space/atlas_space.did";
 
 export const useAuthAgent = () => {
   const tempAgent = useIdentityKitAgent({
@@ -17,8 +18,10 @@ export const useAuthAgent = () => {
   const { data: agent } = useQuery(
     ["user", tempAgent],
     async () => {
-      await tempAgent?.fetchRootKey();
-      return tempAgent ?? null;
+      if (IS_LOCAL && tempAgent) {
+        await tempAgent.fetchRootKey();
+      }
+      return tempAgent;
     },
     {
       enabled: !!tempAgent && IS_LOCAL,
@@ -90,4 +93,33 @@ export const useUnAuthAtlasSpaceActor = (canisterId: Principal)  => {
 
 export const getUnAuthAtlasSpaceActor = (agent: HttpAgent, canisterId: Principal)  => {
   return atlasSpaceActor(agent, canisterId)
+};
+
+export const useAuthAtlasSpaceActorForceRootKey = (canisterId: Principal) => {
+  const tempAgent = useIdentityKitAgent({ host: ICP_HOST }) ?? null;
+  const [actor, setActor] = useState<ActorSubclass<_SERVICE> | null>(null);
+
+  useEffect(() => {
+    if (!tempAgent) return;
+
+    let cancelled = false;
+
+    const init = async () => {
+      if (IS_LOCAL) {
+        await tempAgent.fetchRootKey();
+      }
+
+      if (!cancelled) {
+        setActor(atlasSpaceActor(tempAgent, canisterId));
+      }
+    };
+
+    init();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tempAgent, canisterId]);
+
+  return actor;
 };

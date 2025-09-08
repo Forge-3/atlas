@@ -4,6 +4,7 @@ import type {
   Rank,
   CandidUser,
   Space,
+  ReferralReward,
 } from "../../../../declarations/atlas_main/atlas_main.did.js";
 import type { UserTransactions } from "../../canisters/ckUsdcIndex/types.ts";
 import type { Principal } from "@dfinity/principal";
@@ -15,6 +16,8 @@ export class BlockchainUser implements StorableUser {
   public belonging_to_spaces: Space[];
   public owned_spaces: Space[];
   public in_hub: Space | null;
+  public deci_xp_points: bigint;
+  public referral_rewards: ReferralReward[];
 
   constructor(public user: StorableUser) {
     this.integrations = user.integrations;
@@ -23,6 +26,8 @@ export class BlockchainUser implements StorableUser {
     this.belonging_to_spaces = user.belonging_to_spaces;
     this.owned_spaces = user.owned_spaces;
     this.in_hub = user.in_hub
+    this.deci_xp_points = user.deci_xp_points;
+    this.referral_rewards = user.referral_rewards;
   }
 
   belongingToAnySpace() {
@@ -69,6 +74,8 @@ export interface StorableUser extends Omit<CandidUser, "in_hub"> {
   'space_creation_in_progress' : boolean,
   'belonging_to_spaces' : Array<Space>,
   'owned_spaces' : Array<Space>,
+  'deci_xp_points': bigint;
+  'referral_rewards': ReferralReward[];
 }
 
 interface UserState {

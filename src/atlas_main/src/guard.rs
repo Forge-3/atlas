@@ -41,3 +41,17 @@ pub fn super_admin_guard() -> Result<Principal, Error> {
     }
     Ok(principal)
 }
+
+pub fn space_caller_guard() -> Result<Principal, Error> {
+    let principal = authenticated_guard()?;
+
+    let is_space = memory::with_some_space_vec_iter(|mut spaces| {
+        spaces.any(|space| space.principal() == principal)
+    });
+
+    if !is_space {
+        return Err(Error::NotASpace);
+    }
+
+    Ok(principal)
+}

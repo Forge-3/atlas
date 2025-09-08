@@ -73,7 +73,9 @@ export const getAtlasUser = async ({
       ...userData,
       in_hub: userData.in_hub.pop() ?? null,
       owned_spaces: Array.from(userData.owned_spaces),
-      belonging_to_spaces: Array.from(userData.owned_spaces),
+      belonging_to_spaces: Array.from(userData.belonging_to_spaces),
+      deci_xp_points: userData.deci_xp_points,
+      referral_rewards: Array.from(userData.referral_rewards),
     })
   );
 } finally {
@@ -259,3 +261,35 @@ export const getSpaceUsersCount = async ({
   });
   dispatch(setSpaceUsersCount({spaceId: spaceId.toString(), count}));
 };
+
+interface RegisterReferralRewardArgs {
+  authAtlasMain: ActorSubclass<_SERVICE_MAIN>;
+  user: Principal;
+  spacePrincipal: Principal;
+  taskId: bigint;
+  invitee: Principal;
+  amount: bigint;
+}
+
+export const registerReferralReward = async ({
+  authAtlasMain,
+  user,
+  spacePrincipal,
+  taskId,
+  invitee,
+  amount,
+}: RegisterReferralRewardArgs) => {
+  const call = authAtlasMain.register_referral_reward(
+    user,
+    spacePrincipal,
+    taskId,
+    invitee,
+    amount,
+  );
+
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to register referral reward",
+  });
+};
+

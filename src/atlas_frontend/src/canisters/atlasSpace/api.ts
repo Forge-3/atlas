@@ -436,3 +436,22 @@ export const deleteClosedTask = async ({
     errMsg: "Failed to delete closed task",
   });
 };
+
+interface RegisterReferralArgs {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  taskId: bigint;
+  inviter: Principal;
+}
+
+export const registerReferral = async ({
+  authAtlasSpace,
+  taskId,
+  inviter,
+}: RegisterReferralArgs) => {
+  const call = authAtlasSpace.register_task_referral(taskId, inviter);
+
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to join task with referral",
+  });
+};

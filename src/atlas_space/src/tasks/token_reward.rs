@@ -4,10 +4,15 @@ use serde::Deserialize;
 
 use crate::errors::Error;
 use crate::funds::{
+    calculate_affiliate_uses, 
     calculate_deposit_amount, deposit_ckusdc, get_account_balance, withdraw_ckusdc,
+,
 };
 use crate::memory;
 use crate::nat256::Nat256;
+
+pub const PERCENTAGE_FOR_AFFILIATION_REWARDS: u64 = 20; // 20%
+pub const SINGLE_AFFILIATION_REWARD: u64 = 2_000_000; // 2 ckUSDC
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, Deserialize, CandidType)]
 pub enum TokenReward {
@@ -42,7 +47,7 @@ impl TokenReward {
                 );
                 deposit_ckusdc(caller, subaccount, deposit_and_fee.clone()).await?;
                 ic_cdk::println!(
-                    "Transfered {deposit_and_fee} ckUSDC to subaccount: {}",
+                    "Transfered {deposit_and_fee} ckUSDC (including referral rewards) to subaccount: {}",
                     hex::encode(subaccount)
                 );
                 Ok(())
@@ -64,18 +69,46 @@ impl TokenReward {
         }
     }
 
+    pub async fn withdraw_affiliate_reward(
+        &self,
+        caller: Principal,
+        subaccount: [u8; 32],
+    ) -> Result<(), Error> {
+        match self {
+            TokenReward::CkUsdc { .. } => {
+                withdraw_ckusdc(caller, subaccount, Nat::from(SINGLE_AFFILIATION_REWARD)).await?;
+                ic_cdk::println!(
+                    "Affiliate reward of {} ckUSDC transferred to {}",
+                    SINGLE_AFFILIATION_REWARD,
+                    caller
+                );
+                Ok(())
+            }
+        }
+    }
+
     pub async fn withdraw_remains(
         &self,
         creator: Principal,
         subaccount: [u8; 32],
-        unused_count: u64,
+        unused_task_rewards: u64,
+        unused_affiliate_rewards: u64,
     ) -> Result<(), Error> {
         match self {
             TokenReward::CkUsdc { amount } => {
-                let refund_amount = amount.as_ref().clone() * Nat::from(unused_count);
+                let task_refund = amount.as_ref().clone() * Nat::from(unused_task_rewards);
+                let affiliate_refund =
+                    Nat::from(SINGLE_AFFILIATION_REWARD) * Nat::from(unused_affiliate_rewards);
+                let refund_amount = task_refund.clone() + affiliate_refund.clone();
+
+                if refund_amount == 0u64 {
+                    ic_cdk::println!("No unused rewards to refund for creator: {creator}");
+                    return Ok(());
+                }
+
                 withdraw_ckusdc(creator, subaccount, refund_amount.clone()).await?;
                 ic_cdk::println!(
-                    "Refunded {refund_amount} ckUSDC unused rewards to creator: {creator}"
+                    "Refunded {task_refund} ckUSDC from unused rewards and {affiliate_refund} from unused affiliate rewards to creator: {creator}"
                 );
                 Ok(())
             }
@@ -173,5 +206,13 @@ impl TokenReward {
         }
 
         Ok(())
+    }
+
+    pub fn get_affiliate_uses(&self, number_of_uses: u64) -> u64 {
+        match self {
+            TokenReward::CkUsdc { amount } => {
+                calculate_affiliate_uses(amount.as_ref().clone(), number_of_uses)
+            }
+        }
     }
 }
