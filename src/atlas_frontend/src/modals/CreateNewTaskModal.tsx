@@ -31,6 +31,15 @@ import {
 import { deserialize, type RootState } from "../store/store";
 import { getErrorWithInfoToast } from "../utils/errors";
 import { toLocalISOString } from "../utils/date";
+import type { AnswerFormat } from "../../../declarations/atlas_space/atlas_space.did";
+
+const getAnswerFormatKey = (format: AnswerFormat): string => Object.keys(format)[0];
+const answerFormatDescriptions: Record<string, string> = {
+  Small: "Up to 254 characters",
+  Paragraph: "Up to 600 characters",
+  Long: "Up to 2500 characters",
+  List: "Multiple items, each up to 254 characters",
+};
 
 type TaskType = "generic";
 const allowedTaskTypes = ["generic"] as const;
@@ -46,11 +55,22 @@ interface CreateNewTaskFormInput {
     title: string;
     description: string;
     allowresubmit: boolean;
+    answerFormat: keyof typeof answerFormatDescriptions;
   }[];
 }
+
 const maxSubtitleLength = 50;
 const maxTitleLength = 50;
 const maxDescriptionLength = 500;
+const answerFormats: AnswerFormat[] = [
+  { Small: null },
+  { Paragraph: null },
+  { Long: null },
+  { List: null },
+];
+const answerFormatKeys = Object.keys(answerFormatDescriptions) as Array<
+  keyof typeof answerFormatDescriptions
+>;
 
 const taskSchema = yup.object({
   taskType: yup.mixed<TaskType>().oneOf(allowedTaskTypes).required(),
@@ -68,6 +88,11 @@ const taskSchema = yup.object({
     .required()
     .label("Task description"),
   allowresubmit: yup.boolean().required(),
+  answerFormat: yup
+    .string()
+    .oneOf(answerFormatKeys as string[])
+    .required()
+    .label("Answer format"),
 });
 
 interface CreateNewTaskModalArgs {
@@ -150,6 +175,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
           title: "",
           description: "",
           allowresubmit: false,
+          answerFormat: "Small",
         },
       ],
       startTime: toLocalISOString(renderedAt).slice(0, 16),
@@ -220,6 +246,21 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
       return;
     }
 
+    const toAnswerFormat = (key: string): AnswerFormat => {
+      switch (key) {
+        case "Small":
+          return { Small: null };
+        case "Paragraph":
+          return { Paragraph: null };
+        case "Long":
+          return { Long: null };
+        case "List":
+          return { List: null };
+        default:
+          throw new Error(`Unknown AnswerFormat key: ${key}`);
+      }
+    };
+
     const taskContent = tasks
       ?.map((task) => {
         if (task.taskType === "generic") {
@@ -228,6 +269,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
             title: task.title,
             description: task.description,
             allow_resubmit: task.allowresubmit,
+            answer_format: toAnswerFormat(task.answerFormat),
           };
         }
       })
@@ -306,6 +348,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                   title: "",
                   description: "",
                   allowresubmit: false,
+                  answerFormat: "Small", 
                 })
               }
               className="flex gap-2"
@@ -397,7 +440,22 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                     >
                       <option value="generic">Generic text task</option>
                     </select>
-
+                    <div className="mt-4">
+                      <label className="text-gray-600 font-semibold">Answer format:</label>
+                      <select
+                        {...register(`tasks.${index}.answerFormat`)}
+                        className="border-2 p-2 rounded-xl w-full mt-1"
+                      >
+                        {answerFormats.map((format) => {
+                          const key = getAnswerFormatKey(format);
+                          return (
+                            <option key={key} value={key}>
+                              {key} – {answerFormatDescriptions[key]}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
                     {taskType === "generic" && (
                       <GenericTask
                         register={register}
@@ -414,6 +472,7 @@ const CreateNewTaskModal = ({ callback }: CreateNewTaskModalArgs) => {
                         {...register(`tasks.${index}.allowresubmit`)}
                         className="form-checkbox h-5 w-5 text-[#9173FF] rounded"
                       />
+
                       <label
                         htmlFor={`allowresubmit-${index}`}
                         className="text-gray-600 font-semibold"

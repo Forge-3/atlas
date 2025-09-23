@@ -58,8 +58,15 @@ export const idlFactory = ({ IDL }) => {
   const TokenReward = IDL.Variant({
     'CkUsdc' : IDL.Record({ 'amount' : IDL.Nat }),
   });
+  const AnswerFormat = IDL.Variant({
+    'Small' : IDL.Null,
+    'List' : IDL.Null,
+    'Long' : IDL.Null,
+    'Paragraph' : IDL.Null,
+  });
   const TaskContent = IDL.Variant({
     'TitleAndDescription' : IDL.Record({
+      'answer_format' : AnswerFormat,
       'task_description' : IDL.Text,
       'task_title' : IDL.Text,
       'allow_resubmit' : IDL.Bool,
@@ -89,6 +96,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const Submission = IDL.Variant({
     'Empty' : IDL.Null,
+    'List' : IDL.Record({ 'items' : IDL.Vec(IDL.Text) }),
     'Text' : IDL.Record({ 'content' : IDL.Text }),
   });
   const SubmissionData = IDL.Record({

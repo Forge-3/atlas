@@ -2,6 +2,10 @@ import type { Principal } from '@dfinity/principal';
 import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
+export type AnswerFormat = { 'Small' : null } |
+  { 'List' : null } |
+  { 'Long' : null } |
+  { 'Paragraph' : null };
 export interface CkUsdcLedger { 'fee' : [] | [bigint], 'principal' : Principal }
 export interface CkUsdcLedger_1 {
   'fee' : [] | [bigint],
@@ -112,6 +116,7 @@ export interface State {
   'space_description' : string,
 }
 export type Submission = { 'Empty' : null } |
+  { 'List' : { 'items' : Array<string> } } |
   { 'Text' : { 'content' : string } };
 export interface SubmissionData {
   'state' : SubmissionState,
@@ -134,6 +139,7 @@ export interface Task {
 }
 export type TaskContent = {
     'TitleAndDescription' : {
+      'answer_format' : AnswerFormat,
       'task_description' : string,
       'task_title' : string,
       'allow_resubmit' : boolean,

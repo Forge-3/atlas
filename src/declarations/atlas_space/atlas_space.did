@@ -1,3 +1,4 @@
+type AnswerFormat = variant { Small; List; Long; Paragraph };
 type CkUsdcLedger = record { fee : opt nat; "principal" : principal };
 type CkUsdcLedger_1 = record { fee : opt nat; "principal" : principal };
 type ClosedTask = record {
@@ -103,7 +104,11 @@ type State = record {
   tasks_count : nat64;
   space_description : text;
 };
-type Submission = variant { Empty; Text : record { content : text } };
+type Submission = variant {
+  Empty;
+  List : record { items : vec text };
+  Text : record { content : text };
+};
 type SubmissionData = record {
   state : SubmissionState;
   rejection_reason : opt text;
@@ -123,6 +128,7 @@ type Task = record {
 };
 type TaskContent = variant {
   TitleAndDescription : record {
+    answer_format : AnswerFormat;
     task_description : text;
     task_title : text;
     allow_resubmit : bool;
