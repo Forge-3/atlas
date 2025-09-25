@@ -9,10 +9,12 @@ import { createNewSpace, joinAtlasSpace, transferSpaceTo } from "./mainApi.ts";
 import { execSync } from "child_process";
 import { createSampleTasks, reviewSubtasks, submitSubtasks } from './tasks.ts';
 import { setUserSpaceAllowanceIfNeeded } from './ckUsdcApi.ts';
+import os from "os";
+import path from "path";
 
 const HOST = "http://127.0.0.1:4943";
-const DEFAULT_IDENTITY_PATH = "/home/odzioo/.config/dfx/identity/default/identity.pem";
-
+const HOME = os.homedir();
+const DEFAULT_IDENTITY_PATH = path.join(HOME, ".config", "dfx", "identity", "default", "identity.pem");
 
 function depositCycles(canister: string, amount: number) {
   try {
