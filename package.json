@@ -13,13 +13,15 @@
     "check_for_errors": "npm run check_for_errors --workspaces --if-present",
     "pre-commit": "npm run lint-staged && npm run check_for_errors",
     "lint-staged": "eslint ./src/**/*.tsx",
-    "prepare": "husky"
+    "prepare": "husky",
+    "setup": "ts-node --project dev-scripts/migrationSetup/tsconfig.setup.json dev-scripts/migrationSetup/setup.ts"
   },
   "type": "module",
   "workspaces": [
     "src/atlas_frontend"
   ],
   "devDependencies": {
+    "@dfinity/identity-secp256k1": "^2.4.0",
     "eslint": "^9.24.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-react": "^7.37.5",
