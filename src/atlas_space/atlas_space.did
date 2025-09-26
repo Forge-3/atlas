@@ -150,14 +150,16 @@ type WalletReceiveResult = record { accepted : nat64 };
 service : (SpaceArgs) -> {
   accept_subtask_submission : (principal, nat64, nat64) -> (Result);
   clean_up_space_before_deletion : () -> (Result_1);
+  close_task : (nat64) -> (Result);
   create_task : (CreateTaskArgs) -> (Result_2);
   delete_closed_task : (nat64) -> (Result);
   edit_space : (EditSpaceArgs) -> (Result);
   edit_task : (EditTaskArgs) -> (Result);
-  force_close_task : (nat64) -> (Result);
+  force_expire_task : (nat64) -> (Result);
   get_closed_tasks : (GetTasksArgs) -> (Result_3) query;
   get_config : () -> (Config) query;
   get_current_bytecode_version : () -> (nat64) query;
+  get_expired_tasks : (GetTasksArgs) -> (Result_4) query;
   get_open_tasks : (GetTasksArgs) -> (Result_4) query;
   get_space_info : () -> (SpaceInfo) query;
   get_state : () -> (State) query;

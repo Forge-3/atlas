@@ -147,6 +147,10 @@ impl Task {
         }
     }
 
+    pub fn is_fully_rewarded(&self) -> bool {
+        self.rewarded.len() as u64 == self.number_of_uses
+    }
+
     pub fn submit_subtask_submission(
         &mut self,
         user: Principal,

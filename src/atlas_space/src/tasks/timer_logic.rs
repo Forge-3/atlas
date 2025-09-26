@@ -19,7 +19,7 @@ pub async fn reinitialize_task_timers_after_upgrade() {
     });
 
     for (task_id, task) in tasks {
-        if let Ok(expired) = close_task_if_expired(task_id).await {
+        if let Ok(expired) = expire_task_if_expired(task_id).await {
             if expired {
                 continue;
             }
@@ -31,7 +31,7 @@ pub async fn reinitialize_task_timers_after_upgrade() {
             let id = task_id;
             move || {
                 ic_cdk::futures::spawn(async move {
-                    force_close_task(id).await.unwrap();
+                    force_expire_task(id).await.unwrap();
                 });
             }
         });
@@ -47,35 +47,32 @@ pub async fn reinitialize_task_timers_after_upgrade() {
     }
 }
 
-pub fn schedule_close_task_timer(task_id: TaskId, end_time_sec: u64) -> TimerId {
+pub fn schedule_expire_task_timer(task_id: TaskId, end_time_sec: u64) -> TimerId {
     let delay_sec = end_time_sec.saturating_sub(now_in_seconds());
 
     set_timer(Duration::from_secs(delay_sec), {
         let id = task_id;
         move || {
             ic_cdk::futures::spawn(async move {
-                force_close_task(id).await.unwrap();
+                force_expire_task(id).await.unwrap();
             });
         }
     })
 }
 
-pub async fn close_task_if_expired(task_id: TaskId) -> Result<bool, Error> {
+pub async fn expire_task_if_expired(task_id: TaskId) -> Result<bool, Error> {
     let task = memory::get_open_task(&task_id).ok_or(Error::TaskNotFound(task_id))?;
     let is_expired = task.is_expired();
     if is_expired {
-        force_close_task(task_id).await?;
+        force_expire_task(task_id).await?;
     }
 
     Ok(is_expired)
 }
 
-pub async fn force_close_task(task_id: TaskId) -> Result<(), Error> {
+pub async fn force_expire_task(task_id: TaskId) -> Result<(), Error> {
     let task = memory::get_open_task(&task_id).ok_or(Error::TaskNotFound(task_id))?;
     let timer_id = task.timer_id.clone();
-    let subaccount = sha2::Sha256::digest(task_id.u64().to_bytes()).into();
-    let mut closed_task: ClosedTask = task.into();
-    closed_task.claim_remains(subaccount).await?;
     if let Some(timer_key_data) = timer_id {
         ic_cdk_timers::clear_timer(
             TimerId::try_from(timer_key_data.clone()).expect("Invalid TimerId?!"),
@@ -83,6 +80,17 @@ pub async fn force_close_task(task_id: TaskId) -> Result<(), Error> {
     }
 
     memory::remove_open_task(&task_id).unwrap();
+    memory::insert_expired_task(task_id, task).unwrap();
+    Ok(())
+}
+
+pub async fn force_close_task(task_id: TaskId) -> Result<(), Error> {
+    let task = memory::get_expired_task(&task_id).ok_or(Error::TaskNotFound(task_id))?;
+    let mut closed_task: ClosedTask = task.into();
+    let subaccount = sha2::Sha256::digest(task_id.u64().to_bytes()).into();
+    closed_task.claim_remains(subaccount).await?;
+
+    memory::remove_expired_task(&task_id).unwrap();
     memory::insert_closed_task(task_id, closed_task).unwrap();
     Ok(())
 }

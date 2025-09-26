@@ -80,6 +80,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const Result = IDL.Variant({ 'Ok' : Space, 'Err' : Error });
   const Result_1 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });
+  const Result_2 = IDL.Variant({ 'Ok' : IDL.Nat64, 'Err' : Error });
   const GetSpacesArgs = IDL.Record({
     'count' : IDL.Nat64,
     'start' : IDL.Nat64,
@@ -88,7 +89,7 @@ export const idlFactory = ({ IDL }) => {
     'spaces' : IDL.Vec(Space),
     'spaces_count' : IDL.Nat64,
   });
-  const Result_2 = IDL.Variant({ 'Ok' : GetSpacesRes, 'Err' : Error });
+  const Result_3 = IDL.Variant({ 'Ok' : GetSpacesRes, 'Err' : Error });
   const GetUserBy = IDL.Variant({ 'Principal' : IDL.Principal });
   const Integrations = IDL.Record({ 'discord_id' : IDL.Opt(IDL.Text) });
   const CandidUser = IDL.Record({
@@ -126,9 +127,11 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(IDL.Vec(IDL.Nat8))],
         ['query'],
       ),
-    'get_spaces' : IDL.Func([GetSpacesArgs], [Result_2], ['query']),
+    'get_space_users_count' : IDL.Func([IDL.Principal], [Result_2], ['query']),
+    'get_spaces' : IDL.Func([GetSpacesArgs], [Result_3], ['query']),
     'get_user' : IDL.Func([GetUserBy], [CandidUser], ['query']),
     'get_user_hub' : IDL.Func([IDL.Principal], [IDL.Opt(Space)], ['query']),
+    'get_users_count' : IDL.Func([], [Result_2], ['query']),
     'join_space' : IDL.Func([IDL.Principal], [Result_1], []),
     'set_user_admin' : IDL.Func([IDL.Principal], [Result_1], []),
     'set_user_space_lead' : IDL.Func([IDL.Principal], [Result_1], []),

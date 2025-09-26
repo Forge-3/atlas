@@ -10,6 +10,7 @@ mod migration;
 mod nat256;
 mod state;
 mod tasks;
+mod update_helpers;
 
 use crate::config::Config;
 use crate::cycles::WalletReceiveResult;

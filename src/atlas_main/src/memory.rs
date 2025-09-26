@@ -110,7 +110,11 @@ pub fn get_space_vec_len() -> u64 {
     SPACES_VEC.with_borrow(|space| space.len())
 }
 
-pub fn with_space_vec_iter<F, R>(f: F) -> R
+pub fn get_existing_space_count() -> u64 {
+    SPACES_VEC.with_borrow(|spaces| spaces.iter().filter(|s| s.is_some()).count() as u64)
+}
+
+pub fn with_some_space_vec_iter<F, R>(f: F) -> R
 where
     F: for<'a> FnOnce(Box<dyn Iterator<Item = Space> + 'a>) -> R,
 {
@@ -120,7 +124,7 @@ where
     })
 }
 
-pub fn with_optional_space_vec_iter<F, R>(f: F) -> R
+pub fn with_space_vec_iter<F, R>(f: F) -> R
 where
     F: for<'a> FnOnce(Box<dyn Iterator<Item = Option<Space>> + 'a>) -> R,
 {
@@ -152,6 +156,20 @@ pub fn remove_space(index: u64) -> Result<(), Error> {
         }
         vec.set(index, &None);
         Ok(())
+    })
+}
+
+pub fn space_principal_to_index(space_id: Principal) -> Option<u64> {
+    with_space_vec_iter(|spaces| {
+        spaces
+            .enumerate()
+            .find(|(_, opt_space)| {
+                opt_space
+                    .as_ref()
+                    .map(|space| space.principal() == space_id)
+                    .unwrap_or(false)
+            })
+            .map(|(i, _)| i as u64)
     })
 }
 

@@ -16,6 +16,7 @@ const STATE_MEMORY_ID: MemoryId = MemoryId::new(1);
 
 pub const OPEN_TASKS_MAP_MEMORY_ID: MemoryId = MemoryId::new(2);
 pub const CLOSED_TASKS_MAP_MEMORY_ID: MemoryId = MemoryId::new(3);
+pub const EXPIRED_TASKS_MAP_MEMORY_ID: MemoryId = MemoryId::new(4);
 
 thread_local! {
     pub static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(
@@ -51,6 +52,12 @@ thread_local! {
     static CLOSED_TASKS_MAP: RefCell<StableBTreeMap<TaskId, ClosedTask, VMem>> = RefCell::new(
         StableBTreeMap::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(CLOSED_TASKS_MAP_MEMORY_ID)),
+        )
+    );
+
+    static EXPIRED_TASKS_MAP: RefCell<StableBTreeMap<TaskId, Task, VMem>> = RefCell::new(
+        StableBTreeMap::init(
+            MEMORY_MANAGER.with(|m| m.borrow().get(EXPIRED_TASKS_MAP_MEMORY_ID)),
         )
     );
 }
@@ -200,4 +207,56 @@ pub fn get_closed_tasks_len() -> u64 {
 
 pub fn delete_closed_task(task_id: &TaskId) -> Option<ClosedTask> {
     CLOSED_TASKS_MAP.with_borrow_mut(|tasks| tasks.remove(task_id))
+}
+
+// Expired task methods
+
+pub fn insert_expired_task(task_id: TaskId, task: Task) -> Result<(), Error> {
+    EXPIRED_TASKS_MAP.with_borrow_mut(|tasks| {
+        if tasks.contains_key(&task_id) {
+            return Err(Error::TaskAlreadyExists(task_id));
+        }
+        tasks.insert(task_id, task);
+        Ok(())
+    })
+}
+
+pub fn remove_expired_task(task_id: &TaskId) -> Result<Task, Error> {
+    EXPIRED_TASKS_MAP
+        .with_borrow_mut(|tasks| tasks.remove(task_id).ok_or(Error::TaskNotFound(*task_id)))
+}
+
+pub fn mut_expired_task<F, R>(task_id: TaskId, f: F) -> Result<R, Error>
+where
+    F: FnOnce(&mut Option<Task>) -> R,
+{
+    EXPIRED_TASKS_MAP.with_borrow_mut(|tasks| {
+        let mut task = tasks.get(&task_id);
+        let result = f(&mut task);
+
+        if let Some(task) = task {
+            tasks.insert(task_id, task);
+        }
+
+        Ok(result)
+    })
+}
+
+pub fn with_expired_tasks_iter<F, R>(f: F) -> R
+where
+    F: for<'a> FnOnce(Box<dyn Iterator<Item = (TaskId, Task)> + 'a>) -> R,
+{
+    EXPIRED_TASKS_MAP.with_borrow(|tasks| f(Box::new(tasks.iter())))
+}
+
+pub fn get_expired_task(task_id: &TaskId) -> Option<Task> {
+    EXPIRED_TASKS_MAP.with_borrow(|tasks| tasks.get(task_id))
+}
+
+pub fn get_all_expired_tasks() -> Vec<(TaskId, Task)> {
+    EXPIRED_TASKS_MAP.with_borrow(|tasks| tasks.iter().collect())
+}
+
+pub fn get_expired_tasks_len() -> u64 {
+    EXPIRED_TASKS_MAP.with_borrow(|tasks| tasks.len())
 }

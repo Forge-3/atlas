@@ -182,17 +182,21 @@ pub async fn upgrade_space(space_id: Principal) -> Result<(), Error> {
 pub fn join_space(space_id: Principal) -> Result<(), Error> {
     let caller = authenticated_guard()?;
     let (index, space) = memory::with_space_vec_iter(|spaces| {
-        spaces
-            .enumerate()
-            .find(|(_, space)| space.principal() == space_id)
+        spaces.enumerate().find(|(_, maybe_space)| {
+            maybe_space
+                .as_ref()
+                .map(|s| s.principal() == space_id)
+                .unwrap_or(false)
+        })
     })
     .ok_or(Error::SpaceNotExist)?;
+    let space = space.unwrap();
 
     if space.space_type() == SpaceType::HUB {
         let user = memory::get_user(&caller).unwrap_or_default();
         let is_hub_member = user.belonging_to_spaces().iter().any(|space_index| {
             memory::get_space(*space_index)
-                .expect("Space do  not exist?!")
+                .expect("Space do not exist?!")
                 .space_type()
                 == SpaceType::HUB
         });
@@ -233,12 +237,33 @@ pub async fn transfer_space(args: TransferSpace) -> Result<(), Error> {
         });
     }
 
-    let space_index = memory::with_space_vec_iter(|mut spaces| {
-        spaces.position(|space| space.principal() == args.space_id)
+    let (space_index, _opt_space) = memory::with_space_vec_iter(|spaces| {
+        spaces.enumerate().find(|(_, maybe_space)| {
+            maybe_space
+                .as_ref()
+                .map(|s| s.principal() == args.space_id)
+                .unwrap_or(false)
+        })
     })
     .ok_or(Error::SpaceNotExist)?;
 
-    memory::mut_user(caller, |maybe_user| {
+    let space_owner = if memory::user_rank_match(&caller, &[Rank::Admin, Rank::SuperAdmin]).is_ok()
+    {
+        memory::with_users_iter(|mut users| {
+            users
+                .find(|(_, user)| user.owned_spaces.contains(&(space_index as u64)))
+                .map(|(id, _)| id)
+        })
+        .ok_or(Error::SpaceNotExist)?
+    } else {
+        caller
+    };
+
+    if args.to == space_owner {
+        return Ok(());
+    }
+
+    memory::mut_user(space_owner, |maybe_user| {
         let mut user = maybe_user.expect("User do not exist?!");
         let space_index = user
             .owned_spaces
@@ -267,14 +292,22 @@ pub async fn transfer_space(args: TransferSpace) -> Result<(), Error> {
 
 #[update]
 pub async fn delete_space(space_id: Principal) -> Result<(), Error> {
-    let (caller, user) = admin_or_space_lead_guard()?;
+    let (_caller, user) = admin_or_space_lead_guard()?;
+    let space_index = memory::with_space_vec_iter(|iter| {
+        iter.enumerate()
+            .find(|(_, opt_space)| {
+                opt_space
+                    .as_ref()
+                    .map(|space| space.principal() == space_id)
+                    .unwrap_or(false)
+            })
+            .map(|(i, _)| i as u64)
+    })
+    .ok_or(Error::SpaceNotExist)?;
 
-    let space_index = user
-        .owned_spaces()
-        .iter()
-        .find(|&&i| memory::get_space(i).is_some_and(|space| space.principal() == space_id))
-        .copied()
-        .ok_or(Error::UserNotOwner)?;
+    if user.rank() == &Rank::SpaceLead && !user.owned_spaces().contains(&space_index) {
+        return Err(Error::UserNotOwner);
+    }
 
     Call::bounded_wait(space_id, "clean_up_space_before_deletion")
         .with_arg(())
@@ -306,27 +339,25 @@ pub async fn delete_space(space_id: Principal) -> Result<(), Error> {
     .unwrap_or_else(|err| panic!("Failed to delete canister: {err}"));
 
     memory::remove_space(space_index)?;
-    memory::mut_user(caller, |maybe_user| {
-        let mut user = maybe_user.expect("User do not exist?!");
-        user.remove_owned_space(space_index);
-        Ok(user)
-    })?;
 
     let mut users_to_update = vec![];
     memory::with_users_iter(|iter| {
         iter.for_each(|(user_id, mut user)| {
-            let original_len = user.belonging_to_spaces().len();
+            let mut changed = false;
 
-            let position_to_remove = user
-                .belonging_to_spaces
-                .iter()
-                .position(|&i| i == space_index);
-
-            if let Some(pos) = position_to_remove {
-                user.belonging_to_spaces.remove(pos);
+            if let Some(pos) = user.owned_spaces().iter().position(|&i| i == space_index) {
+                user.owned_spaces.remove(pos);
+                changed = true;
             }
-
-            if user.belonging_to_spaces().len() != original_len {
+            if let Some(pos) = user
+                .belonging_to_spaces()
+                .iter()
+                .position(|&i| i == space_index)
+            {
+                user.belonging_to_spaces.remove(pos);
+                changed = true;
+            }
+            if changed {
                 users_to_update.push((user_id, user));
             }
         });

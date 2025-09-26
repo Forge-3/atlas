@@ -21,7 +21,7 @@ import {
 import Submissions from "../components/Submissions/index.tsx";
 import Wallet from "../components/Wallet/index.tsx";
 import Help from "../components/Help/index.tsx";
-import Admin from "../components/Admin.tsx";
+import Admin from "../components/Admin";
 
 const Router = () => {
   return (

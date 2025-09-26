@@ -259,6 +259,7 @@ const Summation = ({
                 spaceId={spaceId}
                 submissionState={submissionState}
                 user={userPrincipal}
+                isFullyRewarded={currentTask.rewarded.length >= Number(currentTask.number_of_uses)}
               />
             ))}
           </td>
@@ -279,6 +280,7 @@ interface GenericTaskSummationProps {
   spaceId: string;
   submissionState: "Rejected" | "WaitingForReview" | "Accepted";
   user: string;
+  isFullyRewarded: boolean; 
 }
 
 interface SubtaskSubmission {
@@ -299,6 +301,7 @@ const GenericTaskSummation = ({
   spaceId,
   submissionState,
   user,
+  isFullyRewarded,
 }: GenericTaskSummationProps) => {
   const dispatch = useDispatch();
   const userPrincipal = Principal.from(user);
@@ -391,7 +394,7 @@ const GenericTaskSummation = ({
             </div>
           )}
         <div className="flex flex-col justify-end gap-2">
-          {singleSubmissionState === "WaitingForReview" && (
+          {singleSubmissionState === "WaitingForReview" && !isFullyRewarded && (
               <>
                 <div className="flex gap-2 justify-end">
                   <Button onClick={acceptSubtask}>Accept</Button>
@@ -403,7 +406,12 @@ const GenericTaskSummation = ({
                   </Button>
                 </div>
               </>
-            )}
+          )}
+          {singleSubmissionState === "WaitingForReview" && isFullyRewarded && (
+            <div className="flex justify-end">
+              <p className="text-yellow-400 font-semibold">All rewards granted</p>
+            </div>
+          )}
         </div>
       </div>
       {showRejectPopup && (

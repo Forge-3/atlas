@@ -12,12 +12,14 @@ import {
   useUnAuthAtlasSpaceActor,
 } from "../../hooks/identityKit";
 import {
+  closeTask,
   deleteCloseTask,
-  forceCloseTask,
+  forceExpireTask,
   getAtlasSpace,
   getSpaceTasks,
   withdrawReward,
   type AnyTask,
+  type ExpiredTask,
 } from "../../canisters/atlasSpace/api";
 import GenericTask from "./tasks/GenericTask";
 import { FaWallet } from "react-icons/fa";
@@ -139,8 +141,15 @@ const Task = () => {
     return "refunded" in task;
   }
 
+  function isExpiredTask(task: AnyTask): task is ExpiredTask {
+    return "expired" in task;
+  }
+
   const taskDisabled =
     currentTask.start_time > BigInt(time) || isClosedTask(currentTask);
+
+  const taskExpired = isExpiredTask(currentTask);
+  const taskClosed = isClosedTask(currentTask);
 
   const usersSubmissions = currentTask?.tasks
     ? getUsersSubmissions(currentTask.tasks)
@@ -149,8 +158,9 @@ const Task = () => {
   if (!user?.principal) return <></>;
   const isAccepted = usersSubmissions.isAccepted(user.principal.toText());
   const userAlreadyRewarded = currentTask.rewarded
-    .map((p) => p.toText())
-    .includes(user.principal.toText());
+        .map((p) => p.toText())
+        .includes(user.principal.toText());
+
   
   const withdraw = async () => {
     if (!authAtlasSpace) {
@@ -195,12 +205,12 @@ const Task = () => {
     });
   };
 
-  const closeTask = async () => {
+  const expireTask = async () => {
     if (!authAtlasSpace || !taskId) return;
 
     if (
       !window.confirm(
-        "Are you sure you want to force close this task? This action cannot be undone."
+        "Are you sure you want to forcefully expire this task? This action cannot be undone."
       )
     ) {
       return;
@@ -208,7 +218,41 @@ const Task = () => {
 
     await runWithLoading(async () => {
       await toast.promise(
-        forceCloseTask({
+        forceExpireTask({
+          authAtlasSpace,
+          taskId: BigInt(taskId),
+        }),
+        {
+          loading: "Expiring task...",
+          success: "Task expired successfully.",
+          error: getErrorWithInfoToast("Failed to expire task."),
+        }
+      );
+
+      await getSpaceTasks({
+        unAuthAtlasSpace,
+        spaceId,
+        dispatch,
+      });
+    }, dispatch);
+
+    navigate(getSpacePath(parsedSpacePrincipal));
+  };
+
+  const closeExpiredTask = async () => {
+    if (!authAtlasSpace || !taskId) return;
+
+    if (
+      !window.confirm(
+        "Are you sure you want to close this task? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    await runWithLoading(async () => {
+      await toast.promise(
+        closeTask({
           authAtlasSpace,
           taskId: BigInt(taskId),
         }),
@@ -300,48 +344,55 @@ const Task = () => {
                   Review submission
                 </Button>
               )}
-              {didUserCanAdministrate && (type === "starting" || type === "ongoing") && (
-                <Button
-                  className="flex-1 md:flex-none ml-2"
-                  onClick={() => toggleEditTaskModal()}
-                >
-                  Edit task
-                </Button>
-              )}
-              {didUserCanAdministrate && !taskDisabled && (
+              {didUserCanAdministrate && !taskExpired && (type === "starting" || type === "ongoing") && (
+                  <Button
+                    className="flex-1 md:flex-none ml-2"
+                    onClick={() => toggleEditTaskModal()}
+                  >
+                    Edit task
+                  </Button>
+                )}
+              {didUserCanAdministrate && !taskDisabled && !taskExpired && (
                 <Button
                   className="flex-1 md:flex-none ml-2 text-white bg-rose-800"
-                  onClick={closeTask}
+                  onClick={expireTask}
                 >
-                  Force task close
+                  Force task expire
                 </Button>
               )}
-              {didUserCanAdministrate &&
-                (type === "closed" || type === "expired") && (
+              {didUserCanAdministrate && !taskDisabled && taskExpired && (
+                <Button
+                  className="flex-1 md:flex-none ml-2 text-white bg-rose-800"
+                  onClick={closeExpiredTask}
+                >
+                  Close task
+                </Button>
+              )}
+              {didUserCanAdministrate && taskClosed && (
                   <Button
                     className="flex-1 md:flex-none ml-2 text-white bg-rose-800"
                     onClick={deleteClosedTask}
                   >
                     Delete task
                   </Button>
-              )}
+                )}
+              </div>
             </div>
-          </div>
 
-          <div className="relative w-full rounded-xl bg-[#1E0F33]/60 mb-1">
-            <div className=" px-2 py-2 md:px-16 md:py-12">
-              <div className="flex items-center gap-4">
-                <div className="bg-white flex rounded-2xl w-fit h-fit flex-none">
-                  {spaceData.space_logo ? (
-                    <img
-                      src={spaceData.space_logo}
-                      draggable="false"
-                      className="rounded-2xl m-0.5 w-12 h-12 md:w-16 md:h-16"
-                    />
-                  ) : (
-                    <div className="bg-[#4A0295] rounded-2xl m-0.5 w-12 h-12 md:w-16 md:h-16"></div>
-                  )}
-                </div>
+            <div className="relative w-full rounded-xl bg-[#1E0F33]/60 mb-1">
+              <div className=" px-2 py-2 md:px-16 md:py-12">
+                <div className="flex items-center gap-4">
+                  <div className="bg-white flex rounded-2xl w-fit h-fit flex-none">
+                    {spaceData.space_logo ? (
+                      <img
+                        src={spaceData.space_logo}
+                        draggable="false"
+                        className="rounded-2xl m-0.5 w-12 h-12 md:w-16 md:h-16"
+                      />
+                    ) : (
+                      <div className="bg-[#4A0295] rounded-2xl m-0.5 w-12 h-12 md:w-16 md:h-16"></div>
+                    )}
+                  </div>
 
                 <div className="text-xl sm:text-2xl md:text-3xl font-semibold font-montserrat flex flex-1 text-white justify-between">
                   {spaceData?.space_name}
@@ -390,13 +441,13 @@ const Task = () => {
                         subtaskId={key}
                         unAuthAtlasSpace={unAuthAtlasSpace}
                         isUserInHub={isUserInHub}
-                        disabled={taskDisabled}
+                        disabled={taskDisabled || taskExpired}
                       />
                     ))}
                   </div>
                   <div className="flex mt-3 items-center justify-center">
                     <div className="mr-3 md:mr-4">
-                      <div className="bg-[#1E0F33] p-2 mx-[1px] md:mx-0 w-4 h-4 md:w-8 md:h-8 rounded md:rounded-lg relative">
+                      <div className="bg-[#1E0F33] p-2 mx-[1px] md:mx-[0px] w-[16px] h-[16px] md:w-[32px] md:h-[32px] rounded md:rounded-lg relative">
                         {isAccepted && (
                           <img
                             src="/icons/check-in-box.svg"
@@ -422,10 +473,10 @@ const Task = () => {
         </div>
       </div>
       {isEditTaskModal && <CreateNewTaskModal
-        callback={toggleEditTaskModal}
-        taskToEdit={taskToEdit}
-      />}
-    </>
+          callback={toggleEditTaskModal}
+          taskToEdit={taskToEdit}
+    />}
+  </>
   );
 };
 

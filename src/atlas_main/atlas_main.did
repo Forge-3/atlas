@@ -54,7 +54,8 @@ type Integrations = record { discord_id : opt text };
 type Rank = variant { SpaceLead; User; SuperAdmin; Admin };
 type Result = variant { Ok : Space; Err : Error };
 type Result_1 = variant { Ok; Err : Error };
-type Result_2 = variant { Ok : GetSpacesRes; Err : Error };
+type Result_2 = variant { Ok : nat64; Err : Error };
+type Result_3 = variant { Ok : GetSpacesRes; Err : Error };
 type Space = record { id : principal; space_type : SpaceType };
 type SpaceArgs = variant {
   UpgradeArg : record { version : nat64 };
@@ -92,9 +93,11 @@ service : (AtlasArgs) -> {
   delete_space : (principal) -> (Result_1);
   get_current_space_bytecode_version : () -> (nat64) query;
   get_space_bytecode_by_version : (nat64) -> (opt blob) query;
-  get_spaces : (GetSpacesArgs) -> (Result_2) query;
+  get_space_users_count : (principal) -> (Result_2) query;
+  get_spaces : (GetSpacesArgs) -> (Result_3) query;
   get_user : (GetUserBy) -> (CandidUser) query;
   get_user_hub : (principal) -> (opt Space) query;
+  get_users_count : () -> (Result_2) query;
   join_space : (principal) -> (Result_1);
   set_user_admin : (principal) -> (Result_1);
   set_user_space_lead : (principal) -> (Result_1);

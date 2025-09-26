@@ -67,7 +67,9 @@ export type Result = { 'Ok' : Space } |
   { 'Err' : Error };
 export type Result_1 = { 'Ok' : null } |
   { 'Err' : Error };
-export type Result_2 = { 'Ok' : GetSpacesRes } |
+export type Result_2 = { 'Ok' : bigint } |
+  { 'Err' : Error };
+export type Result_3 = { 'Ok' : GetSpacesRes } |
   { 'Err' : Error };
 export interface Space { 'id' : Principal, 'space_type' : SpaceType }
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
@@ -110,9 +112,11 @@ export interface _SERVICE {
     [bigint],
     [] | [Uint8Array | number[]]
   >,
-  'get_spaces' : ActorMethod<[GetSpacesArgs], Result_2>,
+  'get_space_users_count' : ActorMethod<[Principal], Result_2>,
+  'get_spaces' : ActorMethod<[GetSpacesArgs], Result_3>,
   'get_user' : ActorMethod<[GetUserBy], CandidUser>,
   'get_user_hub' : ActorMethod<[Principal], [] | [Space]>,
+  'get_users_count' : ActorMethod<[], Result_2>,
   'join_space' : ActorMethod<[Principal], Result_1>,
   'set_user_admin' : ActorMethod<[Principal], Result_1>,
   'set_user_space_lead' : ActorMethod<[Principal], Result_1>,
