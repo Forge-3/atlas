@@ -133,7 +133,7 @@ const Submissions = () => {
               </h2>
             </div>
             <div className="overflow-x-auto">
-              <table className="table-auto mt-6 w-full overflow-x-auto  text-white text-center rtl:text-right border-separate border-spacing-x-2 font-montserrat">
+              <table className="table-fixed mt-6 w-full text-white text-center rtl:text-right border-separate border-spacing-x-2 font-montserrat">
                 <thead>
                   <tr>
                     <th
@@ -383,6 +383,16 @@ const GenericTaskSummation = ({
             {submission.submissionData.submission.Text.content}
           </div>
         )}
+        {"List" in submission.submissionData.submission && (
+          <ul className="list-disc list-inside border-2 border-[#9173FF]/20 p-3 rounded-xl w-full mb-4 bg-[#9173FF]/20 text-white space-y-1">
+            {submission.submissionData.submission.List.items.map((item: string, idx: number) => (
+              <li key={idx} className="break-words whitespace-pre-wrap">
+                {item}
+              </li>
+            ))}
+          </ul>
+        )}
+        
         {submissionState === "Rejected" &&
           submission.submissionData.rejection_reason[0] &&
           submission.submissionData.rejection_reason[0].trim().length > 0 && (

@@ -1,5 +1,5 @@
 import { DECIMALS } from "../canisters/ckUsdcLedger/constans";
-import type { EditableTask } from "../modals/CreateNewTaskModal";
+import { getAnswerFormatKey, type EditableTask } from "../modals/CreateNewTaskModal";
 import { toLocalISOString } from "./date";
 import { formatUnits } from "ethers";
 
@@ -19,7 +19,8 @@ export function mapTaskToForm(taskToEdit: EditableTask) {
           taskType: "generic" as const,
           title: content.task_title,
           description: content.task_description,
-          allowresubmit: content.allow_resubmit,
+          allowResubmit: content.allow_resubmit,
+          answerFormat: getAnswerFormatKey(content.answer_format), 
         };
       }
       throw new Error("Unsupported task type in edit mode");

@@ -1,6 +1,7 @@
 import type { ActorSubclass } from "@dfinity/agent";
 import type {
   _SERVICE,
+  AnswerFormat,
   ClosedTask,
   EditTaskArgs,
   State,
@@ -26,6 +27,7 @@ interface CreateSubtaskArg {
   title: string;
   description: string;
   allow_resubmit: boolean;
+  answer_format: AnswerFormat
 }
 
 interface GetAtlasSpaceArgs {
@@ -97,6 +99,7 @@ export const createNewTask = async ({
       task_title: arg.title,
       task_description: arg.description,
       allow_resubmit: arg.allow_resubmit,
+      answer_format: arg.answer_format
     },
   }));
 

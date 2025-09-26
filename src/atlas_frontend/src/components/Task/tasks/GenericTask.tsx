@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useState } from "react";
 import type {
   _SERVICE,
   TaskType,
 } from "../../../../../declarations/atlas_space/atlas_space.did";
 import Button from "../../Shared/Button";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useFieldArray, useForm, type SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import {
@@ -32,21 +32,13 @@ interface GenericTaskProps {
   disabled?: boolean;
 }
 
-interface GenericTaskFormInput {
+interface TextFormData {
   taskSubmission: string;
 }
 
-const maxDescriptionLength = 500;
-
-const schema = yup.object({
-  taskSubmission: yup
-    .string()
-    .max(maxDescriptionLength)
-    .trim()
-    .min(2)
-    .required()
-    .label("Task submission"),
-});
+interface ListFormData {
+  items: { value: string }[];
+}
 
 const GenericTask = ({
   genericTask,
@@ -58,22 +50,49 @@ const GenericTask = ({
   disabled = false,
 }: GenericTaskProps) => {
   const dispatch = useDispatch();
-  const { user } = useAuth();
+  const { user, connect } = useAuth();
   const [openSubmission, setSubmission] = useState(false);
-  const { register, handleSubmit} = useForm({
-    resolver: yupResolver(schema),
+  const authAtlasSpace = useAuthAtlasSpaceActor(spacePrincipal);
+  const answerFormatKey = "TitleAndDescription" in genericTask.task_content
+    ? (Object.keys(genericTask.task_content.TitleAndDescription.answer_format)[0] as
+        | "Small"
+        | "Paragraph"
+        | "Long"
+        | "List")
+    : null;
+
+  const maxTextLength = useMemo(() => {
+    switch (answerFormatKey) {
+      case "Small":
+        return 254;
+      case "Paragraph":
+        return 600;
+      case "Long":
+        return 2500;
+      default:
+        return 254;
+    }
+  }, [answerFormatKey]);
+
+  const textSchema = yup.object({
+    taskSubmission: yup
+      .string()
+      .trim()
+      .min(2)
+      .max(maxTextLength)
+      .required("Field is required"),
+  });
+
+  const textForm = useForm<TextFormData>({
+    resolver: yupResolver(textSchema),
     defaultValues: {
-      taskSubmission: "",
+      taskSubmission: ""
     },
   });
-  const { connect } = useAuth();
-  const authAtlasSpace = useAuthAtlasSpaceActor(spacePrincipal);
 
-  const handleSubmitResponse: SubmitHandler<GenericTaskFormInput> = async ({
-    taskSubmission,
-  }) => {
+  const onSubmitText: SubmitHandler<TextFormData> = async ({ taskSubmission }) => {
     if (!authAtlasSpace || !unAuthAtlasSpace) return;
-    
+
     await runWithLoading(async () => {
       const call = submitSubtaskSubmission({
         authAtlasSpace,
@@ -88,7 +107,61 @@ const GenericTask = ({
       });
 
       setSubmission(false);
-      getSpaceTasks({
+      await getSpaceTasks({
+        spaceId: spacePrincipal.toString(),
+        unAuthAtlasSpace,
+        dispatch,
+      });
+    }, dispatch, () => setSubmission(false));
+  };
+
+  const listSchema = yup.object({
+  items: yup
+    .array()
+    .of(
+      yup.object({
+        value: yup
+          .string()
+          .trim()
+          .max(254, "Item too long")
+          .required("Item cannot be empty"),
+      })
+    )
+    .max(25, "Max 25 items allowed")
+    .required(),
+});
+
+const listForm = useForm<ListFormData>({
+  resolver: yupResolver(listSchema),
+  defaultValues: {
+    items: [{ value: "" }]
+  },
+});
+
+  const { fields, append, remove } = useFieldArray({
+    control: listForm.control,
+    name: "items",
+  });
+
+  const onSubmitList = async () => {
+    if (!authAtlasSpace || !unAuthAtlasSpace) return;
+
+    const items = listForm.getValues().items.map(item => item.value.trim());
+    await runWithLoading(async () => {
+      const call = submitSubtaskSubmission({
+        authAtlasSpace,
+        taskId: BigInt(taskId),
+        subtaskId: BigInt(subtaskId),
+        submission: { List: { items } },
+      });
+      await toast.promise(call, {
+        loading: "Submitting list...",
+        success: "Submitted response.",
+        error: getErrorWithInfoToast("Failed to submit response."),
+      });
+
+      setSubmission(false);
+      await getSpaceTasks({
         spaceId: spacePrincipal.toString(),
         unAuthAtlasSpace,
         dispatch,
@@ -112,10 +185,8 @@ const GenericTask = ({
   );
 
   const rawState = Object.keys(submissionData?.state || {})[0] ?? null;
-
   const validStates = ["Rejected", "WaitingForReview", "Accepted"] as const;
   type SubmissionState = typeof validStates[number];
-
   const submissionState = validStates.includes(rawState as SubmissionState)
     ? (rawState as SubmissionState)
     : null;
@@ -161,19 +232,54 @@ const GenericTask = ({
           )}
 
         {canSubmit && openSubmission && !disabled && (
-          <form onSubmit={handleSubmit(handleSubmitResponse)}>
-            <div>
-              <p className="text-xs md:text-base text-white font-semibold mb-1">Submit response:</p>
-              <textarea
-                {...register("taskSubmission")}
-                className="border-2 border-[#9173FF]/20 p-2 h-32 md:h-20 md:p-4 rounded-xl w-full mb-2 bg-[#9173FF]/20 text-white"
-              ></textarea>
-            </div>
-            <div className="flex justify-end">
-              <Button className="text-[14px] px-2 py-1 rounded-xl">Submit</Button>
-            </div>
-          </form>
-        )}
+          <>
+            {answerFormatKey !== "List" ? (
+              <form onSubmit={textForm.handleSubmit(onSubmitText)}>
+                <textarea
+                  {...textForm.register("taskSubmission")}
+                  maxLength={maxTextLength}
+                  className="border-2 border-[#9173FF]/20 p-2 h-32 md:h-20 md:p-4 rounded-xl w-full mb-2 bg-[#9173FF]/20 text-white"
+                />
+                {textForm.formState.errors.taskSubmission && (
+                  <p className="text-red-400 text-sm">
+                    {textForm.formState.errors.taskSubmission.message}
+                  </p>
+                )}
+                <div className="flex justify-end">
+                  <Button className="text-[14px] px-2 py-1 rounded-xl">Submit</Button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={listForm.handleSubmit(onSubmitList)}>
+                {fields.map((field, idx) => (
+                  <div key={field.id} className="flex gap-2 mb-2 items-center">
+                    <input
+                      {...listForm.register(`items.${idx}.value` as const)}
+                      maxLength={254}
+                      className="border-2 border-[#9173FF]/20 p-1 md:p-2 rounded-xl w-full bg-[#9173FF]/20 text-white placeholder-gray-300"
+                      defaultValue={field.value}
+                    />
+                    <button type="button" onClick={() => remove(idx)} className="text-red-500 text-xl px-2 py-1 rounded-lg">
+                      −
+                    </button>
+                  </div>
+                ))}
+                {
+                  <Button onClick={() => append({ value: "" })} className="md:px-2.5 md:py-1 px-2 py-0.5">
+                    + 
+                  </Button>
+                }
+                {listForm.formState.errors.items && (
+                  <p className="text-red-400 text-sm">{(listForm.formState.errors.items)?.message}</p>
+                )}
+                <div className="flex justify-end">
+                  <Button className="text-[14px] px-2 py-1 rounded-xl">Submit</Button>
+                </div>
+              </form>
+            )}
+          </>
+         )}
+         
         {canSubmit  && !openSubmission && !disabled && (
           <div className="flex py-2">
             <Button onClick={() => setSubmission(true)} className="text-[14px] px-2 py-1 rounded-xl">
