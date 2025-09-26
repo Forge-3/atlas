@@ -13,25 +13,6 @@ pub mod submission;
 pub mod token_reward;
 pub mod xp_reward;
 
-#[derive(Debug, serde::Deserialize, serde::Serialize, candid::CandidType, Clone)]
-pub struct DiscordGuild {
-    pub id: String,
-    pub name: String,
-    pub icon: Option<String>,
-}
-
-#[derive(CandidType, Deserialize, Debug, Clone)]
-pub struct DiscordGuildInfo {
-    pub id: String,
-    pub name: String,
-}
-
-#[derive(CandidType, Deserialize, Debug, Clone)]
-pub struct DiscordInviteApiResponse {
-    pub guild: Option<DiscordGuildInfo>,
-    pub expires_at: Option<String>,
-}
-
 #[derive(CandidType, Deserialize)]
 pub struct CreateTaskArgs {
     pub task_title: String,

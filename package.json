@@ -27,6 +27,7 @@
     "typescript-eslint": "^8.29.0"
   },
   "dependencies": {
+    "@astrojs/tailwind": "^6.0.2",
     "axios": "^1.11.0"
   }
 }
