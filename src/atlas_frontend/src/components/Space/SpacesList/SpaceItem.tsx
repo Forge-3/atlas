@@ -1,8 +1,15 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { getSpacePath } from "../../../router/paths";
 import { Principal } from "@dfinity/principal";
+import Button from "../../Shared/Button";
+import { RiAddLine } from "react-icons/ri";
+import { deserialize } from "../../../store/store";
+import { BlockchainUser, selectUserBlockchainData, type StorableUser } from "../../../store/slices/userSlice";
+import useJoinSpace from "../../../hooks/useJoinSpace";
+import { useSelector } from "react-redux";
+import toast from "react-hot-toast";
 
 interface SpaceItemProps {
   name: string;
@@ -10,51 +17,108 @@ interface SpaceItemProps {
   avatarImg: string | null;
   backgroundImg: string | null;
   spacePrincipal: Principal;
-
 }
 
 const SpaceItem = ({
   name,
   description,
-  backgroundImg,
   avatarImg,
   spacePrincipal,
-
 }: SpaceItemProps) => {
   const navigate = useNavigate();
+  const [, setShowToast] = useState(false);
+
+
+  const userBlockchainData = deserialize<StorableUser>(
+      useSelector(selectUserBlockchainData)
+  );
+  const inHub = userBlockchainData?.in_hub ?? null;
+  const isUserInHub = inHub?.id.toString() === spacePrincipal.toString();
+  const isUserInDifferentHub = inHub && inHub.id.toString() !== spacePrincipal.toString();
+
+  const userInfo = userBlockchainData
+      ? new BlockchainUser(userBlockchainData)
+      : null;
+
+  const didUserCanAdministrate =
+    userInfo?.canAdministrate(spacePrincipal) ?? false;
+
+  const joinSpace = useJoinSpace(spacePrincipal).joinSpace;
+
+  const lastToastRef = useRef(0);
+
+  const handleJoinBlocked = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const now = Date.now();
+    if (now - lastToastRef.current < 4000) return;
+    lastToastRef.current = now;
+
+    toast('You’ve reached the maximum number of hubs you can join.', {
+    duration: 3000,
+  });
+    setTimeout(() => setShowToast(false), 2500);
+  };
 
   return (
     <motion.div
       whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.99 }}
-      onClick={() => navigate(getSpacePath(spacePrincipal))}>
-      <div className="rounded-xl bg-[#1E0F33] p-4 text-white">
-        <div
-          className={`${backgroundImg ? "h-52 rounded-3xl bg-center bg-no-repeat bg-cover relative" : "h-52 rounded-3xl bg-center bg-gradient-to-b from-[#9173FF] to-transparent to-[150%] bg-no-repeat bg-cover relative"} w-full flex items-center justify-center`}
-          style={
-            backgroundImg ? { backgroundImage: `url('${backgroundImg}')` } : {}
-          }
-        ></div>
-        <div className="relative -top-16 mb-8 sm:mb-16">
-          <div className="absolute flex">
-            {avatarImg ? (
-              <img
-                src={avatarImg}
-                draggable="false"
-                className="rounded-3xl m-[5px] w-20 h-20 sm:w-28 sm:h-28"
-              />
-            ) : (
-              <div className="bg-[#4A0295] rounded-3xl m-[5px] w-20 h-20 sm:w-28 sm:h-28"></div>
-            )}
-          </div>
+      whileTap={{ scale: 0.99 }}>
+      <div className="flex flex-row w-full my-3">
+        <div className="flex flex-col">
+          {avatarImg ? (
+            <img
+              src={avatarImg}
+              draggable="false"
+              className="rounded-md mb-2 w-20 h-20 sm:w-32 sm:h-28"
+              onClick={() => navigate(getSpacePath(spacePrincipal))}
+            />
+          ) : (
+            <div
+              className="bg-deep-purple rounded-md mb-2 w-20 h-20 sm:w-28 sm:h-28"
+              onClick={() => navigate(getSpacePath(spacePrincipal))}
+            />
+          )}
+
+          {didUserCanAdministrate ? (
+            <span className="px-4 py-1 text-[12px] bg-dark/15 rounded md:text-base text-center font-montserrat font-medium text-white">
+              Owner
+            </span>
+          ) : isUserInHub ? (
+            <span className="px-4 py-1 text-[12px] bg-dark/15 rounded md:text-base text-center font-montserrat font-medium text-white">
+              Joined
+            </span>
+          ) : (
+            <Button
+              variant="primary"
+              className="px-4 text-[12px] md:text-base font-medium text-white"
+              onClick={isUserInDifferentHub ? handleJoinBlocked : joinSpace}            >
+              Join <RiAddLine className="text-base md:text-xl" />
+            </Button>
+          )}
         </div>
-        <div className="mt-2">
-            <h3 className="text-2xl font-semibold truncate">{name}</h3>
-            <p className="truncate">{description}</p>
-          </div>
+        <div
+          className="flex flex-col ml-3 w-full"
+          onClick={() => navigate(getSpacePath(spacePrincipal))}
+        >
+          <h2 className="text-light font-montserrat font-semibold text-[22px] md:text-h2 mb-2">
+            {name}
+          </h2>
+          <h3 className="text-light font-montserrat md:text-h3 mb-2">
+          {/* TODO: Add a new `creationDate` field in the backend for missions. 
+              Send this value when creating a mission, fetch it on the frontend, and display it. */}     
+           {description}
+          </h3>
+          <h3 className="flex text-light h-full rounded p-3 items-center font-montserrat text-base sm:text-h3 bg-background w-full">
+            {description}
+          </h3>
+        </div>
+        
       </div>
+      
     </motion.div>
   );
 };
 
 export default SpaceItem;
+
+

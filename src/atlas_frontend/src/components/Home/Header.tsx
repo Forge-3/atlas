@@ -1,55 +1,68 @@
 import React from "react";
+import Button from "../Shared/Button";
 
 const Header = () => {
   return (
+    <div className="bg-gradient-to-b from-background/20 to-primary/60">
     <header
       className="
-    flex bg-no-repeat w-full bg-center bg-right bg-contain relative
-    pt-60
-    h-[300px]
-    max-h-[62.5rem]
-    container mx-auto                               
-    sm:h-[calc(100vh-250px)]
-    sm:max-h-[35rem]
-    md:max-h-[45rem]
-    lg:max-h-[45rem]
-  "
+        relative 
+        flex 
+        items-end
+        pt-60
+        h-[500px]
+        md:h-[740px]
+        bg-no-repeat bg-center bg-contain 
+        container mx-auto
+        overflow-hidden
+      "
     >
       <img
         className="
-        absolute -right-20 -top-6 z-0
-        h-auto w-auto max-h-[50vh] max-w-[50vw]-md       
-        sm:-right-56 sm:h-100 sm:z-0
-        sm:max-h-screen sm:max-w-screen-lg           
-        md:max-w-screen-lg
-        lg:max-w-screen-2xl
-        lg:max-h-[1000px]
-        xl:min-h-[1060px]                       
+          absolute
+          top-[50px]
+          sm:top-12
+          z-0
+          w-[550px]
+          h-[400px]
+          sm:w-[700px]
+          sm:h-[400px]
+          md:w-[900px]
+          md:h-[600px]
+          lg:w-[1530px] 
+          lg:h-auto 
+          max-w-none 
+          object-cover
         "
         src="/background-a-header.png"
         draggable="false"
-        
+        alt="Background Graphic"
       />
-      <div className="relative flex items-end pb-32 pl-4 md:pl-20 z-1">
+
+      <div className="relative flex px-4 pb-24 md:pb-32">
         <div className="text-white font-montserrat">
-          <span className="font-bold text-2xl sm:text-4xl md:text-[3rem] leading-tight sm:leading-tight md:leading-[3.5rem]">
-            <h2>
-              Join <br />
-              Champion <br />
-              Program
-            </h2>
-          </span>
+          <h4 className="text-[26px] md:text-[42px] font-semibold leading-tight">
+            Elevate Your Impact. <br />
+            Get Rewarded.
+          </h4>
           <div className="mt-4 sm:mt-8">
-            <p className="font-[380] text-base sm:text-xl md:text-3xl">
-              Atlas is a community of Champions promoting
-            </p>
-            <h3 className="text-base sm:text-lg md:text-2xl font-semibold">
-              ICP HUBS NETWORK
+            <h3 className="font-montserrat font-medium max-w-[529px] text-[15px] md:text-h3">
+              ATLAS is the official champion program of the <br />
+              ICP HUBS NETWORK — designed for passionate <br />
+              community members ready to promote the <br />
+              Internet Computer&apos;s global vision.
             </h3>
+            <Button
+            variant="publish"
+            className="mt-6 px-3 font-montserrat text-[12px] md:text-base font-semibold"
+            >
+            Get Started
+            </Button>
           </div>
         </div>
       </div>
     </header>
+    </div>
   );
 };
 

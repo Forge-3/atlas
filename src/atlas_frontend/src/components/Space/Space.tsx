@@ -1,12 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { FiFilter, FiStar } from "react-icons/fi";
+import React, { useEffect, useMemo, useState } from "react";
 import Button from "../Shared/Button.tsx";
+import SpaceHeader from "../Shared/SpaceHeader.tsx";
 import TaskCard from "./TaskCard/index.tsx";
-import CreateNewTaskModal from "../../modals/CreateNewTaskModal.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { deserialize, type RootState } from "../../store/store.ts";
 import { setScreenBlur } from "../../store/slices/appSlice.ts";
-import { useAuth } from "@nfid/identitykit/react";
 import {
   BlockchainUser,
   selectUserBlockchainData,
@@ -16,82 +14,43 @@ import type { Tasks } from "../../canisters/atlasSpace/api.ts";
 import type { Principal } from "@dfinity/principal";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSpaceId } from "../../hooks/space.ts";
-import { FaDiscord, FaLinkedinIn, FaTelegramPlane } from "react-icons/fa";
-import { FaArrowLeftLong, FaXTwitter } from "react-icons/fa6";
 import type { ExternalLinks } from "../../canisters/atlasSpace/types.ts";
-import { getSpaceEditPath, SPACES_PATH } from "../../router/paths.ts";
-import toast from "react-hot-toast";
-import {
-  useAuthAtlasMainActor,
-  useUnAuthAtlasMainActor,
-} from "../../hooks/identityKit.ts";
-import { getAtlasUser, joinAtlasSpace } from "../../canisters/atlasMain/api.ts";
+import { getSpaceEditPath, getCreateTaskPath } from "../../router/paths.ts";
 import TransferSpaceModal from "../../modals/TransferSpaceModal.tsx";
-import { getErrorWithInfoToast } from "../../utils/errors.ts";
 import { nowInSeconds } from "../../utils/date.ts";
 import LocalBlurOverlay from "../Shared/LocalBlurOverlay.tsx";
-import { runWithLoading } from "../../utils/loading.ts";
 import { getStartingIn, getTaskType } from "../../utils/tasks.ts";
-import { deleteSpace } from "../../canisters/atlasMain/api.ts";
-import { deleteSpace as deleteSpaceFromStore } from "../../store/slices/spacesSlice.ts";
+import { AiFillStar } from "react-icons/ai";
+import { RiAddLine, RiExchangeLine, RiSortDesc } from "react-icons/ri";
+import { FiEdit2 } from "react-icons/fi";
 
-interface TasksListProps {
-  tasks: Tasks;
-  spaceId: Principal;
-}
+type SortMode = "newest" | "sorting" | "sorting-reverse";
 
-const TasksList = ({ tasks = {}, spaceId }: TasksListProps) => {
-  const [time, setTime] = useState(nowInSeconds());
+const STATUS_ORDER = {
+  ongoing: 0,
+  starting: 1,
+  expired: 2,
+  closed: 2,
+} as const;
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTime(nowInSeconds());
-    }, 2000);
+type TaskStatus = keyof typeof STATUS_ORDER;
 
-    return () => clearInterval(interval);
-  }, []);
+type SortMeta = { start: number; startsIn: number; type: TaskStatus };
 
-  const tasksEntries = Object.entries(tasks);
-  if (tasksEntries.length === 0) return <></>;
+type TimeLike = number | string | bigint;
+const toSeconds = (v: TimeLike): number => {
+  if (typeof v === "bigint") return Number(v);
+  const n = typeof v === "string" ? Number(v) : v;
+  if (!Number.isFinite(n)) return 0;
+  if (n > 1e18) return Math.floor(n / 1_000_000_000);
+  if (n > 1e12) return Math.floor(n / 1000);
+  return Math.floor(n);
+};
 
-  return (
-    <>
-      <div className="relative w-full bg-[#1E0F33] mb-1">
-        <div className="flex px-8 py-6">
-          <div className="flex gap-4">
-            <Button className="flex gap-1">
-              <FiFilter /> Sorting
-            </Button>
-            <Button className="flex gap-1">
-              <FiStar /> Newest
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="relative w-full bg-[#1E0F33] rounded-b-xl">
-        <div className="flex gap-4 md:mx-3 px-8 py-6 flex-wrap justify-between md:justify-center">
-          <LocalBlurOverlay isLoading={!tasks} />
-          {tasksEntries &&
-            tasksEntries.map(([key, taskData]) => (
-              <TaskCard
-                key={key}
-                id={key}
-                task={taskData}
-                type={getTaskType(taskData, time)}
-                spaceId={spaceId}
-                startingIn={getStartingIn(
-                  taskData,
-                  time,
-                  getTaskType(taskData, time)
-                )}
-                time={time}
-              />
-            ))}
-        </div>
-      </div>
-    </>
-  );
+const hasStartTime = (t: unknown): t is { start_time: TimeLike } => {
+  if (!t || typeof t !== "object") return false;
+  const obj = t as Record<string, unknown>;
+  return "start_time" in obj && obj.start_time != null;
 };
 
 interface SpaceProps {
@@ -104,6 +63,124 @@ interface SpaceProps {
   externalLinks: ExternalLinks;
 }
 
+interface TasksListProps {
+  tasks?: Tasks;
+  spaceId: Principal;
+  sortBy: SortMode;
+}
+
+const TasksList = ({ tasks = {}, spaceId, sortBy }: TasksListProps) => {
+  const [time, setTime] = useState(nowInSeconds());
+
+  useEffect(() => {
+    const i = setInterval(() => setTime(nowInSeconds()), 2000);
+    return () => clearInterval(i);
+  }, []);
+
+  const taskIds = useMemo(
+    () =>
+      Object.entries(tasks ?? {})
+        .filter(([, t]) => hasStartTime(t))
+        .map(([id]) => id),
+    [tasks]
+  );
+
+  const computeTaskMeta = (taskId: string): SortMeta => {
+  const t = tasks[taskId];
+  if (!hasStartTime(t)) {
+    return { start: 0, startsIn: Number.POSITIVE_INFINITY, type: "expired" };
+  }
+  const startSec = toSeconds(t.start_time);
+  const status = getTaskType(t, time) as TaskStatus;
+  return { start: startSec, startsIn: startSec - time, type: status };
+  };
+
+  const getMeta = (taskId: string): SortMeta => computeTaskMeta(taskId);
+
+
+  const compareByStartTime = (
+    leftId: string,
+    rightId: string,
+    direction: "asc" | "desc" = "asc"
+  ) => {
+    const left = getMeta(leftId);
+    const right = getMeta(rightId);
+    const diff = right.start - left.start;
+    return direction === "asc" ? -diff : diff;
+  };
+
+const compareByStartDesc = (leftId: string, rightId: string) =>
+  compareByStartTime(leftId, rightId, "desc");
+
+const parseId = (id: string): bigint => {
+  try { return BigInt(id); } catch { return 0n; }
+};
+
+const compareByCreatedDesc = (leftId: string, rightId: string) => {
+  const l = parseId(leftId);
+  const r = parseId(rightId);
+  if (r > l) return 1;
+  if (r < l) return -1;
+  return compareByStartDesc(leftId, rightId);
+};
+
+const makeCompareByStatus = (direction: "asc" | "desc") =>
+  (leftId: string, rightId: string) => {
+    const left = getMeta(leftId);
+    const right = getMeta(rightId);
+
+    const rawStatusDiff = STATUS_ORDER[left.type] - STATUS_ORDER[right.type];
+    const statusDiff = direction === "asc" ? rawStatusDiff : -rawStatusDiff;
+    if (statusDiff !== 0) return statusDiff;
+
+    if (left.type === "starting" && right.type === "starting") {
+      const rawDelta = left.startsIn - right.startsIn;
+      return direction === "asc" ? rawDelta : -rawDelta;
+    }
+
+    return compareByStartTime(leftId, rightId, direction);
+  };
+
+
+  const comparator =
+  sortBy === "newest"
+    ? compareByCreatedDesc
+    : sortBy === "sorting"
+    ? makeCompareByStatus("asc")
+    : makeCompareByStatus("desc");
+
+  const sortedIds = useMemo(() => {
+    const ids = [...taskIds];
+    ids.sort(comparator);
+    return ids;
+  }, [taskIds, sortBy, time]);
+
+  if (!sortedIds.length) return null;
+
+  return (
+    <div className="relative w-full rounded-b-xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 px-10 py-6">
+        <LocalBlurOverlay isLoading={!tasks} />
+        {sortedIds.map((taskId) => {
+          const task = tasks[taskId];
+          const { type } = getMeta(taskId);
+          return (
+            <TaskCard
+              key={taskId}
+              id={taskId}
+              task={task}
+              type={type}
+              spaceId={spaceId}
+              startingIn={getStartingIn(task, time, type)}
+              time={time}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const Space = ({
   name,
   description,
@@ -115,240 +192,192 @@ const Space = ({
 }: SpaceProps) => {
   const navigate = useNavigate();
   const { spacePrincipal } = useParams();
-  const { user } = useAuth();
   const dispatch = useDispatch();
   const isScreenBlur = useSelector(
-    (state: RootState) => state.app.isScreenBlur
-  );
+    (state: RootState) => state.app.isScreenBlur);
   const userBlockchainData = deserialize<StorableUser>(
     useSelector(selectUserBlockchainData)
   );
   const userInfo = userBlockchainData
-    ? new BlockchainUser(userBlockchainData)
-    : null;
-  const [isCreateTaskModal, setCreateTaskModal] = useState(false);
+   ? new BlockchainUser(userBlockchainData)
+  : null;
   const [isTransferModal, setTransferModal] = useState(false);
+  const [sortBy, setSortBy] = useState<SortMode>("sorting");
   const inHub = userBlockchainData?.in_hub ?? null;
-  const parsedSpacePrincipal = useSpaceId({
-    spacePrincipal,
-    navigate,
-  });
-  const authAtlasMain = useAuthAtlasMainActor();
-  const unAuthAtlasMain = useUnAuthAtlasMainActor();
+  const parsedSpacePrincipal = useSpaceId({ spacePrincipal, navigate });
+  const [isActionsOpen, setActionsOpen] = useState(false);
 
   if (!parsedSpacePrincipal) return <></>;
 
-  const didUserCanAdministrate =
-    userInfo?.canAdministrate(parsedSpacePrincipal) ?? false;
+  const didUserCanAdministrate = userInfo?.canAdministrate(parsedSpacePrincipal) ?? false;
+  const isSpaceLead = userInfo?.isSpaceLead() ?? false;
 
-  const toggleTaskModal = () => {
-    setCreateTaskModal(!isCreateTaskModal);
-    dispatch(setScreenBlur(!isScreenBlur));
-  };
   const toggleTransferModal = () => {
     setTransferModal(!isTransferModal);
     dispatch(setScreenBlur(!isScreenBlur));
   };
 
-  const joinSpace = async () => {
-    if (!authAtlasMain || !unAuthAtlasMain || !user) {
-      return;
-    }
-
-    await runWithLoading(async () => {
-      await toast.promise(
-        joinAtlasSpace({
-          authAtlasMain,
-          space: parsedSpacePrincipal,
-        }),
-        {
-          loading: "Trying to join space...",
-          success: "Successfully joined to space",
-          error: getErrorWithInfoToast("Failed to join to space."),
-        }
-      );
-      await getAtlasUser({
-        unAuthAtlasMain,
-        dispatch,
-        userId: user.principal,
-      });
-    }, dispatch);
+  const toggleSortOrder = () => {
+    setSortBy((prev) => {
+      if (prev === "sorting") return "sorting-reverse";
+      if (prev === "sorting-reverse") return "sorting";
+      return "sorting";
+    });
   };
 
-  const handleDeleteSpace = async () => {
-    if (!authAtlasMain) return;
-    
-    const confirmed = window.confirm("Are you sure you want to delete this space? This action cannot be undone.");
-    if (!confirmed) return;
-    
-    await runWithLoading(async () => {
-      await toast.promise(
-        deleteSpace({
-          authAtlasMain,
-          spaceId: parsedSpacePrincipal,
-        }),
-        {
-          loading: "Deleting space...",
-          success: "Space deleted",
-          error: getErrorWithInfoToast("Failed to delete space."),
-        }
-      );
-
-      dispatch(deleteSpaceFromStore({
-        spaceId: parsedSpacePrincipal.toText()
-      }));
-      navigate(SPACES_PATH);
-    }, dispatch);
-  };
-
+  const isAsc = sortBy === "sorting";
+  const isDesc = sortBy === "sorting-reverse";
 
   return (
     <>
-      <div className="container mx-auto my-4">
-        <div className="w-full px-3">
-          <div className="w-full flex flex-col gap-2 md:flex-row md:flex-none md:w-auto md:gap-none my-4 ">
-            <div className="flex flex-1 gap-2 justify-stretch md:justify-between">
-              <Button
-                light
-                className="flex-1 gap-2 md:flex-none "
-                onClick={() => navigate(SPACES_PATH)}
-              >
-                <FaArrowLeftLong /> Back
-              </Button>
-              {didUserCanAdministrate ? (
+      <div className={`w-full ${didUserCanAdministrate || isSpaceLead ? 'bg-background' : 'bg-dark'} flex`}>
+        <div className="w-full min-h-screen">
+          <SpaceHeader
+            spaceName={name}
+            spaceDescription={description}
+            spaceLogo={avatarImg}
+            spaceBackground={backgroundImg}
+            externalLinks={externalLinks}
+            userInfo={userInfo}
+            spacePrincipal={parsedSpacePrincipal}
+          />
+
+          <div className="w-full h-[1px] bg-primary" />
+          <div className="flex flex-1">
+            <div className="flex gap-3 mx-4 md:mx-10 my-4">
+            <Button
+              variant={isAsc || isDesc ? "primary" : "publish"}
+              className="flex gap-1 py-1 md:py-2 px-4 text-[12px] md:text-base font-montserrat font-medium"
+              onClick={toggleSortOrder}
+            >
+              <RiSortDesc
+                className={[
+                  "h-3 w-3 md:h-6 md:w-6",
+                  "transform transition-transform duration-200",
+                  isAsc ? "rotate-0" : isDesc ? "-rotate-180" : "rotate-0 opacity-60"
+                ].join(" ")}
+              />
+              Sorting
+            </Button>
+            <Button
+              variant={sortBy === "newest" ? "primary" : "publish"}
+              className="flex gap-1 py-1 md:py-2 px-4 text-[12px] md:text-base font-montserrat font-medium"
+              onClick={() => setSortBy("newest")}
+            >
+              <AiFillStar className="h-3 w-3 md:h-6 md:w-6" /> Newest
+            </Button>
+            </div>
+            <div className="flex flex-1 justify-end mx-4 md:mx-10 my-4">
+            <div className="hidden sm:flex gap-2">
+              {userInfo?.ownSpaces(parsedSpacePrincipal) ? (
                 <Button
-                  light
-                  className="flex-1 md:flex-none md:justify-end md:gap-2"
+                  variant="primary"
+                  className="flex-1 md:flex-none px-3 py-1 font-montserrat font-medium md:justify-end md:gap-2"
                   onClick={toggleTransferModal}
                 >
+                  <RiExchangeLine className="h-5 w-5 shrink-0" />
                   Transfer space
                 </Button>
               ) : (
                 <div className="hidden"></div>
               )}
-            </div>
-            {(didUserCanAdministrate ||
-              (!didUserCanAdministrate && userBlockchainData && !inHub)) && (
-              <div className="flex flex-1 w-full gap-2 md:flex-none md:w-auto md:gap-none">
-                {!didUserCanAdministrate && userBlockchainData && !inHub ? (
-                  <Button className="flex-1 md:flex-none" onClick={joinSpace}>
-                    Join space
-                  </Button>
-                ) : (
-                  didUserCanAdministrate && (
+              {(didUserCanAdministrate ||
+                (!didUserCanAdministrate && userBlockchainData && !inHub)) && (
+                <div className="flex gap-2">
+                  {didUserCanAdministrate && userBlockchainData && !inHub && (
                     <Button
-                      light
-                      className="flex-1 md:flex-none"
-                      onClick={() =>
-                        navigate(getSpaceEditPath(parsedSpacePrincipal))
-                      }
+                      variant="primary"
+                      className="flex-1 px-3 py-1 gap-2 md:flex-none font-montserrat font-medium"
+                      onClick={() => navigate(getSpaceEditPath(parsedSpacePrincipal))}
                     >
+                      <FiEdit2 className="h-4 w-5 shrink-0" />
                       Edit space
                     </Button>
-                  )
-                )}
-                {didUserCanAdministrate && (
-                  <Button
-                    light
-                    className="!text-red-400 hover:!bg-red-900/20"
-                    onClick={handleDeleteSpace}
+                  )}
+                  {didUserCanAdministrate && (
+                    <Button
+                      className="flex-1 md:flex-none px-3 py-1 gap-2 font-montserrat font-medium"
+                      onClick={() => navigate(getCreateTaskPath(parsedSpacePrincipal))}
+                    >
+                      <RiAddLine className="h-5 w-5 shrink-0" />
+                      Create new task
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="relative sm:hidden">
+              <Button
+                variant="primary"
+                className="px-3 py-1 font-montserrat font-medium flex items-center gap-2 text-[12px]"
+                onClick={() => setActionsOpen((v) => !v)}
+              >
+                Manage
+                <span
+                  className={`inline-block transition-transform duration-200 ${isActionsOpen ? "rotate-180" : "rotate-0"}`}
+                >
+                  ▾
+                </span>
+              </Button>
+              {isActionsOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setActionsOpen(false)}
+                  />
+                  <div
+                    role="menu"
+                    className="absolute right-0 z-50 mt-2 text-white w-48 rounded-md bg-dark/60 backdrop-blur-2xl"
                   >
-                    Delete space
-                  </Button>
-                )}
-                {didUserCanAdministrate && (
-                  <Button
-                    className="flex-1 md:flex-none"
-                    onClick={toggleTaskModal}
-                  >
-                    Create new task
-                  </Button>
-                )}
-              </div>
-              )
-            }
-          </div>
-          <div className="relative w-full rounded-t-xl bg-[#1E0F33] mb-1">
-            <div className="relative p-5 md:p-8 md:static">
-              <div
-                className={`${backgroundImg ? "h-52 rounded-3xl bg-center bg-no-repeat bg-cover relative" : "h-52 rounded-3xl bg-center bg-no-repeat bg-gradient-to-b from-[#9173FF] to-transparent to-[150%] bg-cover relative"} w-full flex items-center justify-center`}
-                style={
-                  backgroundImg
-                    ? { backgroundImage: `url('${backgroundImg}')` }
-                    : {}
-                }
-              ></div>
-              <div className="flex md:mt-2 flex-col md:flex-row">
-                <div className="absolute md:static left-12 transform -translate-x -translate-y-16 md:mt-8 md:gap-4 md:-translate-y-4">
-                  <div className="bg-white  flex rounded-3xl w-fit h-fit flex-none">
-                    {avatarImg ? (
-                      <img
-                        src={avatarImg}
-                        draggable="false"
-                        className="rounded-3xl m-[3px] w-20 h-20 md:m-[5px] md:w-28 md:h-28"
-                      />
-                    ) : (
-                      <div className="bg-[#4A0295] rounded-3xl m-[3px] w-20 h-20 md:m-[5px] md:w-28 md:h-28"></div>
+                    {userInfo?.ownSpaces(parsedSpacePrincipal) && (
+                      <button
+                      role="menuitem"
+                      className="w-full text-left px-3 py-2 rounded-md font-montserrat flex items-center gap-2"
+                      onClick={() => { setActionsOpen(false); toggleTransferModal(); }}
+                    >
+                      <RiExchangeLine className="h-5 w-5 shrink-0" />
+                      Transfer space
+                    </button>
+                    )}
+                    <div className="h-[1px] bg-light" role="none"></div>
+                    {(didUserCanAdministrate ||
+                      (!didUserCanAdministrate && userBlockchainData && !inHub)) && (
+                      <>
+                        {didUserCanAdministrate && userBlockchainData && !inHub && (
+                          <button
+                            role="menuitem"
+                            className="w-full text-left px-3 py-2 rounded-md flex items-center gap-2 font-montserrat"
+                            onClick={() => { setActionsOpen(false); navigate(getSpaceEditPath(parsedSpacePrincipal)); }}
+                          >
+                            <FiEdit2 className="h-4 w-5 shrink-0" />
+                            Edit space
+                          </button>
+                        )}
+                        <div className="w-full h-[1px] bg-light" role="none"></div>
+                        {didUserCanAdministrate && (
+                          <button
+                            role="menuitem"
+                            className="w-full text-left px-3 py-2 rounded-md flex items-center gap-2 font-montserrat"
+                            onClick={() => { setActionsOpen(false); navigate(getCreateTaskPath(parsedSpacePrincipal)); }}
+                          >
+                            <RiAddLine className="h-5 w-5 shrink-0" />
+                            Create new task
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
-                </div>
-                <div className="mt-8 mb-2 md:mb-6 md:mt-6 md:mx-5 text-white font-montserrat min-w-0 md:flex-wrap md:my-1 flex-1">
-                  <h2 className="text-base sm:text-2xl md:text-3xl lg:text-4xl font-semibold mb-2 truncate">
-                    {name}
-                  </h2>
-                  <p className="bg-[#9173FF]/20 text-xs md:text-base lg:text-2xl px-2 md:px-4 py-2 rounded-xl font-medium truncate">
-                    {description}
-                  </p>
-                </div>
-                <div className="flex items-center justify-center text-white gap-2">
-                  {externalLinks.discord && (
-                    <a
-                      href={externalLinks.discord}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <button className="p-2 bg-[#9173FF]/20 rounded-xl ">
-                        <FaDiscord size={36} />
-                      </button>
-                    </a>
-                  )}
-                  {externalLinks.telegram && (
-                    <a
-                      href={externalLinks.telegram}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <button className="p-2 bg-[#9173FF]/20 rounded-xl ">
-                        <FaTelegramPlane size={36} />
-                      </button>
-                    </a>
-                  )}
-                  {externalLinks.x && (
-                    <a href={externalLinks.x} target="_blank" rel="noreferrer">
-                      <button className="p-2 bg-[#9173FF]/20 rounded-xl ">
-                        <FaXTwitter size={36} />
-                      </button>
-                    </a>
-                  )}
-                  {externalLinks.linkedIn && (
-                    <a
-                      href={externalLinks.linkedIn}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <button className="p-2 bg-[#9173FF]/20 rounded-xl ">
-                        <FaLinkedinIn size={36} />
-                      </button>
-                    </a>
-                  )}
-                </div>
-              </div>
+                </>
+              )}
             </div>
-          <TasksList tasks={tasks} spaceId={spaceId} />
           </div>
+          </div>
+
+          <div className="w-full h-[1px] bg-primary mb-2" />
+
+          <TasksList tasks={tasks} spaceId={spaceId} sortBy={sortBy} />
         </div>
       </div>
-      {isCreateTaskModal && <CreateNewTaskModal callback={toggleTaskModal} taskToEdit={null}/>}
       {isTransferModal && <TransferSpaceModal callback={toggleTransferModal} />}
     </>
   );

@@ -17,9 +17,10 @@ target/
 node_modules/
 dist/
 .svelte-kit/
-**/.astro
 
 # environment variables
 .env
 dfx.json
-.astro
+
+# Astro build cache
+**/.astro/*

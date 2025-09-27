@@ -23,18 +23,22 @@ import {
   getUsersSubmissions,
   UserSubmissions,
 } from "../../canisters/atlasSpace/tasks";
-import { shortPrincipal } from "../../utils/icp";
 import { TiArrowSortedDown } from "react-icons/ti";
 import Button from "../Shared/Button";
+import SpaceHeader from "../Shared/SpaceHeader";
 import type { ActorSubclass } from "@dfinity/agent";
 import { Principal } from "@dfinity/principal";
 import type { TaskData, TasksData } from "../../canisters/atlasSpace/types";
 import type { Space } from "../../store/slices/spacesSlice";
-import { FaArrowLeftLong } from "react-icons/fa6";
-import { getTaskPath } from "../../router/paths";
+import { getSpacePath } from "../../router/paths";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import toast from "react-hot-toast";
 import { runWithLoading } from "../../utils/loading";
+import {
+  BlockchainUser,
+  selectUserBlockchainData,
+  type StorableUser,
+} from "../../store/slices/userSlice";
 
 const Submissions = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -48,6 +52,11 @@ const Submissions = () => {
   const unAuthAtlasSpace = principal
     ? useUnAuthAtlasSpaceActor(principal)
     : null;
+    const parsedSpacePrincipal = useSpaceId({
+          spacePrincipal,
+          navigate,
+        });
+    if (!parsedSpacePrincipal) return <></>;
 
   const space = principal
     ? deserialize<Space>(
@@ -60,6 +69,13 @@ const Submissions = () => {
 
   const tasks = space?.tasks ? space.tasks : null;
   const spaceData = space?.state;
+
+  const userBlockchainData = deserialize<StorableUser>(
+    useSelector(selectUserBlockchainData)
+  );
+  const userInfo = userBlockchainData
+    ? new BlockchainUser(userBlockchainData)
+    : null;
 
   useEffect(() => {
     if (spaceId && !spaceData && unAuthAtlasSpace) {
@@ -92,93 +108,116 @@ const Submissions = () => {
   }
 
   return (
-    <div className="container mx-auto my-4">
-      <div className="w-full px-3">
-        <div className="w-full flex flex-col gap-2 md:flex-row md:flex-none md:w-auto md:gap-none my-4 md:justify-between">
-          <div className="flex">
-            <Button
-              light
-              className="flex-1 gap-2"
-              onClick={() => navigate(getTaskPath(principal, taskId))}
-            >
-              <FaArrowLeftLong /> Back
-            </Button>
-          </div>
+    <div className="mb-4">
+      <div className="w-full min-h-screen">
+        <SpaceHeader
+          spaceName={spaceData.space_name}
+          spaceDescription={spaceData.space_description}
+          spaceLogo={spaceData.space_logo}
+          spaceBackground={spaceData.space_background}
+          externalLinks={spaceData.external_links}
+          userInfo={userInfo}
+          spacePrincipal={parsedSpacePrincipal}
+        />
+        <div className="w-full h-[1px] bg-primary mb-4" />
+
+        <div className="flex flex-1 justify-between px-10">
+          <Button
+            variant="vivid"
+            className="flex gap-2 md:flex-none px-4"
+            onClick={() => navigate(getSpacePath(parsedSpacePrincipal))}
+          >
+            All Missions
+          </Button>
+          <Button
+            variant="publish"
+            onClick={() => navigate(-1)}
+            className="px-2 font-semibold rounded text-sm sm:text-base"
+          >
+            Review
+          </Button>
         </div>
-        <div className="relative w-full rounded-xl bg-[#1E0F33]/60 mb-1 p-4 sm:p-8">
-          <div className="flex items-center gap-4">
-            <div className="bg-white flex rounded-2xl w-fit h-fit flex-none">
-              {spaceData.space_logo ? (
-                <img
-                  src={spaceData.space_logo}
-                  draggable="false"
-                  className="rounded-2xl m-1 w-16 h-16"
-                />
-              ) : (
-                <div className="bg-[#4A0295] rounded-3xl m-1 w-16 h-16"></div>
-              )}
+        <div className="w-full h-[1px] bg-white/40 my-3" />
+        <div className="relative w-full rounded-xl mb-1 p-4 sm:p-6">
+          <h2 className="text-light text-h2 font-montserrat mt-4 pl-2">
+            Mission Review
+          </h2>
+          <div className="hidden sm:block">
+            <div className="mt-6 px-2">
+              <div className="flex items-center text-xs sm:text-sm text-white gap-2 font-montserrat mb-2">
+                <div className="w-64 shrink-0">
+                  <div className="bg-primary rounded px-3 py-1 w-full text-center">
+                    Date Created
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0 px-2">
+                  <div className="bg-primary rounded px-3 py-1 w-full text-center">
+                    Mission Name
+                  </div>
+                </div>
+                <div className="w-36 shrink-0">
+                  <div className="bg-primary rounded px-3 py-1 w-full text-center">
+                    Status
+                  </div>
+                </div>
+              </div>
             </div>
-            <div>
-              <h2 className="text-3xl font-semibold font-montserrat flex text-white">
-                {spaceData?.space_name}
-              </h2>
-            </div>
-          </div>
-          <div className="mx-1 sm:mx-2">
-            <div className="h-1 w-full bg-white/20 mt-4 mb-3 sm:mt-6 sm:mb-8 rounded-full"></div>
-            <div>
-              <h2 className="text-3l sm:text-4xl font-semibold font-montserrat flex text-white">
-                {currentTask.task_title}{" "}
-                <span className="text-[#9173FF] ml-2">(Submissions)</span>
-              </h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="table-fixed mt-6 w-full text-white text-center rtl:text-right border-separate border-spacing-x-2 font-montserrat">
-                <thead>
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-2 py-3 text-xs sm:text-sm text-left w-8 rounded-tl-lg"
-                    ></th>
-                    <th
-                      scope="col"
-                      className="px-4 py-3 text-xs sm:text-sm text-left w-1/3"
-                    >
-                      Principal
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-4 py-3 text-xs sm:text-sm text-center w-1/3"
-                    >
-                      Submitted
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-4 py-3  text-xs sm:text-sm text-right w-1/3 rounded-tr-lg"
-                    >
-                      State
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(usersSubmissions.userSubmissionsData).map(
-                    ([userPrincipal, tasks]) => (
-                      <Summation
-                        key={userPrincipal}
-                        userPrincipal={userPrincipal}
-                        currentTask={currentTask}
-                        tasksCount={tasksCount}
-                        usersSubmissions={usersSubmissions}
-                        currentTaskData={tasks}
-                        authAtlasSpace={authAtlasSpace}
-                        taskId={taskId}
-                        unAuthAtlasSpace={unAuthAtlasSpace}
-                        spaceId={spaceId}
-                      />
-                    )
-                  )}
-                </tbody>
-              </table>
+            <div className="mx-1 sm:mx-2">
+              <div className="h-1 w-full bg-white/20 mt-4 mb-3 sm:mt-6 sm:mb-8 rounded-full"></div>
+              <div>
+                <h2 className="text-3l sm:text-4xl font-semibold font-montserrat flex text-white">
+                  {currentTask.task_title}{" "}
+                  <span className="text-[#9173FF] ml-2">(Submissions)</span>
+                </h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="table-fixed mt-6 w-full text-white text-center rtl:text-right border-separate border-spacing-x-2 font-montserrat">
+                  <thead>
+                    <tr>
+                      <th
+                        scope="col"
+                        className="px-2 py-3 text-xs sm:text-sm text-left w-8 rounded-tl-lg"
+                      ></th>
+                      <th
+                        scope="col"
+                        className="px-4 py-3 text-xs sm:text-sm text-left w-1/3"
+                      >
+                        Principal
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-4 py-3 text-xs sm:text-sm text-center w-1/3"
+                      >
+                        Submitted
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-4 py-3  text-xs sm:text-sm text-right w-1/3 rounded-tr-lg"
+                      >
+                        State
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(usersSubmissions.userSubmissionsData).map(
+                      ([userPrincipal, tasks]) => (
+                        <Summation
+                          key={userPrincipal}
+                          userPrincipal={userPrincipal}
+                          currentTask={currentTask}
+                          tasksCount={tasksCount}
+                          usersSubmissions={usersSubmissions}
+                          currentTaskData={tasks}
+                          authAtlasSpace={authAtlasSpace}
+                          taskId={taskId}
+                          unAuthAtlasSpace={unAuthAtlasSpace}
+                          spaceId={spaceId}
+                        />
+                      )
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -203,7 +242,6 @@ const Summation = ({
   currentTask,
   usersSubmissions,
   userPrincipal,
-  tasksCount,
   currentTaskData,
   authAtlasSpace,
   taskId,
@@ -213,39 +251,85 @@ const Summation = ({
   const [isSummationOpen, setSummationOpen] = useState(false);
   const submissionState = usersSubmissions.getSubmissionState(userPrincipal);
 
+  const fakeDate = "2025/09/09, 15:44:37 PM UTC";
+  const fakeRelative = "5 days ago";
+
+  const badge = (state: "Rejected" | "WaitingForReview" | "Accepted") => {
+    const base =
+      "inline-flex items-center justify-center rounded-md px-3 py-1 text-xs font-semibold";
+    switch (state) {
+      case "Accepted":
+        return `${base} bg-green-500/90 text-white`;
+      case "Rejected":
+        return `${base} bg-red-500/90 text-white`;
+      default:
+        return `${base} bg-indigo-500/90 text-white`;
+    }
+  };
+
   return (
-    <>
-      <tr
-        onClick={() => setSummationOpen(!isSummationOpen)}
-        className="border-b border-gray-700 hover:bg-[#9173FF]/40 cursor-pointer transition-colors duration-200"
+    <div className="rounded-xl transition-colors duration-200
+                odd:bg-primary/90 even:bg-dark/15
+                sm:odd:bg-transparent sm:even:bg-transparent
+                sm:hover:bg-primary/20">
+      <div
+        className="sm:hidden flex items-start gap-2 py-3 cursor-pointer"
+        onClick={() => setSummationOpen((v) => !v)}
       >
-        <td className="bg-[#9173FF]/30 px-2 py-2 sm:px-3 sm:py-3 text-center rounded-bl-lg">
-          <div
-            className={`flex items-center justify-center transition-transform duration-200 ${!isSummationOpen && "-rotate-90"}`}
-          >
-            <TiArrowSortedDown className="text-xl" />
+        <div className="w-6 shrink-0 flex items-start justify-center pt-[2px]">
+          <TiArrowSortedDown
+            className={`text-lg text-white transition-transform duration-200 ${
+              !isSummationOpen ? "-rotate-90" : ""
+            }`}
+          />
+        </div>
+        <div className="flex-1 min-w-0 text-white">
+          <div className="mb-2">
+            <div className="text-xs mb-1 font-semibold">Date Created</div>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-sm truncate">{fakeDate}</span>
+              <span className="text-xs flex-shrink-0">{fakeRelative}</span>
+            </div>
           </div>
-        </td>
-        <td className="bg-[#9173FF]/30 px-3 py-2 sm:px-5 sm:py-3 text-xs sm:text-sm md:text-base text-left truncate max-w-[150px]">
-          {shortPrincipal(userPrincipal)}
-        </td>
-        <td className="bg-[#9173FF]/30 px-3 py-2 sm:px-5 sm:py-3 text-xs sm:text-sm md:text-base text-center">
-          {Object.keys(currentTaskData).length}/{tasksCount}
-        </td>
-        <th
-          className={`bg-[#9173FF]/30 px-3 py-2 sm:px-5 sm:py-3 text-xs sm:text-sm md:text-base text-center rounded-br-lg ${
-            submissionState === "Rejected" && "text-red-500"
-          } ${submissionState === "Accepted" && "text-green-500"}`}
-        >
-          {submissionState}
-        </th>
-      </tr>
+          <div className="mb-2">
+            <div className="text-xs mb-1 font-semibold">Mission Name</div>
+            <div className="text-sm truncate">{currentTask.task_title}</div>
+          </div>
+          <div>
+            <div className="text-xs mb-1 font-semibold">Status</div>
+            <span className={badge(submissionState)}>{submissionState}</span>
+          </div>
+        </div>
+      </div>
+      <div
+        className="hidden sm:flex items-start gap-2  cursor-pointer"
+        onClick={() => setSummationOpen((v) => !v)}
+      >
+        <div className="w-64 shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <TiArrowSortedDown
+              className={`text-xl text-white relative -top-[1px] transition-transform duration-200 ${
+                !isSummationOpen ? "-rotate-90" : ""
+              }`}
+            />
+            <span className="text-sm text-white truncate">{fakeDate}</span>
+            <span className="text-xs text-white/70 flex-shrink-0">
+              {fakeRelative}
+            </span>
+          </div>
+        </div>
+        <div className="flex-1 min-w-0 pr-2">
+          <div className="rounded-lg px-3 text-sm truncate text-white">
+            {currentTask.task_title}
+          </div>
+        </div>
+        <div className="w-36 shrink-0 text-center">
+          <span className={badge(submissionState)}>{submissionState}</span>
+        </div>
+      </div>
       {isSummationOpen && (
-        <tr>
-          <td
-            colSpan={4}
-            className="bg-[#9173FF]/20 px-4 py-4 sm:px-6 rounded-b-lg"
-          >
+        <div className="px-2 pb-2">
+          <div className="px-4 py-4 sm:px-6 rounded-b-lg">
             {Object.entries(currentTaskData).map(([key]) => (
               <GenericTaskSummation
                 key={key}
@@ -262,10 +346,10 @@ const Summation = ({
                 isFullyRewarded={currentTask.rewarded.length >= Number(currentTask.number_of_uses)}
               />
             ))}
-          </td>
-        </tr>
+          </div>
+        </div>
       )}
-    </>
+    </div>
   );
 };
 
@@ -366,20 +450,20 @@ const GenericTaskSummation = ({
   const singleSubmissionState = Object.keys(submission.submissionData.state)[0];
 
   return (
-    <div className="text-left pb-4 mt-4 p-4 rounded-lg bg-[#1E0F33]/40">
+    <div className="text-left pb-4 p-4 rounded-lg odd:bg-white/10 even:bg-primary   sm:bg-darker/40">
       <p className="text-white text-xs font-semibold mb-2">
         Subtask: {subtaskId} | Status: {singleSubmissionState}
       </p>
-      <h3 className="text-xl font-bold text-white mb-2 break-words">
+      <h3 className="sm:text-xl font-bold text-white mb-2 break-words">
         {genericTask.task_content.TitleAndDescription.task_title}
       </h3>
-      <p className="text-wrap mb-4 break-words">
+      <p className="text-sm sm:text-base text-wrap text-white mb-4 break-words">
         {genericTask.task_content.TitleAndDescription.task_description}
       </p>
-      <div className="mt-4">
+      <div className="mt-4 text-sm sm:text-base">
         <p className="text-white font-semibold mb-1">Submitted response:</p>
         {"Text" in submission.submissionData.submission && (
-          <div className="border-2 border-[#9173FF]/20 p-3 rounded-xl w-full mb-4 bg-[#9173FF]/20 text-white break-words">
+          <div className="border-2 border-dark/10 p-3 rounded w-full mb-4 bg-primary/20 text-white break-words">
             {submission.submissionData.submission.Text.content}
           </div>
         )}
@@ -396,8 +480,8 @@ const GenericTaskSummation = ({
         {submissionState === "Rejected" &&
           submission.submissionData.rejection_reason[0] &&
           submission.submissionData.rejection_reason[0].trim().length > 0 && (
-            <div className="mt-2 p-3 rounded-lg border border-red-500 bg-red-900 bg-opacity-20 text-red-300">
-              <p className="font-semibold text-red-200 mb-1">Reject Reason:</p>
+            <div className="mt-2 p-3 text-sm sm:text-base rounded border border-red-500 bg-red-800 text-red-300">
+              <p className="font-semibold text-white mb-1">Reject Reason:</p>
               <p className="break-words">
                 {submission.submissionData.rejection_reason[0]}
               </p>
@@ -407,7 +491,12 @@ const GenericTaskSummation = ({
           {singleSubmissionState === "WaitingForReview" && !isFullyRewarded && (
               <>
                 <div className="flex gap-2 justify-end">
-                  <Button onClick={acceptSubtask}>Accept</Button>
+                  <Button
+                    onClick={acceptSubtask}
+                    className="px-4 font-medium"
+                  >
+                    Accept
+                  </Button>
                   <Button
                     onClick={() => setShowRejectPopup(true)}
                     className="bg-red-500"
@@ -416,8 +505,8 @@ const GenericTaskSummation = ({
                   </Button>
                 </div>
               </>
-          )}
-          {singleSubmissionState === "WaitingForReview" && isFullyRewarded && (
+            )}
+            {singleSubmissionState === "WaitingForReview" && isFullyRewarded && (
             <div className="flex justify-end">
               <p className="text-yellow-400 font-semibold">All rewards granted</p>
             </div>
@@ -426,29 +515,32 @@ const GenericTaskSummation = ({
       </div>
       {showRejectPopup && (
         <div
-          className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${isLoading ? "z-30 blur-sm" : "z-50"}`}
+          className={`fixed inset-0 bg-black/30 flex items-center justify-center ${isLoading ? "z-30 blur-sm" : "z-50"}`}
         >
-          <div className="bg-[#402a5f] p-6 rounded-2xl shadow-lg w-96 text-black">
+          <div className="bg-dark m-4 p-6 rounded-2xl shadow-lg w-96 text-black">
             <h2 className="text-xl text-white font-bold mb-4">
               Reason for Rejection
             </h2>
             <form onSubmit={handleSubmit(onSubmit)} className="my-3 rounded-lg">
               <textarea
                 {...register("reason")}
-                className="w-full p-3 border border-[#8973FF]/20 bg-[#9173FF]/20 rounded-xl text-white mb-2 resize-none overflow-hidden"
+                className="w-full p-3 border outline-none focus:outline-none border-light/20 rounded-xl text-white mb-2 resize-none overflow-hidden"
                 placeholder="Enter reason here(optional)"
                 rows={5}
               />
               <div className="flex justify-end gap-2">
                 <Button
+                  variant="primary"
                   onClick={() => {
                     setShowRejectPopup(false);
                   }}
-                  className=""
+                  className="px-2"
                 >
                   Cancel
                 </Button>
-                <Button className="bg-red-500">Submit Rejection</Button>
+                <Button 
+                variant="red"
+                className="px-2">Submit Rejection</Button>
               </div>
             </form>
           </div>
@@ -459,3 +551,5 @@ const GenericTaskSummation = ({
 };
 
 export default Submissions;
+
+

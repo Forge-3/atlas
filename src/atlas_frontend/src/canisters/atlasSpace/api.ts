@@ -427,7 +427,7 @@ export const forceExpireTask = async ({
   });
 };
 
-export const deleteCloseTask = async ({
+export const deleteClosedTask = async ({
   authAtlasSpace,
   taskId,
 }: CloseTaskArgs) => {

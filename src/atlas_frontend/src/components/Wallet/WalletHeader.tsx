@@ -140,14 +140,14 @@ const WalletHeader = () => {
             className="flex flex-col gap-3 text-white"
             onSubmit={handleSubmit(handleWithdrawFunds)}
           >
-            <div className="border-[#9173FF] border-[3px] py-4 px-6 flex gap-2 items-center justify-center w-fit mx-auto rounded-2xl">
+            <div className="border-primary border-[3px] py-4 px-6 flex gap-2 items-center justify-center w-fit mx-auto rounded-2xl">
               <div className="text-white text-base sm:text-3xl">
                 Smart <br />
                 Wallet
               </div>
               <WalletIcon className="h-12 sm:h-16" />
-              <div className="bg-[#9173FF]/30 text-white px-2 py-1 text-[14px] sm:px-6 sm:py-4 sm:text-lg rounded-2xl backdrop-blur-sm text-center">
-                {parsedUserCkUsdc} XP
+              <div className="bg-primary/30 text-white px-2 py-1 text-[14px] sm:px-6 sm:py-4 sm:text-lg rounded-2xl backdrop-blur-sm text-center">
+                {parsedUserCkUsdc} ckUSDC
               </div>
             </div>
             <div className="flex flex-col gap-3">
@@ -173,7 +173,7 @@ const WalletHeader = () => {
                   maxValue={1000}
                 />
                 <span
-                  className="absolute text-[#9173FF] top-3 right-6 cursor-pointer select-none"
+                  className="absolute text-primary top-3 right-6 cursor-pointer select-none"
                   onClick={setMax}
                 >
                   max
@@ -181,8 +181,8 @@ const WalletHeader = () => {
               </div>
 
               {parsedCkUsdcFee && (
-                <div className="text-white mx-auto bg-[#9173FF]/40 w-fit py-1 px-4 rounded-full font-normal">
-                  Fee: {parsedCkUsdcFee} XP
+                <div className="text-white mx-auto bg-primary/40 w-fit py-1 px-4 rounded-full font-normal">
+                  Fee: {parsedCkUsdcFee} ckUSDC
                 </div>
               )}
               <motion.button

@@ -105,7 +105,7 @@ const TransferSpaceModal = ({ callback }: TransferSpaceModalArgs) => {
             Transfer space
             <Button className="flex gap-2">Transfer space</Button>
           </h2>
-          <div className="border-l-2 pl-2 border-[#9173FF] border-dashed lex items-center justify-between font-semibold gap-2">
+          <div className="border-l-2 pl-2 border-primary border-dashed lex items-center justify-between font-semibold gap-2">
             <WalletAddressInputForm
               register={register}
               name="principal"

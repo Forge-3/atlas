@@ -24,15 +24,15 @@ const WalletAddressInputForm = <TFormValues extends FieldValues>({
 }: WalletAddressInputFormProps<TFormValues>) => {
   return (
     <div>
-      {label && <p className="text-gray-600">{label}</p>}
-      {small && <small className="text-gray-600">{small}</small>}
+      {label && <p className="text-white">{label}</p>}
+      {small && <small className="text-white">{small}</small>}
       <input
         type="text"
         autoComplete="off"
         placeholder={placeholder}
         maxLength={maxLength}
         {...register(name)}
-        className={`border-2 p-2 rounded-xl w-full ${className ?? ""} ${
+        className={`p-2 rounded-xl w-full ${className ?? ""} ${
           errors?.[name]?.message ? "!border-2 border-red-500" : ""
         }`}
       />
