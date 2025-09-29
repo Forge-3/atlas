@@ -20,7 +20,7 @@ const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
   const navigate = useNavigate();
 
   const reward = formatUnits(task.token_reward.CkUsdc.amount, DECIMALS)
-  const lastTask = task.tasks.at(-1)?.GenericTask.submission.filter(([, submission]) => 'Accepted' in submission.state)
+  const rewarded = task.rewarded.length;
 
   return (
     <div className="w-full h-auto">
@@ -52,8 +52,7 @@ const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
             points={reward}
           />
           <InfoBox type="steps" steps={task.tasks.length} />
-          {/* //TODO: fix count of submission */}
-          <InfoBox type="uses" uses={`${lastTask?.length}/${task.number_of_uses}`} />
+          <InfoBox type="uses" uses={`${rewarded}/${task.number_of_uses}`} />
         </div>
       </div>
     </a>

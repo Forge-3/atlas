@@ -561,7 +561,7 @@ const SpaceBuilder = () => {
                     </p>
                   </div>
                 </div>
-                <div className="my-4 flex justify-center lg:justify-end px-0 sm:px-3">
+                <div className="my-4 flex justify-center md:justify-end px-0 sm:px-3">
                   {parsedSpacePrincipal ? (
                     didUserCanAdministrate && (
                       <Button

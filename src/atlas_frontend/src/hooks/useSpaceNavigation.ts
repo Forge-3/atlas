@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { deserialize, type RootState } from "../store/store";
 import { BlockchainUser, selectUserBlockchainData, type StorableUser } from "../store/slices/userSlice";
 import type { StorableConfig } from "../store/slices/appSlice";

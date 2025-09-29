@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { getSpacePath } from "../../../router/paths";
@@ -9,7 +9,6 @@ import { deserialize } from "../../../store/store";
 import { BlockchainUser, selectUserBlockchainData, type StorableUser } from "../../../store/slices/userSlice";
 import useJoinSpace from "../../../hooks/useJoinSpace";
 import { useSelector } from "react-redux";
-import toast from "react-hot-toast";
 
 interface SpaceItemProps {
   name: string;
@@ -26,8 +25,6 @@ const SpaceItem = ({
   spacePrincipal,
 }: SpaceItemProps) => {
   const navigate = useNavigate();
-  const [, setShowToast] = useState(false);
-
 
   const userBlockchainData = deserialize<StorableUser>(
       useSelector(selectUserBlockchainData)
@@ -44,20 +41,6 @@ const SpaceItem = ({
     userInfo?.canAdministrate(spacePrincipal) ?? false;
 
   const joinSpace = useJoinSpace(spacePrincipal).joinSpace;
-
-  const lastToastRef = useRef(0);
-
-  const handleJoinBlocked = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const now = Date.now();
-    if (now - lastToastRef.current < 4000) return;
-    lastToastRef.current = now;
-
-    toast('You’ve reached the maximum number of hubs you can join.', {
-    duration: 3000,
-  });
-    setTimeout(() => setShowToast(false), 2500);
-  };
 
   return (
     <motion.div
@@ -84,14 +67,18 @@ const SpaceItem = ({
               Owner
             </span>
           ) : isUserInHub ? (
-            <span className="px-4 py-1 text-[12px] bg-dark/15 rounded md:text-base text-center font-montserrat font-medium text-white">
+            <span className="px-4 py-1 text-[12px] bg-primary rounded md:text-base text-center font-montserrat font-medium text-white">
               Joined
+            </span>
+          ) : isUserInDifferentHub ? (
+            <span className="px-4 py-1 text-[12px] bg-dark/15 rounded md:text-base text-center font-montserrat font-medium text-white/60">
+              {`Can't join`}
             </span>
           ) : (
             <Button
               variant="primary"
               className="px-4 text-[12px] md:text-base font-medium text-white"
-              onClick={isUserInDifferentHub ? handleJoinBlocked : joinSpace}            >
+              onClick={joinSpace}>
               Join <RiAddLine className="text-base md:text-xl" />
             </Button>
           )}

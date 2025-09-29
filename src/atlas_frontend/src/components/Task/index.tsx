@@ -315,7 +315,7 @@ const Task = () => {
               {didUserCanAdministrate ? (
                 <Button
                   variant="dark"
-                  className="gap-2 px-2 w-[93px] whitespace-nowrap sm:w-[120px]"
+                  className="gap-2 px-2 w-[108px] whitespace-nowrap sm:w-[120px]"
                   onClick={() => navigate(getSpacePath(parsedSpacePrincipal))}
                 >
                   All Missions
@@ -323,7 +323,7 @@ const Task = () => {
               ) : (
                 <Button
                   variant="vivid"
-                  className="gap-2 px-2 w-[93px] whitespace-nowrap sm:w-[120px]"
+                  className="gap-2 px-2 w-[108px] whitespace-nowrap sm:w-[120px]"
                   onClick={() => navigate(getSpacePath(parsedSpacePrincipal))}
                 >
                   All Missions
@@ -377,7 +377,7 @@ const Task = () => {
             <div className="flex flex-1">
               {didUserCanAdministrate && !taskDisabled && !taskExpired && (
                 <Button
-                  className="whitespace-nowrap px-4 sm:ml-2 text-white bg-rose-800 w-[93px] sm:w-auto"
+                  className="whitespace-nowrap px-4 sm:ml-2 text-white bg-rose-800 w-[108px] sm:w-auto"
                   onClick={expireTask}
                 >
                   Force task expire
@@ -406,13 +406,13 @@ const Task = () => {
         <div className="w-full h-[1px] bg-primary mb-4"/>
         <div className="flex flex-col-reverse md:flex-row w-full md:py-8">
           <div className="flex flex-col w-full px-6">
-            <div className="flex flex-row justify-between items-center w-full mt-4 md:mt-0">
-              <h2 className="text-h3 md:text-h2 font-medium mt-4 md:my-0 font-montserrat text-white">
-                Do task to redeem rewards
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center w-full mt-4 md:mt-0">
+              <h2 className="text-h3 md:text-h2 font-medium mt-4 md:my-0 font-montserrat text-white break-words">
+                {currentTask.task_title}
               </h2>
-              {didUserCanAdministrate && (
+              {didUserCanAdministrate && !taskExpired && !taskClosed && (
                 <Button
-                  className="ml-4 whitespace-nowrap px-4 text-white bg-blue-700"
+                  className="mt-4 sm:mt-0 sm:ml-4 whitespace-nowrap px-4 text-white bg-blue-700"
                   onClick={() => navigate(getEditTaskPath(parsedSpacePrincipal, taskId))}
                 >
                   Edit mission
@@ -484,7 +484,7 @@ const Task = () => {
               </div>
             </div>
           </div>
-          <div className="flex flex-col w-auto  max-h-min bg-black/20 p-4 md:p-8 rounded-lg mx-6">
+          <div className="flex flex-col w-auto  max-h-min bg-black/20 p-4 md:p-8 rounded-lg mx-6 sm:self-start ">
             <div className="flex flex-col xl:flex-row justify-between">
               {type === "ongoing" && (
                 <div className="mb-2 w-full">

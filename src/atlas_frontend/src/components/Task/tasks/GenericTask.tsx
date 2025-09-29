@@ -254,17 +254,31 @@ const listForm = useForm<ListFormData>({
       </div>
       <div className="flex flex-col bg-black/20 rounded-lg p-3 md:p-6 w-full">
         <div className="mb-4">
-          <div className="flex items-baseline gap-2">
+          <div className="hidden sm:flex items-baseline gap-2">
             <h3 className="flex-1 text-[20px] md:text-h3 font-medium font-montserrat text-light break-all">
               {"TitleAndDescription" in genericTask.task_content 
                 ? genericTask.task_content.TitleAndDescription.task_title
                 : "N/A"}
             </h3>
             {user && !isUserAdmin && submissionData && (
-              <span className={`shrink-0 ml-2 text-[12px] sm:text-base ${badgeCls(userState)} px-3 py-2 rounded-lg text-white`}>
+              <span className={`shrink-0 sm:ml-2 ${badgeCls(userState)} px-3 py-2 rounded-lg text-light`}>
                 {prettyStatus}
               </span>
             )}
+          </div>
+          <div className="sm:hidden flex-col items-baseline">
+            {user && !isUserAdmin && submissionData && (
+              <div className="mb-3">
+                <span className={`shrink-0 text-[12px] ${badgeCls(userState)} px-3 py-2 rounded-lg text-light`}>
+                  {prettyStatus}
+                </span>
+              </div>
+            )}
+            <h3 className="flex-1 text-[20px] md:text-h3 font-medium font-montserrat text-light break-all">
+              {"TitleAndDescription" in genericTask.task_content 
+                ? genericTask.task_content.TitleAndDescription.task_title
+                : "N/A"}
+            </h3>
           </div>
           <p className="mt-1 text-[14px] md:text-base text-light/80 font-montserrat break-all">
             {"TitleAndDescription" in genericTask.task_content 
@@ -278,10 +292,10 @@ const listForm = useForm<ListFormData>({
             {answerFormatKey !== "List" ? (
                <form onSubmit={textForm.handleSubmit(onSubmitText)}>
                  <div>
-                  <p className="flex flex-col w-full text-xs md:text-base text-white font-semibold mb-1">Submit response:</p>
+                  <p className="flex flex-col w-full text-xs md:text-base text-light font-semibold mb-1">Submit response:</p>
                   <textarea
                     {...textForm.register("taskSubmission")}
-                    className="border-2 border-primary/20 outline-none focus:outline-none resize-none overflow-hidden p-2 md:p-4 rounded-xl w-full max mb-2 bg-primary/20 text-white"
+                    className="border-2 border-primary/20 outline-none focus:outline-none resize-none overflow-hidden p-2 md:p-4 rounded-xl w-full max mb-2 bg-primary/20 text-light"
                     maxLength={maxTextLength}
                     onInput={(e) => resize(e.currentTarget)}
                   />
@@ -290,36 +304,48 @@ const listForm = useForm<ListFormData>({
                       {textForm.formState.errors.taskSubmission.message}
                     </p>
                   )}
-                  <div className="flex justify-end">
-                    <Button variant="vivid" className="text-[12px] md:text-base font-medium px-2 rounded-md mb-4">Submit</Button>
+                  <div className="flex justify-between items-center">
+                    {answerFormatKey && (
+                      <span className="text-xs sm:text-sm bg-primary/20 text-primary px-2 py-1 rounded-md font-medium">
+                        {`Answer format: ${answerFormatKey} (max ${maxTextLength} chars)`}
+                      </span>
+                    )}
+                    <Button variant="vivid" className="text-[12px] md:text-base font-medium px-2 rounded-md sm:mb-4">Submit</Button>
                   </div>
                 </div>
               </form>
             ) : (
               <form onSubmit={listForm.handleSubmit(onSubmitList)}>
                 {fields.map((field, idx) => (
-                  <div key={field.id} className="flex gap-2 mb-2 items-center">
+                  <div key={field.id} className="flex mb-2 items-center">
+                    <span className="w-6 text-light font-bold">{idx + 1}.</span>
                     <input
                       {...listForm.register(`items.${idx}.value` as const)}
-                      maxLength={254}
-                      className="border-2 border-[#9173FF]/20 p-1 md:p-2 rounded-xl w-full bg-[#9173FF]/20 text-white placeholder-gray-300"
+                      maxLength={maxTextLength}
+                      className="border-2 border-primary/20 p-1 md:p-2 rounded-xl w-full bg-primary/20 text-light placeholder-gray-300 outline-none focus:outline-none"
                       defaultValue={field.value}
                     />
-                    <button type="button" onClick={() => remove(idx)} className="text-red-500 text-xl px-2 py-1 rounded-lg">
+                    <button type="button" onClick={() => remove(idx)}
+                      className="w-8 h-8 flex items-center justify-center rounded-full text-red-500 text-xl font-bold cursor-pointer hover:bg-red-500/20 transition-colors">
                       −
                     </button>
                   </div>
                 ))}
-                {
-                  <Button onClick={() => append({ value: "" })} className="md:px-2.5 md:py-1 px-2 py-0.5">
+                {fields.length < 25 && (
+                  <Button onClick={() => append({ value: "" })} className="w-5 h-5 md:w-8 md:h-8 flex items-center justify-center rounded-full text-light text-lg">
                     + 
                   </Button>
-                }
+                )}
                 {listForm.formState.errors.items && (
                   <p className="text-red-400 text-sm">{(listForm.formState.errors.items)?.message}</p>
                 )}
-                <div className="flex justify-end">
-                  <Button variant="vivid" className="text-[12px] md:text-base font-medium px-2 rounded-md mb-4">Submit</Button>
+                <div className="flex justify-between items-center mt-2">
+                  {answerFormatKey && (
+                    <span className="text-xs sm:text-sm bg-primary/20 text-primary px-2 py-1 rounded-md font-medium">
+                      {"Answer format: List (max 25 items)"}
+                    </span>
+                  )}
+                  <Button variant="vivid" className="text-[12px] md:text-base font-medium px-2 rounded-md sm:mb-4">Submit</Button>
                 </div>
               </form>
             )}

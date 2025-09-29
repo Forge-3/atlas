@@ -325,7 +325,6 @@ const Navbar = () => {
             <Button
             variant="saveDraft"
             className="text-[14px] px-3 md:text-[18px] md:w-[110px] md:h-[33px] md:px-4 md:2my-2 sm:my-0"
-            disabled={true}
             onClick={() => navigate(SPACES_PATH)}>
             Discover
             </Button>

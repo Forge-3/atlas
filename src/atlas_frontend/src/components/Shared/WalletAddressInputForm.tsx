@@ -32,7 +32,7 @@ const WalletAddressInputForm = <TFormValues extends FieldValues>({
         placeholder={placeholder}
         maxLength={maxLength}
         {...register(name)}
-        className={`p-2 rounded-xl w-full ${className ?? ""} ${
+        className={`p-2 rounded-xl w-full focus:outline-none ${className ?? ""} ${
           errors?.[name]?.message ? "!border-2 border-red-500" : ""
         }`}
       />

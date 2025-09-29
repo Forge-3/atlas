@@ -9,7 +9,6 @@ import type {
   SubmissionData,
   Task,
   TaskContent,
-  TaskType,
 } from "../../../../declarations/atlas_space/atlas_space.did.js";
 import { unwrapCall } from "../delegatedCall.js";
 import { setSpace, setTasks } from "../../store/slices/spacesSlice.js";
@@ -17,7 +16,6 @@ import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { Principal } from "@dfinity/principal";
 import type { ExternalLinks } from "./types.js";
-import { setSpaceUsersCount } from "../../store/slices/statsSlice.js";
 export interface ExpiredTask extends Task {
   expired: true;
 }

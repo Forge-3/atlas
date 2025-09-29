@@ -9,7 +9,9 @@ const ScreenLoadingOverlay = () => {
   if (!isLoading && !isInitialUserLoading) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/25 backdrop-blur-2xl z-40">
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/25 z-40"
+      style={{ backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}>
       <AstronautIcon />
     </div>
   );

@@ -8,7 +8,7 @@ import { formatUnits, parseUnits } from "ethers";
 import { useDispatch, useSelector } from "react-redux";
 import { DECIMALS } from "../canisters/ckUsdcLedger/constans";
 import { createNewTask, editTask, getSpaceTasks } from "../canisters/atlasSpace/api";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   useAuthAtlasSpaceActor,
   useAuthCkUsdcLedgerActor,
@@ -135,6 +135,8 @@ export interface EditableTask extends Task {
 const CreateNewTaskModal = () => {
   const { spacePrincipal, taskId } = useParams();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const title = pathname.endsWith("/edit") ? "Edit mission" : "Create new mission";
 
   const principal = useSpaceId({
     spacePrincipal,
@@ -416,9 +418,12 @@ const CreateNewTaskModal = () => {
         ),
       };
 
+      taskId = taskToEdit.task_id;
+
       const isSameTask = JSON.stringify(sortKeys(oldTaskData)) === JSON.stringify(sortKeys(newTaskData));
       if (isSameTask) {
         toast.success("No changes detected, task not updated.");
+        navigate(getTaskPath(principal, taskId.toString()));
         return;
       }
 
@@ -434,109 +439,120 @@ const CreateNewTaskModal = () => {
         numberOfUsesBn
       );
 
-      if (newDepositAndFee > currentDepositAndFee) {
-        const extraCost = newDepositAndFee - currentDepositAndFee + BigInt(ckUsdcFee);
-        const allowanceCheck = setUserSpaceAllowanceIfNeeded({
+      await runWithLoading(async () => {
+        if (newDepositAndFee > currentDepositAndFee) {
+          const extraCost = newDepositAndFee - currentDepositAndFee + BigInt(ckUsdcFee);
+          const allowanceCheck = setUserSpaceAllowanceIfNeeded({
+            unAuthCkUsd: unAuthCkUsdcActor,
+            authCkUsdc: authCkUsdcActor,
+            spacePrincipal: principal,
+            amount: extraCost,
+            userPrincipal: user.principal,
+          });
+          await toast.promise(allowanceCheck, {
+            loading: "Checking available funds...",
+            success: "Funds allowance granted successfully.",
+            error: getErrorWithInfoToast("Failed to allocate funds:"),
+          });
+        }
+
+        const editedCall = editTask({
+          authAtlasSpace: authAtlasSpaceActor,
+          args: {
+            task_id: taskId,
+            task_title: taskTitle !== taskToEdit.task_title ? [taskTitle] : [],
+            token_reward: rewardPerUsageBn !== taskToEdit.token_reward.CkUsdc.amount ? [{ CkUsdc: { amount: rewardPerUsageBn } }]: [],
+            start_time: startTimeUnixSec !== Number(taskToEdit.start_time) ? [BigInt(startTimeUnixSec)] : [],
+            end_time: endTimeUnixSec !== Number(taskToEdit.end_time) ? [BigInt(endTimeUnixSec)] : [],
+            number_of_uses: numberOfUsesBn !== taskToEdit.number_of_uses ? [numberOfUsesBn] : [],
+            task_content: [
+              taskContent.map(task => task
+                ? [{ TitleAndDescription: {
+                    task_title: task.title,
+                    task_description: task.description,
+                    allow_resubmit: task.allow_resubmit,
+                    answer_format: task.answer_format,
+                  }}]
+                : []
+              )
+            ],
+          }
+        });
+        await toast.promise(editedCall, {
+          loading: "Saving changes...",
+          success: "Task updated successfully.",
+          error: getErrorWithInfoToast("Failed to update task:"),
+        });
+      
+
+        await getSpaceTasks({
+          spaceId,
+          unAuthAtlasSpace: authAtlasSpaceActor,
+          dispatch,
+        });
+        await getUserBalance({
+          unAuthCkUsdc: unAuthCkUsdcActor,
+          userPrincipal: user?.principal,
+          dispatch,
+        });
+        navigate(getTaskPath(principal, taskId.toString()));
+      }, dispatch);
+    } else {
+      await runWithLoading(async () => {
+        const estimatedCost = calculateDepositAmount(rewardPerUsageBn, ckUsdcFee, numberOfUsesBn);
+        const getOrSetAllowance = setUserSpaceAllowanceIfNeeded({
           unAuthCkUsd: unAuthCkUsdcActor,
           authCkUsdc: authCkUsdcActor,
           spacePrincipal: principal,
-          amount: extraCost,
+          amount: estimatedCost,
           userPrincipal: user.principal,
         });
-        await toast.promise(allowanceCheck, {
+        await toast.promise(getOrSetAllowance, {
           loading: "Checking available funds...",
           success: "Funds allowance granted successfully.",
           error: getErrorWithInfoToast("Failed to allocate funds:"),
         });
-      }
 
-      taskId = taskToEdit.task_id;
-      const editedCall = editTask({
-        authAtlasSpace: authAtlasSpaceActor,
-        args: {
-          task_id: taskId,
-          task_title: taskTitle !== taskToEdit.task_title ? [taskTitle] : [],
-          token_reward: rewardPerUsageBn !== taskToEdit.token_reward.CkUsdc.amount ? [{ CkUsdc: { amount: rewardPerUsageBn } }]: [],
-          start_time: startTimeUnixSec !== Number(taskToEdit.start_time) ? [BigInt(startTimeUnixSec)] : [],
-          end_time: endTimeUnixSec !== Number(taskToEdit.end_time) ? [BigInt(endTimeUnixSec)] : [],
-          number_of_uses: numberOfUsesBn !== taskToEdit.number_of_uses ? [numberOfUsesBn] : [],
-          task_content: [
-            taskContent.map(task => task
-              ? [{ TitleAndDescription: {
-                  task_title: task.title,
-                  task_description: task.description,
-                  allow_resubmit: task.allow_resubmit,
-                  answer_format: task.answer_format,
-                }}]
-              : []
-            )
-          ],
-        }
-      });
-      await toast.promise(editedCall, {
-        loading: "Saving changes...",
-        success: "Task updated successfully.",
-        error: getErrorWithInfoToast("Failed to update task:"),
-      });
-      await getSpaceTasks({
-        spaceId,
-        unAuthAtlasSpace: authAtlasSpaceActor,
-        dispatch,
-      });
-      navigate(getTaskPath(principal, taskId.toString()));
-    } else {
-      const estimatedCost = calculateDepositAmount(rewardPerUsageBn, ckUsdcFee, numberOfUsesBn);
-      const getOrSetAllowance = setUserSpaceAllowanceIfNeeded({
-        unAuthCkUsd: unAuthCkUsdcActor,
-        authCkUsdc: authCkUsdcActor,
-        spacePrincipal: principal,
-        amount: estimatedCost,
-        userPrincipal: user.principal,
-      });
-      await toast.promise(getOrSetAllowance, {
-        loading: "Checking available funds...",
-        success: "Funds allowance granted successfully.",
-        error: getErrorWithInfoToast("Failed to allocate funds:"),
-      });
+        const createNewTaskCall = createNewTask({
+          authAtlasSpaceActor,
+          numberOfUses: numberOfUsesBn,
+          rewardPerUsage: rewardPerUsageBn,
+          tasks: taskContent.filter((task) => task !== null),
+          taskTitle,
+          startTime: BigInt(startTimeUnixSec),
+          endTime: BigInt(endTimeUnixSec),
+        });
+        const taskId = await toast.promise(createNewTaskCall, {
+          loading: "Creating new task...",
+          success: "Task created successfully.",
+          error: getErrorWithInfoToast("Failed to create task:"),
+        });
+      
+        await getSpaceTasks({
+          spaceId,
+          unAuthAtlasSpace: authAtlasSpaceActor,
+          dispatch,
+        });
+        await getUserBalance({
+          unAuthCkUsdc: unAuthCkUsdcActor,
+          userPrincipal: user?.principal,
+          dispatch,
+        });
+        navigate(getTaskPath(principal, taskId.toString()));
+      }, dispatch);
+    }
+  };
 
-      const createNewTaskCall = createNewTask({
-        authAtlasSpaceActor,
-        numberOfUses: numberOfUsesBn,
-        rewardPerUsage: rewardPerUsageBn,
-        tasks: taskContent.filter((task) => task !== null),
-        taskTitle,
-        startTime: BigInt(startTimeUnixSec),
-        endTime: BigInt(endTimeUnixSec),
-      });
-      const taskId = await toast.promise(createNewTaskCall, {
-        loading: "Creating new task...",
-        success: "Task created successfully.",
-        error: getErrorWithInfoToast("Failed to create task:"),
-      });
-      await getSpaceTasks({
-        spaceId,
-        unAuthAtlasSpace: authAtlasSpaceActor,
-        dispatch,
-      });
-      await getUserBalance({
-        unAuthCkUsdc: unAuthCkUsdcActor,
-        userPrincipal: user?.principal,
-        dispatch,
-      });
-      navigate(getTaskPath(principal, taskId.toString()));
+  const formatDisplayDateTime = (dateTimeString: string | null | undefined) => {
+    if (!dateTimeString) return { date: 'N/A', time: 'N/A' };
+    const date = new Date(dateTimeString);
+    if (isNaN(date.getTime())) return { date: 'N/A', time: 'N/A' };
+    
+    return {
+      date: formatDateShortMonth(date),
+      time: formatDateShortHour(date)
     };
   };
-
-const formatDisplayDateTime = (dateTimeString: string | null | undefined) => {
-  if (!dateTimeString) return { date: 'N/A', time: 'N/A' };
-  const date = new Date(dateTimeString);
-  if (isNaN(date.getTime())) return { date: 'N/A', time: 'N/A' };
-  
-  return {
-    date: formatDateShortMonth(date),
-    time: formatDateShortHour(date)
-  };
-};
 
   const currentStartTime = watch("startTime");
   const currentEndTime = watch("endTime");
@@ -570,8 +586,8 @@ const formatDisplayDateTime = (dateTimeString: string | null | undefined) => {
     el.style.height = `${el.scrollHeight}px`;
   };
 
- return (
-  <form onSubmit={handleSubmit(onSubmit)} className="bg-gradient-to-b from-background to-primary overflow-auto  flex flex-1 w-full items-center justify-center pb-12">
+  return (
+   <div className="bg-gradient-to-b from-background to-primary overflow-auto  flex flex-1 w-full items-center justify-center pb-12">
     <div className="flex-col flex-1">
       <SpaceHeader
         spaceName={spaceName}
@@ -602,8 +618,8 @@ const formatDisplayDateTime = (dateTimeString: string | null | undefined) => {
       </div>
       <div className="w-full h-[1px] bg-white/40 mb-3 my-3" />
 
-      <h2 className="text-white font-medium font-montserrat text-xl sm:text-2xl mb-4">Create new mission</h2>
-
+      <form onSubmit={handleSubmit(onSubmit)}>
+      <h2 className="text-white font-medium font-montserrat text-xl sm:text-2xl mb-4">{title}</h2>
       <div className="flex flex-col lg:flex-row gap-6 mb-4 flex-grow">
         <div className="flex-1">
           <div className="bg-dark/20 p-2 rounded mb-6">
@@ -690,7 +706,7 @@ const formatDisplayDateTime = (dateTimeString: string | null | undefined) => {
                       key={field.id}
                       className="bg-dark/20 rounded-lg p-4 sm:p-6 mb-6 shadow-lg"
                     >
-                      <h3 className="bg-dark text-white text-base sm:text-lg font-montserrat font-medium py-1 px-3 sm:px-4 rounded-md inline-block mb-4">
+                      <h3 className="bg-dark text-white text-base sm:text-lg font-montserrat font-medium py-1 px-3 sm:px-4 rounded-md inline-block">
                         Task {index + 1} (deleted)
                       </h3>
                     </div>
@@ -841,10 +857,11 @@ const formatDisplayDateTime = (dateTimeString: string | null | undefined) => {
         >
           Publish
         </Button>
-      </div>
+        </div>
+      </form>
     </div>
     </div>
-  </form>
+  </div>
   );
 };
 

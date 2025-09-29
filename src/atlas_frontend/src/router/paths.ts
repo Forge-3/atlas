@@ -3,7 +3,6 @@ import type { Principal } from "@dfinity/principal";
 export const SPACES_PATH = "/space";
 export const SPACE_PATH = SPACES_PATH + "/:spacePrincipal";
 export const TASK_PATH = SPACE_PATH + "/:taskId";
-export const REVIEW_SUMMATIONS_PATH = TASK_PATH + "/summations";
 export const CREATE_TASK_PATH = SPACE_PATH + "/create-task";
 export const EDIT_TASK_PATH = TASK_PATH + "/edit";
 
@@ -23,12 +22,6 @@ export const getTaskPath = (principal: Principal, taskId: string) =>
   );
 export const getSpaceEditPath = (principal: Principal) =>
   SPACE_EDIT_PATH.replace(":spacePrincipal", principal.toText());
-
-export const getSubmissionsPath = (principal: Principal, taskId: string) =>
-  REVIEW_SUMMATIONS_PATH.replace(":spacePrincipal", principal.toText()).replace(
-    ":taskId",
-    taskId
-  );
 
 export const getCreateTaskPath = (spacePrincipal: Principal) =>
   CREATE_TASK_PATH.replace(":spacePrincipal", spacePrincipal.toText());

@@ -96,21 +96,23 @@ const TransferSpaceModal = ({ callback }: TransferSpaceModalArgs) => {
         onClick={callback}
       >
         <div
-          className="flex flex-col rounded-xl bg-white p-[20px] gap-[10px] w-[40rem] max-h-[80vh] overflow-y-auto"
+          className="flex flex-col rounded-xl bg-background m-6 sm:m-0 p-[20px] gap-[10px] w-[40rem] max-h-[80vh] overflow-y-auto"
           onClick={(e) => {
             e.stopPropagation();
           }}
         >
-          <h2 className="flex items-center justify-between font-semibold mb-4">
+          <h2 className="flex items-center justify-between font-semibold mb-4 text-light">
             Transfer space
-            <Button className="flex gap-2">Transfer space</Button>
+            <Button
+            variant="primary" 
+            className="flex gap-2 px-2">Transfer space</Button>
           </h2>
-          <div className="border-l-2 pl-2 border-primary border-dashed lex items-center justify-between font-semibold gap-2">
+          <div className="border-l-2 pl-2 border-light border-dashed lex items-center justify-between font-semibold gap-2">
             <WalletAddressInputForm
               register={register}
               name="principal"
               placeholder="Enter the principal"
-              className="py-3 px-4 rounded-xl bg-white/20 backdrop-blur-sm border-0"
+              className="py-3 px-4 rounded-xl bg-dark/20 backdrop-blur-sm border-0 text-light"
               errors={errors}
             />
           </div>

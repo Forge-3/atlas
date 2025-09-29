@@ -95,12 +95,6 @@ impl User {
         &self.owned_spaces
     }
 
-    pub fn remove_owned_space(&mut self, space: u64) {
-        if let Some(pos) = self.owned_spaces.iter().position(|&i| i == space) {
-            self.owned_spaces.remove(pos);
-        }
-    }
-
     pub fn promote_to_admin(&mut self) -> Result<(), Error> {
         match self.rank() {
             Rank::User => {

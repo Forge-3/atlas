@@ -11,7 +11,7 @@ interface ButtonProps {
   variant?: 'primary' | 'publish' | 'saveDraft' | 'vivid' | 'dark' | 'red';
 }
 
-const Button = ({children, onClick, className, variant = 'primary'}: ButtonProps) => {
+const Button = ({children, onClick, className, variant = 'primary', disabled = false,}: ButtonProps) => {
   const baseClasses = "cursor-pointer flex justify-center rounded items-center py-1 md:py-2 font-montserrat";
   const variantClasses = {
     primary: "bg-primary text-white",
@@ -25,7 +25,8 @@ const Button = ({children, onClick, className, variant = 'primary'}: ButtonProps
   return (
     <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={onClick}
       className={`${baseClasses} ${variantClasses[variant]} ${className ?? ""}`}
-    >      
+      disabled={disabled}
+    >
         {children}
     </motion.button>
   );

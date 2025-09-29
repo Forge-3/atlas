@@ -139,6 +139,15 @@ const ReviewSubmission = ({
             {submission.submissionData.submission.Text.content}
           </div>
         )}
+        {"List" in submission.submissionData.submission && (
+          <ul className="list-decimal list-inside border-2 border-dark/10 p-3 rounded-xl w-full mb-4 bg-primary/20 text-white space-y-1">
+            {submission.submissionData.submission.List.items.map((item: string, idx: number) => (
+              <li key={idx} className="break-words whitespace-pre-wrap">
+                {item}
+              </li>
+            ))}
+          </ul>
+        )}
         <div className="flex flex-col justify-end gap-2">
           <div className="flex gap-2 justify-end">
             <Button

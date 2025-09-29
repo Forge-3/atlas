@@ -10,7 +10,9 @@ const LocalBlurOverlay = ({ isLoading }: LocalBlurOverlayProps) => {
 
   return (
     <div className="w-full h-[calc(100vh-340px)]">
-      <div className="backdrop-blur-sm z-10 flex justify-center items-center w-full h-full">
+      <div 
+        className="z-10 flex justify-center items-center w-full h-full"
+        style={{ backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}>
         <AstronautIcon />
       </div>
     </div>
