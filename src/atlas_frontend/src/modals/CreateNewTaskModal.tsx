@@ -25,6 +25,7 @@ import {
 import { useAuth } from "@nfid/identitykit/react";
 import {
   selectBlockchainConfig,
+  setLoading,
   type StorableConfig,
 } from "../store/slices/appSlice";
 import { deserialize, type RootState } from "../store/store";
@@ -49,6 +50,7 @@ import {
   selectUserBlockchainData,
   type StorableUser,
 } from "../store/slices/userSlice";
+import ScreenLoadingOverlay from "../components/Shared/ScreenLoadingOverlay";
 
 export const getAnswerFormatKey = (format: AnswerFormat): string => Object.keys(format)[0];
 const answerFormatDescriptions: Record<string, string> = {
@@ -328,75 +330,77 @@ const CreateNewTaskModal = () => {
     endTime,
     taskTitle,
   }) => {
-    const numberOfUsesBn = BigInt(numberOfUses.toString());
-    const rewardPerUsageBn = parseUnits(rewardPerUsage.toString(), DECIMALS);
+    dispatch(setLoading(true));
+    try {
+      const numberOfUsesBn = BigInt(numberOfUses.toString());
+      const rewardPerUsageBn = parseUnits(rewardPerUsage.toString(), DECIMALS);
 
-    const startTimeUnixSec = Math.floor(new Date(startTime).getTime() / 1000);
-    const endTimeUnixSec = Math.floor(new Date(endTime).getTime() / 1000);
+      const startTimeUnixSec = Math.floor(new Date(startTime).getTime() / 1000);
+      const endTimeUnixSec = Math.floor(new Date(endTime).getTime() / 1000);
 
-    if (
-      !authAtlasSpaceActor ||
-      !unAuthCkUsdcActor ||
-      !authCkUsdcActor ||
-      !user
-    ) {
-      toast.error("Session expired");
-      navigate("/");
-      return;
-    }
-
-    const toAnswerFormat = (key: string): AnswerFormat => {
-      switch (key) {
-        case "Small":
-          return { Small: null };
-        case "Paragraph":
-          return { Paragraph: null };
-        case "Long":
-          return { Long: null };
-        case "List":
-          return { List: null };
-        default:
-          throw new Error(`Unknown AnswerFormat key: ${key}`);
+      if (
+        !authAtlasSpaceActor ||
+        !unAuthCkUsdcActor ||
+        !authCkUsdcActor ||
+        !user
+      ) {
+        toast.error("Session expired");
+        navigate("/");
+        return;
       }
-    };
 
-    const taskContent = tasks.map((task) => {
-      if ("disabled" in task) {
-        return null;
+      const toAnswerFormat = (key: string): AnswerFormat => {
+        switch (key) {
+          case "Small":
+            return { Small: null };
+          case "Paragraph":
+            return { Paragraph: null };
+          case "Long":
+            return { Long: null };
+          case "List":
+            return { List: null };
+          default:
+            throw new Error(`Unknown AnswerFormat key: ${key}`);
+        }
+      };
+
+      const taskContent = tasks.map((task) => {
+        if ("disabled" in task) {
+          return null;
+        }
+        return {
+          task_type: "generic",
+          title: task.title,
+          description: task.description,
+          allow_resubmit: task.allowResubmit,
+          answer_format: toAnswerFormat(task.answerFormat),
+        };
+      });
+
+      if (!taskContent || taskContent.length === 0) {
+        toast.error("Invalid subtasks: the minimum number of subtasks is one.");
+        return;
       }
-      return {
-        task_type: "generic",
-        title: task.title,
-        description: task.description,
-        allow_resubmit: task.allowResubmit,
-        answer_format: toAnswerFormat(task.answerFormat),
-      };
-    });
 
-    if (!taskContent || taskContent.length === 0) {
-      toast.error("Invalid subtasks: the minimum number of subtasks is one.");
-      return;
-    }
-
-    let taskId: bigint;
-    if (taskToEdit) {
-      const oldTaskData = {
-        task_title: taskToEdit.task_title,
-        start_time: taskToEdit.start_time.toString(),
-        end_time: taskToEdit.end_time.toString(),
-        number_of_uses: taskToEdit.number_of_uses.toString(),
-        token_reward: taskToEdit.token_reward.CkUsdc.amount.toString(),
-        tasks: taskToEdit.tasks
-          .map(t => {
-            if ("GenericTask" in t) {
-              return {
-                task_content: t.GenericTask.task_content.TitleAndDescription,
-              };
-            }
-            return null;
-          })
-          .filter(Boolean),
-      };
+      let taskId: bigint;
+      if (taskToEdit) {
+        const oldTaskData = {
+          task_title: taskToEdit.task_title,
+          start_time: taskToEdit.start_time.toString(),
+          end_time: taskToEdit.end_time.toString(),
+          number_of_uses: taskToEdit.number_of_uses.toString(),
+          token_reward: taskToEdit.token_reward.CkUsdc.amount.toString(),
+          tasks: taskToEdit.tasks
+            .map(t => {
+              if ("GenericTask" in t) {
+                return {
+                  task_content: t.GenericTask.task_content.TitleAndDescription,
+                };
+              }
+              return null;
+            })
+            .filter(Boolean),
+        };
 
       const newTaskData = {
         task_title: taskTitle,
@@ -420,24 +424,24 @@ const CreateNewTaskModal = () => {
 
       taskId = taskToEdit.task_id;
 
-      const isSameTask = JSON.stringify(sortKeys(oldTaskData)) === JSON.stringify(sortKeys(newTaskData));
-      if (isSameTask) {
-        toast.success("No changes detected, task not updated.");
-        navigate(getTaskPath(principal, taskId.toString()));
+        const isSameTask = JSON.stringify(sortKeys(oldTaskData)) === JSON.stringify(sortKeys(newTaskData));
+        if (isSameTask) {
+          toast.success("No changes detected, task not updated.");
+          navigate(getTaskPath(principal, taskId.toString()));
         return;
-      }
+        }
 
-      const currentDepositAndFee = calculateDepositAmount(
-        taskToEdit.token_reward.CkUsdc.amount,
-        BigInt(ckUsdcFee),
-        BigInt(taskToEdit.number_of_uses)
-      );
+        const currentDepositAndFee = calculateDepositAmount(
+          taskToEdit.token_reward.CkUsdc.amount,
+          BigInt(ckUsdcFee),
+          BigInt(taskToEdit.number_of_uses)
+        );
 
-      const newDepositAndFee = calculateDepositAmount(
-        rewardPerUsageBn,
-        BigInt(ckUsdcFee),
-        numberOfUsesBn
-      );
+        const newDepositAndFee = calculateDepositAmount(
+          rewardPerUsageBn,
+          BigInt(ckUsdcFee),
+          numberOfUsesBn
+        );
 
       await runWithLoading(async () => {
         if (newDepositAndFee > currentDepositAndFee) {
