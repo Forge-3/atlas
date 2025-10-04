@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm, useFieldArray, type SubmitHandler, type FieldErrorsImpl } from "react-hook-form";
 import Button from "../components/Shared/Button";
@@ -221,6 +221,8 @@ const CreateNewTaskModal = () => {
     control,
     watch,
     setValue,
+    getValues,
+    reset,
     formState: { errors },
   } = useForm<CreateNewTaskFormInput>({
     resolver: yupResolver(schema),
@@ -543,6 +545,36 @@ const CreateNewTaskModal = () => {
     }
   };
 
+  const DRAFT_KEY = "create-task-draft";
+  const [hasDraft, setHasDraft] = useState(false);
+
+  useEffect(() => {
+    const existingDraft = localStorage.getItem(DRAFT_KEY);
+    setHasDraft(!!existingDraft);
+  }, []);
+
+  const handleSaveDraft = () => {
+    const values = getValues();
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(values));
+    setHasDraft(true);
+    toast.success("Draft saved!");
+  };
+
+  const handleOpenDraft = () => {
+    const saved = localStorage.getItem(DRAFT_KEY);
+    if (!saved) {
+      toast.error("No draft found");
+      return;
+    }
+    try {
+      const parsed = JSON.parse(saved);
+      reset(parsed);
+      toast.success("Draft loaded!");
+    } catch {
+      toast.error("Failed to load draft");
+    }
+  };
+
   const formatDisplayDateTime = (dateTimeString: string | null | undefined) => {
     if (!dateTimeString) return { date: 'N/A', time: 'N/A' };
     const date = new Date(dateTimeString);
@@ -842,15 +874,24 @@ const CreateNewTaskModal = () => {
         >
           Task <FaPlus className="ml-2"/>
         </Button>
-        {/* TODO: We should be saving form to localstorage than ("Save Draft" -> "Open Draft") to be able to restore information
-        should be similar to EditSpace feat */
-        /* <Button
+        <Button
           variant="saveDraft"
+          type="button"
           className="px-3 font-semibold text-sm sm:text-base w-full sm:w-auto mb-2 sm:mb-0"
-          onClick={() => toast("Draft saving not yet implemented")}
+          onClick={handleSaveDraft}
         >
           Save draft
-        </Button> */}
+        </Button>
+        {hasDraft && (
+          <Button
+            variant="saveDraft"
+            type="button"
+            className="px-3 font-semibold text-sm sm:text-base w-full sm:w-auto mb-2 sm:mb-0"
+            onClick={handleOpenDraft}
+          >
+            Apply Draft
+          </Button>
+        )}
         <Button
           variant="publish"
           className="px-3 font-semibold text-sm sm:text-base w-full sm:w-auto"

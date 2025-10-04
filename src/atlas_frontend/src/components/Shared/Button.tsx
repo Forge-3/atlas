@@ -9,13 +9,14 @@ interface ButtonProps {
   smallText?: string
   disabled?: boolean;
   variant?: 'primary' | 'publish' | 'saveDraft' | 'vivid' | 'dark' | 'red';
+  type?: "button" | "submit" | "reset";
 }
 
 const Button = ({children, onClick, className, variant = 'primary', disabled = false,}: ButtonProps) => {
   const baseClasses = "cursor-pointer flex justify-center rounded items-center py-1 md:py-2 font-montserrat";
   const variantClasses = {
     primary: "bg-primary text-white",
-    publish: "bg-white text-dark",
+    publish: "bg-light text-dark",
     saveDraft: "bg-dark text-white",
     vivid: "bg-background text-white",
     dark: "bg-dark text-white",
@@ -23,7 +24,7 @@ const Button = ({children, onClick, className, variant = 'primary', disabled = f
   };
 
   return (
-    <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={onClick}
+    <motion.button type={type} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={onClick}
       className={`${baseClasses} ${variantClasses[variant]} ${className ?? ""}`}
       disabled={disabled}
     >
