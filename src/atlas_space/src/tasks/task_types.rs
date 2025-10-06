@@ -206,6 +206,7 @@ impl From<&TaskContent> for TaskType {
 }
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType)]
+#[allow(clippy::enum_variant_names)]
 pub enum TaskType {
     #[n(0)]
     GenericTask {

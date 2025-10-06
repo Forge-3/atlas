@@ -21,9 +21,10 @@ import { runWithLoading } from "../../utils/loading";
 
 type GenericTaskType = Extract<TaskType, { GenericTask: unknown }>['GenericTask'];
 type DiscordTaskType = Extract<TaskType, { DiscordTask: unknown }>['DiscordTask'];
+type TwitterTaskType = Extract<TaskType, { TwitterTask: unknown }>['TwitterTask'];
 
 export interface TaskSummationProps {
-  task: GenericTaskType | DiscordTaskType;
+  task: GenericTaskType | DiscordTaskType | TwitterTaskType;
   usersSubmissions: UserSubmissions;
   submission: TaskData;
   authAtlasSpace: ActorSubclass<_SERVICE>;
@@ -129,6 +130,18 @@ const TaskSummation = ({
           </h3>
           <p className="text-wrap break-all">
             {task.task_content.DiscordTask.task_description}
+          </p>
+        </>
+      );
+    }
+    if ('TwitterTask' in task.task_content) {
+      return (
+        <>
+          <h3 className="text-xl font-bold text-wrap break-all">
+            {task.task_content.TwitterTask.task_title}
+          </h3>
+          <p className="text-wrap break-all">
+            {task.task_content.TwitterTask.task_description}
           </p>
         </>
       );
