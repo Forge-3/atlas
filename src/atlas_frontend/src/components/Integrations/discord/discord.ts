@@ -33,7 +33,7 @@ export const getOAuth2URL = (stateData?: string) => {
     new URL(DISCORD_CALLBACK_PATH, window.location.origin).toString()
   );
   url.searchParams.set("response_type", "token");
-  url.searchParams.set("scope", "identify");
+  url.searchParams.set("scope", "identify guilds");
   if (stateData) url.searchParams.set("state", stateData);
 
   return url.toString();
