@@ -1,3 +1,4 @@
+
 type PopupOptions = {
   clientId: string;
   redirectUri: string;
