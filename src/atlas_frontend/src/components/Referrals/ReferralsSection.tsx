@@ -55,10 +55,10 @@ const ReferralSection = () => {
           </div>
 
           <div className="w-full md:w-2/3 min-h-[160px] bg-[url(/reward-bg-img.png)] bg-cover bg-center [mix-blend-mode:luminosity] backdrop-blur-sm rounded-2xl text-center flex flex-col justify-center">
-            <div className="text-xl font-semibold">Max referral rewards for rank ({championTitle}): </div>
+            <div className="text-xl font-semibold">Max referral rewards uses for rank ({championTitle}): </div>
             <div className="text-3xl text-[#00FFAA] font-bold mt-2">{maxReferrals}</div>
             <div className="mt-2 text-base text-gray-300">
-              Remaining referral rewards:{" "}
+              Remaining referral rewards uses:{" "}
               <span className="text-white font-semibold">{remainingReferrals}</span>
             </div>
           </div>

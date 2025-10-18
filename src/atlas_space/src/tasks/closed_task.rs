@@ -150,9 +150,7 @@ impl ClosedTask {
         let mut combined: HashSet<Principal> = accepted_users;
         combined.extend(self.rewarded.iter().cloned());
 
-        let unused_task_rewards = self
-            .number_of_uses
-            .saturating_sub(combined.len() as u64);
+        let unused_task_rewards = self.number_of_uses.saturating_sub(combined.len() as u64);
         if unused_task_rewards == 0 && unused_affiliate_rewards == 0 {
             return Err(Error::AllRewardsClaimed);
         }

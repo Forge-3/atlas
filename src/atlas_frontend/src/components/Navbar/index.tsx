@@ -322,7 +322,7 @@ const Navbar = () => {
         </a>
         <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4">
           {user && (
-            <div className="flex">
+            <div className="flex gap-2 sm:gap-3 md:gap-4">
               <Button
                 variant={location?.pathname !== "/space" ? "publish" : "primary"}
                 onClick={() => navigate(SPACES_PATH)}
@@ -335,8 +335,9 @@ const Navbar = () => {
               </Button> */}
               {!userInfo?.isAdmin() && (
                 <Button
-                  light={location?.pathname !== "/referrals"}
-                  onClick={() => navigate(REFERRALS_PATH)} className="px-4 py-1.5 rounded-2xl text-[16px]"
+                  variant={location?.pathname !== "/referrals" ? "publish" : "primary"}
+                  onClick={() => navigate(REFERRALS_PATH)}
+                  className="font-medium text-[12px] md:text-base px-4 md:px-6 "
                 >
                   Referrals
                 </Button>

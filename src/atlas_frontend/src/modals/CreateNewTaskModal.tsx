@@ -290,7 +290,7 @@ const CreateNewTaskModal = () => {
     useSelector(selectBlockchainConfig)
   );
 
-  const calculateDepositAmount = (amount: bigint, fee: bigint, numberOfUses: bigint) => {
+  const calculateDepositAmount = (rewardPerUsageBn: bigint, ckUsdcFee: bigint, numberOfUsesBn: bigint) => {
     const PERCENTAGE_FOR_AFFILIATION_REWARDS = 20n; // 20%
     const SINGLE_AFFILIATION_REWARD = 2_000_000n;
 

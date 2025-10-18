@@ -1,12 +1,10 @@
+use crate::guard::user_has_available_referrals;
 use crate::tasks::task::validate_task_time_edit;
 use crate::tasks::task::EditTaskArgs;
-use crate::guard::user_has_available_referrals;
 use crate::tasks::task::Task;
 use crate::tasks::task_types::TaskType;
 use crate::tasks::timer_logic;
 use crate::update_helpers::{accept_expired_subtask_submission, accept_open_subtask_submission};
-use crate::tasks::token_reward::TokenReward;
-use crate::tasks::token_reward::SINGLE_AFFILIATION_REWARD;
 use crate::CreateTaskArgs;
 use crate::Submission;
 use crate::TaskId;
@@ -18,11 +16,9 @@ use crate::{
     tasks::closed_task::ClosedTask,
 };
 use candid::Principal;
-use ic_cdk::call::Call;
 use ic_cdk::update;
 use ic_cdk_timers::TimerId;
 use ic_stable_structures::Storable;
-use num_traits::cast::ToPrimitive;
 use sha2::Digest;
 use std::collections::BTreeMap;
 

@@ -1,15 +1,13 @@
-use candid::{CandidType, Nat, Principal};
-use minicbor::{Decode, Encode};
-use serde::Deserialize;
-
 use crate::errors::Error;
 use crate::funds::{
-    calculate_affiliate_uses, 
-    calculate_deposit_amount, deposit_ckusdc, get_account_balance, withdraw_ckusdc,
-,
+    calculate_affiliate_uses, calculate_deposit_amount, deposit_ckusdc, get_account_balance,
+    withdraw_ckusdc,
 };
 use crate::memory;
 use crate::nat256::Nat256;
+use candid::{CandidType, Nat, Principal};
+use minicbor::{Decode, Encode};
+use serde::Deserialize;
 
 pub const PERCENTAGE_FOR_AFFILIATION_REWARDS: u64 = 20; // 20%
 pub const SINGLE_AFFILIATION_REWARD: u64 = 2_000_000; // 2 ckUSDC

@@ -23,7 +23,7 @@ import {
 import Wallet from "../components/Wallet/index.tsx";
 import Help from "../components/Help/index.tsx";
 import CreateNewTaskModal from "../modals/CreateNewTaskModal.tsx";
-import Admin from "../components/Admin/index.tsx/index.tsx";
+import Admin from "../components/Admin/index.tsx";
 import Referrals from "../components/Referrals/index.tsx";
 
 const Router = () => {

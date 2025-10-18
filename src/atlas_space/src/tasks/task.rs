@@ -1,7 +1,7 @@
 use crate::errors::Error;
 use std::borrow::Cow;
-use std::collections::HashSet;
 use std::collections::BTreeMap;
+use std::collections::HashSet;
 
 use crate::tasks::submission::{Submission, SubmissionState};
 use crate::tasks::task_types::*;

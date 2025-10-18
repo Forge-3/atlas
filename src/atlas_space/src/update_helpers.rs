@@ -3,11 +3,12 @@ use crate::memory;
 use crate::tasks::task_types::TaskId;
 use crate::tasks::timer_logic;
 use crate::tasks::token_reward::TokenReward;
+use crate::tasks::token_reward::SINGLE_AFFILIATION_REWARD;
 use candid::Principal;
 use ic_cdk::call::Call;
 use ic_stable_structures::Storable;
+use num_traits::cast::ToPrimitive;
 use sha2::Digest;
-use crate::tasks::token_reward::SINGLE_AFFILIATION_REWARD;
 
 pub async fn accept_open_subtask_submission(
     user: Principal,
