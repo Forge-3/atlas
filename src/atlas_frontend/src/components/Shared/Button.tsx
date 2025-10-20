@@ -12,7 +12,7 @@ interface ButtonProps {
   type?: "button" | "submit" | "reset";
 }
 
-const Button = ({children, onClick, className, variant = 'primary', disabled = false,}: ButtonProps) => {
+const Button = ({children, onClick, className, variant = 'primary', disabled = false, type = "button"}: ButtonProps) => {
   const baseClasses = "cursor-pointer flex justify-center rounded items-center py-1 md:py-2 font-montserrat";
   const variantClasses = {
     primary: "bg-primary text-white",
