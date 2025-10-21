@@ -30,8 +30,10 @@ import { FaCaretRight } from "react-icons/fa6";
 import { shortPrincipal } from "../../../utils/icp";
 import { FiCopy } from "react-icons/fi";
 
+type GenericTaskType = Extract<TaskType, { GenericTask: unknown }>['GenericTask'];
+
 interface GenericTaskProps {
-  genericTask: TaskType["GenericTask"];
+  genericTask: GenericTaskType;
   spacePrincipal: Principal;
   taskId: string;
   subtaskId: number;
@@ -206,10 +208,11 @@ const listForm = useForm<ListFormData>({
   : null;
 
   const canSubmit = user && isUserInHub && (
-  currentSubmissionState === null ||
-  (currentSubmissionState === "Rejected" && genericTask.task_content.TitleAndDescription.allow_resubmit)
+    currentSubmissionState === null ||
+    (currentSubmissionState === "Rejected" && ("TitleAndDescription" in genericTask.task_content
+      ? genericTask.task_content.TitleAndDescription.allow_resubmit : "N/A"))
   );
-
+  
   const rawState = Object.keys(submissionData?.state || {})[0] ?? null;
   const validStates = ["Rejected", "WaitingForReview", "Accepted"] as const;
   type SubmissionState = typeof validStates[number];
@@ -403,7 +406,7 @@ const listForm = useForm<ListFormData>({
                   <ReviewSubmission
                     submission={{
                       submissionData: submissionData,
-                      taskType: "GenericTask"
+                      taskType: "GenericTask" as keyof TaskType,
                     }}
                     authAtlasSpace={authAtlasSpace}
                     taskId={taskId}

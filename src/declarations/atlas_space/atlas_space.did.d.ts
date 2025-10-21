@@ -99,9 +99,11 @@ export type Result_1 = { 'Ok' : null } |
   { 'Err' : string };
 export type Result_2 = { 'Ok' : bigint } |
   { 'Err' : Error };
-export type Result_3 = { 'Ok' : GetClosedTasksRes } |
+export type Result_3 = { 'Ok' : string } |
+  { 'Err' : string };
+export type Result_4 = { 'Ok' : GetClosedTasksRes } |
   { 'Err' : Error };
-export type Result_4 = { 'Ok' : GetTasksRes } |
+export type Result_5 = { 'Ok' : GetTasksRes } |
   { 'Err' : Error };
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
   { 'InitArg' : SpaceInitArg };
@@ -128,7 +130,8 @@ export interface State {
 }
 export type Submission = { 'Empty' : null } |
   { 'List' : { 'items' : Array<string> } } |
-  { 'Text' : { 'content' : string } };
+  { 'Text' : { 'content' : string } } |
+  { 'Discord' : { 'username' : string, 'user_id' : bigint } };
 export interface SubmissionData {
   'state' : SubmissionState,
   'rejection_reason' : [] | [string],
@@ -149,6 +152,22 @@ export interface Task {
   'number_of_uses' : bigint,
 }
 export type TaskContent = {
+    'TwitterTask' : {
+      'task_description' : string,
+      'task_title' : string,
+      'allow_resubmit' : boolean,
+    }
+  } |
+  {
+    'DiscordTask' : {
+      'task_description' : string,
+      'task_title' : string,
+      'invite_link' : string,
+      'guild_id' : string,
+      'allow_resubmit' : boolean,
+    }
+  } |
+  {
     'TitleAndDescription' : {
       'answer_format' : AnswerFormat,
       'task_description' : string,
@@ -157,6 +176,18 @@ export type TaskContent = {
     }
   };
 export type TaskType = {
+    'TwitterTask' : {
+      'task_content' : TaskContent,
+      'submission' : Array<[Principal, SubmissionData]>,
+    }
+  } |
+  {
+    'DiscordTask' : {
+      'task_content' : TaskContent,
+      'submission' : Array<[Principal, SubmissionData]>,
+    }
+  } |
+  {
     'GenericTask' : {
       'task_content' : TaskContent,
       'submission' : Array<[Principal, SubmissionData]>,
@@ -175,12 +206,14 @@ export interface _SERVICE {
   'delete_closed_task' : ActorMethod<[bigint], Result>,
   'edit_space' : ActorMethod<[EditSpaceArgs], Result>,
   'edit_task' : ActorMethod<[EditTaskArgs], Result>,
+  'exchange_code_for_token' : ActorMethod<[string, string], Result_3>,
+  'fetch_x_user_info' : ActorMethod<[string], Result_3>,
   'force_expire_task' : ActorMethod<[bigint], Result>,
-  'get_closed_tasks' : ActorMethod<[GetTasksArgs], Result_3>,
+  'get_closed_tasks' : ActorMethod<[GetTasksArgs], Result_4>,
   'get_config' : ActorMethod<[], Config>,
   'get_current_bytecode_version' : ActorMethod<[], bigint>,
-  'get_expired_tasks' : ActorMethod<[GetTasksArgs], Result_4>,
-  'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_4>,
+  'get_expired_tasks' : ActorMethod<[GetTasksArgs], Result_5>,
+  'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_5>,
   'get_space_info' : ActorMethod<[], SpaceInfo>,
   'get_state' : ActorMethod<[], State>,
   'reject_subtask_submission' : ActorMethod<

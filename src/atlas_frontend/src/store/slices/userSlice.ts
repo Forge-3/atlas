@@ -78,6 +78,7 @@ interface UserState {
   };
   blockchain: StorableUser | null;
   userHub: string | null;
+  accessToken: string | null;
 }
 
 const initialState = (): UserState => {
@@ -88,6 +89,7 @@ const initialState = (): UserState => {
     },
     userHub: null,
     blockchain: null,
+    accessToken: null,
   };
 };
 
@@ -107,6 +109,11 @@ export const userSlice = createSlice({
         ...action.payload,
       };
     },
+    setDiscordUserAccessToken: (state, action: PayloadAction<{
+      accessToken: string;
+    }>) => {
+      state.accessToken = action.payload.accessToken;
+    },
   },
   selectors: {
     selectUserBlockchainData: (userState: UserState) => {
@@ -122,11 +129,16 @@ export const userSlice = createSlice({
     selectUserTxs: (userState: UserState) => {
       return userState.txs;
     },
+    selectDiscordUserAccessToken: (userState: UserState) => {
+      if(userState.accessToken)
+        return userState.accessToken;
+      return null;
+    },
   },
 });
 
-export const { setUserBlockchainData, setCkUsdcBalance, appendUserTxs } =
+export const { setUserBlockchainData, setCkUsdcBalance, appendUserTxs, setDiscordUserAccessToken } =
   userSlice.actions;
-export const { selectUserBlockchainData, selectUserCkUsdc, selectUserTxs } =
+export const { selectUserBlockchainData, selectUserCkUsdc, selectUserTxs, selectDiscordUserAccessToken } =
   userSlice.selectors;
 export default userSlice.reducer;

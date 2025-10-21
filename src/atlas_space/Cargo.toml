@@ -19,7 +19,10 @@ shared = { workspace = true }
 ic-ledger-types = { workspace = true }
 ethnum = { workspace = true }
 num-bigint = { workspace = true }
-icrc-ledger-types = "0.1.8"
 sha2 = { workspace = true }
+ic-management-canister-types = { workspace = true }
+serde_json = { workspace = true}
+icrc-ledger-types = "0.1.8"
 ic-cdk-timers = "0.12.2"
 slotmap = "1.0.7"
+base64 = "0.22.1"

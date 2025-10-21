@@ -16,17 +16,15 @@ import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { Principal } from "@dfinity/principal";
 import type { ExternalLinks } from "./types.js";
+import type { DiscordTaskContent, GenericTaskContent, TwitterTaskContent } from "../../utils/taskMapper.js";
+import type { DiscordGuild, DiscordInviteApiResponse } from "../../components/Integrations/discord/types.js";
+import { getUserGuilds } from "../../components/Integrations/discord/userGuilds.js";
 export interface ExpiredTask extends Task {
   expired: true;
 }
+import { validateDiscordInvite as validateInvite } from "../../components/Integrations/discord/inviteLink.js";
 
-interface CreateSubtaskArg {
-  task_type: string;
-  title: string;
-  description: string;
-  allow_resubmit: boolean;
-  answer_format: AnswerFormat
-}
+type CreateSubtaskArg = GenericTaskContent | DiscordTaskContent | TwitterTaskContent;
 
 interface GetAtlasSpaceArgs {
   unAuthAtlasSpace: ActorSubclass<_SERVICE>;
@@ -92,14 +90,36 @@ export const createNewTask = async ({
   startTime,
   endTime,
 }: CreateNewSpaceTaskArgs) => {
-  const transformedTasks: TaskContent[] = tasks.map((arg) => ({
-    TitleAndDescription: {
-      task_title: arg.title,
-      task_description: arg.description,
-      allow_resubmit: arg.allow_resubmit,
-      answer_format: arg.answer_format
-    },
-  }));
+  const transformedTasks: TaskContent[] = tasks.map((arg) => {
+    if (arg.task_type === "discord") {
+      return {
+        DiscordTask: {
+          task_title: arg.title,
+          task_description: arg.description,
+          guild_id: arg.guild_id,
+          invite_link: arg.invite_link,
+          allow_resubmit: arg.allow_resubmit,
+        },
+      };
+    } else if (arg.task_type === "twitter") {
+        return {
+          TwitterTask: {
+            task_title: arg.title,
+            task_description: arg.description,
+            allow_resubmit: arg.allow_resubmit,
+          },
+        };
+    } else {
+      return {
+        TitleAndDescription: {
+          task_title: arg.title,
+          task_description: arg.description,
+          allow_resubmit: arg.allow_resubmit,
+          answer_format: arg.answer_format,
+        },
+      };
+    }
+  });
 
   const call = authAtlasSpaceActor.create_task({
     task_title: taskTitle,
@@ -434,5 +454,40 @@ export const deleteClosedTask = async ({
   await unwrapCall<null>({
     call,
     errMsg: "Failed to delete closed task",
+  });
+};
+
+export const getDiscordGuilds = async (
+  accessToken: string
+): Promise<DiscordGuild[]> => {
+  return await getUserGuilds(accessToken);
+};
+
+export const validateDiscordInvite = async (
+  inviteCode: string,
+  expectedGuildId: string
+): Promise<DiscordInviteApiResponse> => {
+  return await validateInvite(inviteCode, expectedGuildId);
+};
+
+interface ExchangeCodeForTokenArgs {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  code: string;
+  codeVerifier: string;
+}
+
+export const exchange_code_for_token = async ({
+  authAtlasSpace,
+  code,
+  codeVerifier
+}: ExchangeCodeForTokenArgs) => {
+  const call = authAtlasSpace.exchange_code_for_token(
+    code,
+    codeVerifier
+  );
+
+  return unwrapCall<String>({
+    call,
+    errMsg: "Failed to exchange Twitter code for token",
   });
 };

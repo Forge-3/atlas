@@ -29,6 +29,13 @@ pub enum Submission {
         #[n(0)]
         items: Vec<String>,
     },
+    #[n(3)]
+    Discord {
+        #[n(0)]
+        username: String,
+        #[n(1)]
+        user_id: u64,
+    },
 }
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType)]

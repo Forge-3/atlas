@@ -9,6 +9,7 @@ import Task from "../components/Task/index.tsx";
 import {
   ADMIN_PATH,
   DISCORD_CALLBACK_PATH,
+  TWITTER_CALLBACK_PATH,
   HELP_PATH,
   SPACE_BUILDER_PATH,
   SPACE_EDIT_PATH,
@@ -23,6 +24,7 @@ import Wallet from "../components/Wallet/index.tsx";
 import Help from "../components/Help/index.tsx";
 import CreateNewTaskModal from "../modals/CreateNewTaskModal.tsx";
 import Admin from "../components/Admin/index.tsx";
+import TwitterCallback from "../components/Integrations/TwitterCallback.tsx";
 
 const Router = () => {
   return (
@@ -33,6 +35,7 @@ const Router = () => {
       <Route path={SPACE_BUILDER_PATH} element={<SpaceBuilder />} />
       <Route path={SPACE_EDIT_PATH} element={<SpaceBuilder />} />
       <Route path={DISCORD_CALLBACK_PATH} element={<DiscordCallback />} />
+      <Route path={TWITTER_CALLBACK_PATH} element={<TwitterCallback />} />
       <Route path={TASK_PATH} element={<Task />} />
       <Route path={WALLET_PATH} element={<Wallet />} />
       <Route path={HELP_PATH} element={<Help />} />
