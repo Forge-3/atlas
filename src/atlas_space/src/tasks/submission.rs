@@ -24,12 +24,11 @@ pub enum Submission {
     },
     #[n(1)]
     Empty,
-}
-
-impl Submission {
-    pub fn is_text(&self) -> bool {
-        matches!(self, Submission::Text { .. })
-    }
+    #[n(2)]
+    List {
+        #[n(0)]
+        items: Vec<String>,
+    },
 }
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType)]

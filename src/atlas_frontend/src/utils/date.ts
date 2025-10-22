@@ -91,7 +91,9 @@ export function bigintToDate(date: bigint) {
   return new Date(Number(date * 1000n));
 }
 
-export function toLocalISOString(date = new Date()) {
+export function toLocalISOString(input: number | Date): string {
+  const date = input instanceof Date ? input : new Date(input * 1000);
   const offsetMs = date.getTimezoneOffset() * 60000;
   const localDate = new Date(date.getTime() - offsetMs);
-  return localDate.toISOString().slice(0, -1);}
+  return localDate.toISOString().slice(0, 16);
+}

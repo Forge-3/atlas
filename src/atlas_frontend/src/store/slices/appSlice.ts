@@ -10,12 +10,14 @@ interface AppState {
   blockchainConfig: null | StorableConfig;
   isScreenBlur: boolean;
   isLoading: boolean;
+  isInitialUserLoading: boolean;
 }
 
 const initialState: AppState = {
   blockchainConfig: null,
   isScreenBlur: false,
   isLoading: false,
+  isInitialUserLoading: false,
 };
 
 export const appSlice = createSlice({
@@ -31,6 +33,9 @@ export const appSlice = createSlice({
     setConfig: (state, action: PayloadAction<StorableConfig>) => {
       state.blockchainConfig = action.payload;
     },
+    setInitialUserLoading: (state, action: PayloadAction<boolean>) => {
+      state.isInitialUserLoading = action.payload;
+    },
   },
   selectors: {
     selectBlockchainConfig: (state: AppState) => {
@@ -40,7 +45,7 @@ export const appSlice = createSlice({
   }
 });
 
-export const { setScreenBlur, setConfig, setLoading } =
+export const { setScreenBlur, setConfig, setLoading, setInitialUserLoading } =
   appSlice.actions;
   export const { selectBlockchainConfig } = appSlice.selectors;
   

@@ -98,6 +98,28 @@ pub fn get_closed_tasks(args: GetTasksArgs) -> Result<GetClosedTasksRes, Error> 
 }
 
 #[query]
+pub fn get_expired_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
+    if args.count > MAX_TASKS_PER_RESPONSE as usize {
+        return Err(Error::CountToHigh {
+            max: MAX_TASKS_PER_RESPONSE as usize,
+            found: args.count,
+        });
+    }
+
+    let tasks = memory::with_expired_tasks_iter(|tasks| {
+        tasks
+            .skip(args.start)
+            .take(args.count.min(MAX_TASKS_PER_RESPONSE as usize))
+            .collect()
+    });
+
+    Ok(GetTasksRes {
+        tasks,
+        tasks_count: memory::get_expired_tasks_len() as usize,
+    })
+}
+
+#[query]
 pub fn get_current_bytecode_version() -> u64 {
     memory::read_config(|config| config.current_wasm_version)
 }

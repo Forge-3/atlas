@@ -31,6 +31,18 @@ impl TryFrom<TimerKeyData> for TimerId {
 }
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType, Deserialize)]
+pub enum AnswerFormat {
+    #[n(0)]
+    Small, // 254 chars
+    #[n(1)]
+    Paragraph, // 600 chars
+    #[n(2)]
+    Long, // 2500 chars
+    #[n(3)]
+    List, // Vec<String>, each max 254 chars
+}
+
+#[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType, Deserialize)]
 pub enum TaskContent {
     #[n(0)]
     TitleAndDescription {
@@ -40,6 +52,8 @@ pub enum TaskContent {
         task_description: String,
         #[n(2)]
         allow_resubmit: bool,
+        #[n(3)]
+        answer_format: AnswerFormat,
     },
 }
 
@@ -50,6 +64,7 @@ impl TaskContent {
                 task_title,
                 task_description,
                 allow_resubmit: _,
+                answer_format: _,
             } => {
                 if task_title.trim().len() > 50 {
                     return Err(Error::InvalidTaskContent(
@@ -80,11 +95,13 @@ impl From<&TaskContent> for TaskType {
                 task_title,
                 task_description,
                 allow_resubmit,
+                answer_format,
             } => Self::GenericTask {
                 task_content: TaskContent::TitleAndDescription {
                     task_title: task_title.clone(),
                     task_description: task_description.clone(),
                     allow_resubmit: *allow_resubmit,
+                    answer_format: answer_format.clone(),
                 },
                 submission: Default::default(),
             },
@@ -108,7 +125,7 @@ impl TaskType {
         let allow_resubmit = self.get_allow_resubmit();
         match self {
             TaskType::GenericTask {
-                task_content: _,
+                task_content,
                 submission: submissions_map,
             } => {
                 if let Some(existing_submission) = submissions_map.get(&user) {
@@ -120,8 +137,71 @@ impl TaskType {
                         return Err(Error::UserAlreadySubmitted);
                     }
                 }
-                if !submission.is_text() {
-                    return Err(Error::IncorrectSubmission("Text".to_string()));
+                match (task_content, &submission) {
+                    (
+                        TaskContent::TitleAndDescription { answer_format, .. },
+                        Submission::Text { content },
+                    ) => {
+                        let len = content.trim().len();
+                        match answer_format {
+                            AnswerFormat::Small if len > 254 => {
+                                return Err(Error::IncorrectSubmission(
+                                    "Answer too long (max 254 chars)".into(),
+                                ))
+                            }
+                            AnswerFormat::Paragraph if len > 600 => {
+                                return Err(Error::IncorrectSubmission(
+                                    "Answer too long (max 600 chars)".into(),
+                                ))
+                            }
+                            AnswerFormat::Long if len > 2500 => {
+                                return Err(Error::IncorrectSubmission(
+                                    "Answer too long (max 2500 chars)".into(),
+                                ))
+                            }
+                            AnswerFormat::List => {
+                                return Err(Error::IncorrectSubmission(
+                                    "Expected list submission".into(),
+                                ))
+                            }
+                            _ => {}
+                        }
+                    }
+                    (
+                        TaskContent::TitleAndDescription { answer_format, .. },
+                        Submission::List { items },
+                    ) => {
+                        if *answer_format != AnswerFormat::List {
+                            return Err(Error::IncorrectSubmission(
+                                "Expected text submission".into(),
+                            ));
+                        }
+                        if items.is_empty() {
+                            return Err(Error::IncorrectSubmission("List cannot be empty".into()));
+                        }
+                        if items.len() > 25 {
+                            return Err(Error::IncorrectSubmission(
+                                "List too long (max 25 items)".into(),
+                            ));
+                        }
+                        for item in items {
+                            if item.trim().is_empty() {
+                                return Err(Error::IncorrectSubmission(
+                                    "List item cannot be empty".into(),
+                                ));
+                            }
+                            if item.len() > 254 {
+                                return Err(Error::IncorrectSubmission(
+                                    "List item too long (max 254 chars)".into(),
+                                ));
+                            }
+                        }
+                    }
+                    _ => {
+                        return Err(Error::IncorrectSubmission(
+                            "Unsupported submission type".into(),
+                        ))
+                    }
                 }
                 submissions_map.insert(
                     user,
@@ -196,6 +276,12 @@ impl TaskType {
     pub fn get_allow_resubmit(&self) -> bool {
         match self {
             TaskType::GenericTask { task_content, .. } => task_content.allow_resubmit(),
+        }
+    }
+
+    pub fn get_content(&self) -> &TaskContent {
+        match self {
+            TaskType::GenericTask { task_content, .. } => task_content,
         }
     }
 }

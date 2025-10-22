@@ -33,6 +33,12 @@ pub enum Error {
     #[error("Failed to transfer funds (Error: {0})")]
     FailedToTransfer(String),
 
+    #[error("Failed to query balance (Error: {0})")]
+    FailedToQueryBalance(String),
+
+    #[error("Balance inconsistency (Error: {0})")]
+    BalanceInconsistency(String),
+
     #[error("Invalid task content (Error: {0})")]
     InvalidTaskContent(String),
 

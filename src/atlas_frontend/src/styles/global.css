@@ -1,1 +1,89 @@
-@import "tailwindcss"
+@import "tailwindcss";
+
+@theme {
+    --color-dark: #290C69;
+    --color-darker: #1E0F33;
+    --color-deep-purple: #4A0295;
+    --color-dark-purple: #522785;
+    --color-gradient-dark: #493480;
+    --color-gradient-light: #6C52BD;
+    --color-classic: #F9F9F9;
+    --color-classic3: #777777;
+    --color-classic2: #000000;
+    --color-primary: #9173FF;
+    --color-primary-light: #8973FF;
+    --color-background: #7332F5;
+    --color-light: #F5F2FF;
+    --color-light2: #E0D6FE;
+    --color-white: #FFFFFF;
+    --font-roboto: "Roboto", sans-serif;
+    --font-robotoMono: "Roboto Mono", monospace;
+    --font-poppins: "Poppins", sans-serif;
+    --font-montserrat: "Montserrat", sans-serif;
+    --font-manrope: "Manrope", sans-serif;
+    --text-h1: 52px;
+    --text-h2: 32px;
+    --text-h3: 22px;
+    --text-h4: 42px;
+    --text-p: 18px;
+    --text-a: 11.5px;
+    --border-width-1: 1px;
+
+     @keyframes rotate-sway {
+    0%, 100% {
+      transform: rotate(-20deg);
+    }
+    50% {
+      transform: rotate(10deg);
+    }
+  }
+
+  --animate-rotate-sway: rotate-sway 4s ease-in-out infinite;
+}
+
+:root {
+    --color-dark: #290C69;
+    --color-darker: #1E0F33;
+    --color-deep-purple: #4A0295;
+    --color-dark-purple: #522785;
+    --color-gradient-dark: #493480;
+    --color-gradient-light: #6C52BD;
+    --color-classic: #F9F9F9;
+    --color-classic3: #777777;
+    --color-classic2: #000000;
+    --color-primary: #9173FF;
+    --color-primary-light: #8973FF;
+    --color-background: #7332F5;
+    --color-light: #F5F2FF;
+    --color-light2: #E0D6FE;
+    --color-white: #FFFFFF;
+    --font-roboto: "Roboto", sans-serif;
+    --font-robotoMono: "Roboto Mono", monospace;
+    --font-poppins: "Poppins", sans-serif;
+    --font-montserrat: "Montserrat", sans-serif;
+    --font-manrope: "Manrope", sans-serif;
+    --text-h1: 52px;
+    --text-h2: 32px;
+    --text-h3: 22px;
+    --text-h4: 42px;
+    --text-p: 18px;
+    --text-a: 11.5px;
+    --border-width-1: 1px;
+
+}
+h1,h2,h3,h4,p {
+    letter-spacing: -0.01em;
+    line-height: 1.08;
+}
+a {
+    line-height: 1.15;
+}
+
+img {
+  -webkit-user-drag: none;
+}
+
+input[type="number"] { appearance: textfield; }
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { appearance: none; }
+

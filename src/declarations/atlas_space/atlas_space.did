@@ -1,3 +1,4 @@
+type AnswerFormat = variant { Small; List; Long; Paragraph };
 type CkUsdcLedger = record { fee : opt nat; "principal" : principal };
 type CkUsdcLedger_1 = record { fee : opt nat; "principal" : principal };
 type ClosedTask = record {
@@ -32,11 +33,21 @@ type EditSpaceArgs = record {
   space_name : text;
   space_description : text;
 };
+type EditTaskArgs = record {
+  task_id : nat64;
+  task_title : opt text;
+  token_reward : opt TokenReward;
+  end_time : opt nat64;
+  task_content : opt vec opt TaskContent;
+  start_time : opt nat64;
+  number_of_uses : opt nat64;
+};
 type Error = variant {
   BytecodeUpToDate;
   NotTaskCreator;
   NotParent;
   UsageLimitExceeded;
+  FailedToQueryBalance : text;
   UserSubmissionNotFound;
   FailedToUpdateConfig : text;
   UserDoesNotBelongToSpace;
@@ -50,6 +61,7 @@ type Error = variant {
   FailedToClaimRewards : vec record { nat64; Error };
   NotAdminNorOwnerNorParent;
   UserAlreadySubmitted;
+  BalanceInconsistency : text;
   RewardAlreadyRefunded;
   NotAdmin;
   IncorrectSubmission : text;
@@ -103,7 +115,11 @@ type State = record {
   tasks_count : nat64;
   space_description : text;
 };
-type Submission = variant { Empty; Text : record { content : text } };
+type Submission = variant {
+  Empty;
+  List : record { items : vec text };
+  Text : record { content : text };
+};
 type SubmissionData = record {
   state : SubmissionState;
   rejection_reason : opt text;
@@ -123,6 +139,7 @@ type Task = record {
 };
 type TaskContent = variant {
   TitleAndDescription : record {
+    answer_format : AnswerFormat;
     task_description : text;
     task_title : text;
     allow_resubmit : bool;
@@ -139,13 +156,16 @@ type WalletReceiveResult = record { accepted : nat64 };
 service : (SpaceArgs) -> {
   accept_subtask_submission : (principal, nat64, nat64) -> (Result);
   clean_up_space_before_deletion : () -> (Result_1);
+  close_task : (nat64) -> (Result);
   create_task : (CreateTaskArgs) -> (Result_2);
   delete_closed_task : (nat64) -> (Result);
   edit_space : (EditSpaceArgs) -> (Result);
-  force_close_task : (nat64) -> (Result);
+  edit_task : (EditTaskArgs) -> (Result);
+  force_expire_task : (nat64) -> (Result);
   get_closed_tasks : (GetTasksArgs) -> (Result_3) query;
   get_config : () -> (Config) query;
   get_current_bytecode_version : () -> (nat64) query;
+  get_expired_tasks : (GetTasksArgs) -> (Result_4) query;
   get_open_tasks : (GetTasksArgs) -> (Result_4) query;
   get_space_info : () -> (SpaceInfo) query;
   get_state : () -> (State) query;

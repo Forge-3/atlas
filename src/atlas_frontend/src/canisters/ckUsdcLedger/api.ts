@@ -2,7 +2,6 @@ import type { ActorSubclass } from "@dfinity/agent";
 import type {
   _SERVICE,
   BlockIndex,
-  TransferResult,
 } from "../../../../declarations/ckusdc_ledger_canister/ckusdc_ledger_canister.did";
 import type { Principal } from "@dfinity/principal";
 import { unwrapCall } from "../delegatedCall";

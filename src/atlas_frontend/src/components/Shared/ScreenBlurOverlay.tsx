@@ -7,8 +7,10 @@ const ScreenBlurOverlay = () => {
   if (!isScreenBlur) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-25 sm:backdrop-blur-sm backdrop-blur-none z-40">
-    </div>
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center bg-black/25"
+      style={{ backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}
+    />
   );
 };
 

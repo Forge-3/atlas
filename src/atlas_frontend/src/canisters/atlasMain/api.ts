@@ -9,7 +9,7 @@ import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import { setUserBlockchainData } from "../../store/slices/userSlice.js";
 import { unwrapCall } from "../delegatedCall.js";
-import { setConfig } from "../../store/slices/appSlice.js";
+import { setConfig, setInitialUserLoading } from "../../store/slices/appSlice.js";
 import { setSpaces } from "../../store/slices/spacesSlice.js";
 import type { ExternalLinks } from "../atlasSpace/types.js";
 import { setSpaceUsersCount, setUsersCount } from "../../store/slices/statsSlice.js";
@@ -62,6 +62,8 @@ export const getAtlasUser = async ({
   userId,
   dispatch,
 }: GetAtlasUserArgs) => {
+  dispatch(setInitialUserLoading(true));
+  try {
   const userData = await unAuthAtlasMain.get_user({
     Principal: userId,
   });
@@ -74,6 +76,9 @@ export const getAtlasUser = async ({
       belonging_to_spaces: Array.from(userData.owned_spaces),
     })
   );
+} finally {
+  dispatch(setInitialUserLoading(false));
+}
 };
 
 interface GetAtlasData {

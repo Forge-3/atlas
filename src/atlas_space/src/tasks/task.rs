@@ -1,5 +1,6 @@
 use crate::errors::Error;
 use std::borrow::Cow;
+use std::collections::HashSet;
 
 use crate::tasks::submission::{Submission, SubmissionState};
 use crate::tasks::task_types::*;
@@ -9,6 +10,7 @@ use candid::{CandidType, Nat, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
 use serde::Deserialize;
+use sha2::Digest;
 
 #[derive(CandidType, Deserialize)]
 pub struct CreateTaskArgs {
@@ -22,36 +24,41 @@ pub struct CreateTaskArgs {
 
 impl CreateTaskArgs {
     pub fn validate(&self) -> Result<(), Error> {
-        if self.task_title.trim().len() > 50 {
-            return Err(Error::InvalidTaskContent(
-                "Task title is too long (max length: 50)".into(),
-            ));
-        }
-        if self.task_content.len() > 10 {
-            return Err(Error::InvalidTaskContent("Too many subtasks".into()));
-        }
-        if self.end_time <= self.start_time {
-            return Err(Error::InvalidTaskContent(
-                "Task End time must be after start time".into(),
-            ));
+        validate_task_title(&self.task_title)?;
+        validate_task_content(&self.task_content)?;
+        validate_task_time_create(self.start_time, self.end_time)?;
+        Ok(())
+    }
+}
+
+#[derive(CandidType, Deserialize)]
+pub struct EditTaskArgs {
+    pub task_id: TaskId,
+    pub task_title: Option<String>,
+    pub token_reward: Option<TokenReward>,
+    pub task_content: Option<Vec<Option<TaskContent>>>,
+    pub number_of_uses: Option<u64>,
+    pub start_time: Option<u64>,
+    pub end_time: Option<u64>,
+}
+
+impl EditTaskArgs {
+    pub fn validate(&self) -> Result<(), Error> {
+        if let Some(title) = &self.task_title {
+            validate_task_title(title)?;
         }
 
-        let min_task_time = 5 * 60; // 5 minutes
-        if (self.start_time + min_task_time) <= now_in_seconds() {
-            return Err(Error::InvalidTaskContent(
-                "Task start time already passed".into(),
-            ));
+        if let Some(content) = &self.task_content {
+            let filtered_content: Vec<TaskContent> =
+                content.iter().filter_map(|c| c.clone()).collect();
+            validate_task_content(&filtered_content)?;
         }
 
-        if self.end_time <= (self.start_time + min_task_time) {
-            return Err(Error::InvalidTaskContent(format!(
-                "Task end time must be at least {} minutes in the future",
-                min_task_time / 60
-            )));
+        if let (Some(start), Some(end)) = (self.start_time, self.end_time) {
+            validate_task_time_edit(start, end)?;
         }
-        self.task_content
-            .iter()
-            .try_for_each(|content| content.validate())
+
+        Ok(())
     }
 }
 
@@ -112,6 +119,36 @@ impl Task {
 
     pub fn is_active(&self) -> bool {
         now_in_seconds() > self.start_time && !self.is_expired()
+    }
+
+    pub fn edit_task(&mut self, args: &EditTaskArgs, new_tasks: Option<&Vec<TaskType>>) {
+        if let Some(title) = &args.task_title {
+            self.task_title = title.clone();
+        }
+
+        if let Some(token_reward) = &args.token_reward {
+            self.token_reward = token_reward.clone();
+        }
+
+        if let Some(start_time) = args.start_time {
+            self.start_time = start_time;
+        }
+
+        if let Some(end_time) = args.end_time {
+            self.end_time = end_time;
+        }
+
+        if let Some(number_of_uses) = args.number_of_uses {
+            self.number_of_uses = number_of_uses;
+        }
+
+        if let Some(new_tasks) = new_tasks {
+            self.tasks = new_tasks.clone();
+        }
+    }
+
+    pub fn is_fully_rewarded(&self) -> bool {
+        self.rewarded.len() as u64 == self.number_of_uses
     }
 
     pub fn submit_subtask_submission(
@@ -192,6 +229,35 @@ impl Task {
         self.rewarded.push(user);
         Ok(())
     }
+
+    pub async fn claim_all_rewards(&mut self, task_id: TaskId) -> Result<(), Error> {
+        let tasks = self.tasks.clone();
+        let not_rewarded = tasks
+            .first()
+            .expect("First subtask to not exist?!")
+            .get_submission_map()
+            .iter()
+            .filter(|(principal, _)| !self.rewarded.contains(principal));
+
+        let users_to_rewarded: HashSet<_> = not_rewarded
+            .into_iter()
+            .filter(|(principal, _)| {
+                tasks.iter().all(|task| {
+                    task.get_submission(**principal)
+                        .map(|sub| sub.get_state() == &SubmissionState::Accepted)
+                        .unwrap_or(false)
+                })
+            })
+            .map(|(principal, _)| principal)
+            .collect();
+
+        for principal in users_to_rewarded {
+            let subaccount = sha2::Sha256::digest(task_id.u64().to_bytes()).into();
+            self.claim_reward(*principal, subaccount).await?;
+        }
+
+        Ok(())
+    }
 }
 
 impl Storable for Task {
@@ -207,4 +273,66 @@ impl Storable for Task {
     }
 
     const BOUND: Bound = Bound::Unbounded;
+}
+
+// validation functions for task creation
+
+pub const MAX_TASK_TITLE_LENGTH: usize = 50;
+pub const MIN_TASK_TIME: u64 = 5 * 60;
+pub const MAX_NUMBER_OF_SUBTASKS: usize = 10;
+
+pub fn validate_task_title(title: &str) -> Result<(), Error> {
+    if title.trim().len() > MAX_TASK_TITLE_LENGTH {
+        return Err(Error::InvalidTaskContent(format!(
+            "Task title is too long (max length: {MAX_TASK_TITLE_LENGTH})",
+        )));
+    }
+
+    Ok(())
+}
+
+pub fn validate_task_content(task_content: &[TaskContent]) -> Result<(), Error> {
+    if task_content.len() > MAX_NUMBER_OF_SUBTASKS {
+        return Err(Error::InvalidTaskContent("Too many subtasks".into()));
+    }
+    if task_content.is_empty() {
+        return Err(Error::InvalidTaskContent(
+            "Too few subtasks (must be at least 1)".into(),
+        ));
+    }
+
+    task_content.iter().try_for_each(|c| c.validate())
+}
+
+pub fn validate_task_time_create(start: u64, end: u64) -> Result<(), Error> {
+    if (start + MIN_TASK_TIME) <= now_in_seconds() {
+        return Err(Error::InvalidTaskContent(
+            "Task start time already passed".into(),
+        ));
+    }
+
+    if end <= (start + MIN_TASK_TIME) {
+        return Err(Error::InvalidTaskContent(format!(
+            "Task end time must be at least {} minutes in the future",
+            MIN_TASK_TIME / 60
+        )));
+    }
+
+    Ok(())
+}
+
+pub fn validate_task_time_edit(start: u64, end: u64) -> Result<(), Error> {
+    if end <= start {
+        return Err(Error::InvalidTaskContent(
+            "Task end time must be after start time".to_string(),
+        ));
+    }
+
+    if end <= now_in_seconds() {
+        return Err(Error::InvalidTaskContent(
+            "Task end time must be in the future".to_string(),
+        ));
+    }
+
+    Ok(())
 }

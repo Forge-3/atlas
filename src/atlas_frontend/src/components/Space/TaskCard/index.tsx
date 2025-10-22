@@ -20,30 +20,39 @@ const TaskCard = ({ startingIn, task, id, type, spaceId}: TaskCardProps) => {
   const navigate = useNavigate();
 
   const reward = formatUnits(task.token_reward.CkUsdc.amount, DECIMALS)
-  const lastTask = task.tasks.at(-1)?.GenericTask.submission.filter(([, submission]) => 'Accepted' in submission.state)
+  const rewarded = task.rewarded.length;
 
   return (
-    <div className="w-full md:w-[20rem]">
-    <a className="rounded-xl bg-gradient-to-b from-[#9173FF] to-transparent to-[150%] flex flex-col" onClick={() => navigate(getTaskPath(spaceId, id))}>
+    <div className="w-full h-auto">
+    <a className="flex flex-col" onClick={() => navigate(getTaskPath(spaceId, id))}>
       <div
-        className={`h-40 p-4 rounded-t-xl ${
-          type === "ongoing" && "bg-[#9173FF]/20"
-        } ${type === "starting" && "bg-[#4A0295]"} ${
-          (type === "expired" || type === "closed") && "bg-[#202020]"
+        className={`h-52 p-4 rounded-t-xl ${
+          type === "ongoing" && "bg-primary"
+        } ${type === "starting" && "bg-primary"} ${
+          (type === "expired" || type === "closed") && "bg-black"
         }`}
       >
         <InfoBox type={type} startingIn={startingIn} />
       </div>
-      <div className="text-white font-montserrat font-medium p-6 flex flex-col gap-2">
-        <h3 className="text-2xl">{task.task_title}</h3>
-        <div className="flex justify-end gap-2">
+      <div
+      className={`text-white rounded-b-xl font-montserrat font-medium p-4 flex flex-col gap-2 h-44`}
+      style={
+        type === "ongoing"
+          ? { backgroundImage: 'linear-gradient(to bottom, var(--color-background) 0%, var(--color-primary) 100%)' }
+          : type === "starting"
+          ? { backgroundImage: 'linear-gradient(to bottom, var(--color-dark) 0%, var(--color-background) 100%)' }
+          : (type === "expired" || type === "closed")
+          ? { backgroundImage: 'linear-gradient(to bottom, var(--color-classic3) 0%, var(--color-classic3) 40%, var(--color-classic2) 130%)' }
+          : {}
+      }>
+        <h3 className="break-words text-2xl my-5">{task.task_title}</h3>
+        <div className="flex mt-auto gap-2 ">
           <InfoBox
             type="points"
             points={reward}
           />
           <InfoBox type="steps" steps={task.tasks.length} />
-          {/* //TODO: fix count of submission */}
-          <InfoBox type="uses" uses={`${lastTask?.length}/${task.number_of_uses}`} />
+          <InfoBox type="uses" uses={`${rewarded}/${task.number_of_uses}`} />
         </div>
       </div>
     </a>

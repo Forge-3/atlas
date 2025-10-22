@@ -47,7 +47,7 @@ const TransactionHistory = ({ tokenSymbol }: TransactionHistoryProps) => {
   return (
     <div className="w-full mt-2 sm:mt-4">
       <div className="w-full rounded-xl overflow-hidden font-montserrat">
-        <div className="inset-0 bg-gradient-to-b from-[#522785] to-transparent px-2 md:px-8 bg-cover bg-center z-0">
+        <div className="inset-0 bg-dark/50 px-2 md:px-8 bg-cover bg-center z-0">
           <h2 className="font-montserrat text-white text-2xl font-medium p-6 md:py-10">
             ICP Transaction
           </h2>
@@ -66,16 +66,16 @@ const TransactionHistory = ({ tokenSymbol }: TransactionHistoryProps) => {
               {transactions.map((tx, index) => (
                 <tr
                   key={index}
-                  className={`${index % 2 === 0 ? 'bg-[#9173FF]/5' : 'bg-[#9173FF]/15'}`}
+                  className={`${index % 2 === 0 ? 'bg-primary/5' : 'bg-primary/15'}`}
                 >
-                  <td className="px-4 py-2 text-white/60 text-sm text-nowrap">
+                  <td className="px-4 py-2 text-white/80 text-sm text-nowrap">
                     {tx.from === "N/A"
                       ? "N/A"
                       : user?.principal.toString() === tx.from
                         ? "You"
                         : shortPrincipal(tx.from)}
                   </td>
-                  <td className="px-4 py-2 text-white/60 text-sm text-nowrap">
+                  <td className="px-4 py-2 text-white/80 text-sm text-nowrap">
                     {tx.to === "N/A"
                       ? "N/A"
                       : user?.principal.toString() === tx.to
@@ -84,26 +84,26 @@ const TransactionHistory = ({ tokenSymbol }: TransactionHistoryProps) => {
                   </td>
                   <td className="px-4 py-2 text-white capitalize text-sm">
                     <div className={`px-2 py-[2px] rounded-full ${
-                      tx.kind === "approve" ? "bg-[#9173FF]" : ""
+                      tx.kind === "approve" ? "bg-primary" : ""
                     } ${
-                      tx.kind === "transfer" ? "bg-[#FFFFFF]/50" : ""
+                      tx.kind === "transfer" ? "bg-white/50" : ""
                     } ${
-                      tx.kind === "mint" ? "bg-[#1E0F33]/50" : ""
+                      tx.kind === "mint" ? "bg-darker/50" : ""
                     } ${
-                      tx.kind === "burn" ? "bg-[#1E0F33]" : ""
+                      tx.kind === "burn" ? "bg-darker" : ""
                     }`}>
                       {tx.kind}
                     </div>
                   </td>
                   <td className="px-4 py-2 text-white text-right font-medium">
                     {formatUnits(tx.amount, DECIMALS)}{" "}
-                    <span className="text-[#9173FF]">{tokenSymbol}</span>
+                    <span className="text-primary">{tokenSymbol}</span>
                   </td>
                   <td className="px-4 py-2 text-white">
                     <span className="font-medium text-sm">
                       {formatUtcDate(tx.timestamp)}
                     </span>
-                    <span className="ml-2 text-xs text-white/60 text-nowrap">
+                    <span className="ml-2 text-xs text-white/80 text-nowrap">
                       {timeAgo(tx.timestamp)}
                     </span>
                   </td>

@@ -1,13 +1,14 @@
 import type { ActorSubclass } from "@dfinity/agent";
 import type {
   _SERVICE,
+  AnswerFormat,
   ClosedTask,
+  EditTaskArgs,
   State,
   Submission,
   SubmissionData,
   Task,
   TaskContent,
-  TaskType,
 } from "../../../../declarations/atlas_space/atlas_space.did.js";
 import { unwrapCall } from "../delegatedCall.js";
 import { setSpace, setTasks } from "../../store/slices/spacesSlice.js";
@@ -15,13 +16,16 @@ import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { Principal } from "@dfinity/principal";
 import type { ExternalLinks } from "./types.js";
-import { setSpaceUsersCount } from "../../store/slices/statsSlice.js";
+export interface ExpiredTask extends Task {
+  expired: true;
+}
 
 interface CreateSubtaskArg {
   task_type: string;
   title: string;
   description: string;
   allow_resubmit: boolean;
+  answer_format: AnswerFormat
 }
 
 interface GetAtlasSpaceArgs {
@@ -93,6 +97,7 @@ export const createNewTask = async ({
       task_title: arg.title,
       task_description: arg.description,
       allow_resubmit: arg.allow_resubmit,
+      answer_format: arg.answer_format
     },
   }));
 
@@ -115,10 +120,11 @@ export const createNewTask = async ({
   });
 };
 
-export type AnyTask = Task | ClosedTask;
+export type AnyTask = Task | ExpiredTask | ClosedTask;
 export type Tasks = { [key: string]: AnyTask };
 export enum TaskTypeEnum {
   Open = "Open",
+  Expired = "Expired",
   Closed = "Closed",
 }
 
@@ -141,6 +147,8 @@ const fetchTasks = async ({
     switch (taskType) {
       case TaskTypeEnum.Open:
         return "Failed to fetch open tasks";
+      case TaskTypeEnum.Expired:
+        return "Failed to fetch expired tasks";
       case TaskTypeEnum.Closed:
         return "Failed to fetch closed tasks";
       default:
@@ -152,11 +160,21 @@ const fetchTasks = async ({
     switch (taskType) {
       case TaskTypeEnum.Open:
         return unAuthAtlasSpace.get_open_tasks({ start, count });
+      case TaskTypeEnum.Expired:
+        return unAuthAtlasSpace.get_expired_tasks({ start, count });
       case TaskTypeEnum.Closed:
         return unAuthAtlasSpace.get_closed_tasks({ start, count });
       default:
         throw new Error(`Unsupported TaskTypeEnum: ${taskType}`);
     }
+  };
+
+  const handleExpiredTasks = (tasks: [bigint, AnyTask][]): [bigint, AnyTask][] => {
+    if (taskType !== TaskTypeEnum.Expired) return tasks;
+    return tasks.map(([id, task]) => [
+      id,
+      { ...task, expired: true } as ExpiredTask,
+    ]);
   };
 
   const res = await unwrapCall<{ tasks_count: bigint; tasks: [bigint, AnyTask][] }>({
@@ -165,7 +183,7 @@ const fetchTasks = async ({
   });
 
   totalCount = res.tasks_count;
-  result.push(...res.tasks);
+  result.push(...handleExpiredTasks(res.tasks));
   start += count;
 
   while (totalCount > result.length) {
@@ -173,24 +191,28 @@ const fetchTasks = async ({
       call: fetchFn(),
       errMsg: unwrapMessage,
     });
-    result.push(...res.tasks);
+    result.push(...handleExpiredTasks(res.tasks));
     start += count;
   }
 
-    return result.reduce((acc, [id, val]) => {
-      acc[id.toString()] = val;
-      return acc;
-    }, {} as Tasks);
-  };
+  return result.reduce((acc, [id, val]) => {
+    acc[id.toString()] = val;
+    return acc;
+  }, {} as Tasks);
+};
 
 export const getSpaceTasks = async ({
   unAuthAtlasSpace,
   spaceId,
   dispatch,
 }: GetAtlasSpaceArgs) => {
-  const [openTasks, closedTasks] = await Promise.all([
+  const [openTasks, expiredTasks, closedTasks] = await Promise.all([
     fetchTasks({
       taskType: TaskTypeEnum.Open,
+      unAuthAtlasSpace,
+    }),
+    fetchTasks({
+      taskType: TaskTypeEnum.Expired,
       unAuthAtlasSpace,
     }),
     fetchTasks({
@@ -201,6 +223,7 @@ export const getSpaceTasks = async ({
 
   const mergedTasks = {
     ...openTasks,
+    ...expiredTasks,
     ...closedTasks,
   } as { [key: string]: AnyTask };
 
@@ -356,16 +379,33 @@ export const editSpace = async ({
   });
 };
 
+interface EditTaskCallArgs {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  args: EditTaskArgs;
+}
+
+export const editTask = async ({
+  authAtlasSpace,
+  args,
+}: EditTaskCallArgs) => {
+  const call = authAtlasSpace.edit_task(args);
+
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to edit task",
+  });
+};
+
 interface CloseTaskArgs {
   authAtlasSpace: ActorSubclass<_SERVICE>;
   taskId: bigint;
 }
 
-export const forceCloseTask = async ({
+export const closeTask = async ({
   authAtlasSpace,
   taskId,
 }: CloseTaskArgs) => {
-  const call = authAtlasSpace.force_close_task(taskId);
+  const call = authAtlasSpace.close_task(taskId);
 
   await unwrapCall<null>({
     call,
@@ -373,7 +413,19 @@ export const forceCloseTask = async ({
   });
 };
 
-export const deleteCloseTask = async ({
+export const forceExpireTask = async ({
+  authAtlasSpace,
+  taskId,
+}: CloseTaskArgs) => {
+  const call = authAtlasSpace.force_expire_task(taskId);
+
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to close task",
+  });
+};
+
+export const deleteClosedTask = async ({
   authAtlasSpace,
   taskId,
 }: CloseTaskArgs) => {

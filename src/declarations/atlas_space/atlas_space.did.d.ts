@@ -2,6 +2,10 @@ import type { Principal } from '@dfinity/principal';
 import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
+export type AnswerFormat = { 'Small' : null } |
+  { 'List' : null } |
+  { 'Long' : null } |
+  { 'Paragraph' : null };
 export interface CkUsdcLedger { 'fee' : [] | [bigint], 'principal' : Principal }
 export interface CkUsdcLedger_1 {
   'fee' : [] | [bigint],
@@ -39,10 +43,20 @@ export interface EditSpaceArgs {
   'space_name' : string,
   'space_description' : string,
 }
+export interface EditTaskArgs {
+  'task_id' : bigint,
+  'task_title' : [] | [string],
+  'token_reward' : [] | [TokenReward],
+  'end_time' : [] | [bigint],
+  'task_content' : [] | [Array<[] | [TaskContent]>],
+  'start_time' : [] | [bigint],
+  'number_of_uses' : [] | [bigint],
+}
 export type Error = { 'BytecodeUpToDate' : null } |
   { 'NotTaskCreator' : null } |
   { 'NotParent' : null } |
   { 'UsageLimitExceeded' : null } |
+  { 'FailedToQueryBalance' : string } |
   { 'UserSubmissionNotFound' : null } |
   { 'FailedToUpdateConfig' : string } |
   { 'UserDoesNotBelongToSpace' : null } |
@@ -56,6 +70,7 @@ export type Error = { 'BytecodeUpToDate' : null } |
   { 'FailedToClaimRewards' : Array<[bigint, Error]> } |
   { 'NotAdminNorOwnerNorParent' : null } |
   { 'UserAlreadySubmitted' : null } |
+  { 'BalanceInconsistency' : string } |
   { 'RewardAlreadyRefunded' : null } |
   { 'NotAdmin' : null } |
   { 'IncorrectSubmission' : string } |
@@ -112,6 +127,7 @@ export interface State {
   'space_description' : string,
 }
 export type Submission = { 'Empty' : null } |
+  { 'List' : { 'items' : Array<string> } } |
   { 'Text' : { 'content' : string } };
 export interface SubmissionData {
   'state' : SubmissionState,
@@ -134,6 +150,7 @@ export interface Task {
 }
 export type TaskContent = {
     'TitleAndDescription' : {
+      'answer_format' : AnswerFormat,
       'task_description' : string,
       'task_title' : string,
       'allow_resubmit' : boolean,
@@ -153,13 +170,16 @@ export interface _SERVICE {
     Result
   >,
   'clean_up_space_before_deletion' : ActorMethod<[], Result_1>,
+  'close_task' : ActorMethod<[bigint], Result>,
   'create_task' : ActorMethod<[CreateTaskArgs], Result_2>,
   'delete_closed_task' : ActorMethod<[bigint], Result>,
   'edit_space' : ActorMethod<[EditSpaceArgs], Result>,
-  'force_close_task' : ActorMethod<[bigint], Result>,
+  'edit_task' : ActorMethod<[EditTaskArgs], Result>,
+  'force_expire_task' : ActorMethod<[bigint], Result>,
   'get_closed_tasks' : ActorMethod<[GetTasksArgs], Result_3>,
   'get_config' : ActorMethod<[], Config>,
   'get_current_bytecode_version' : ActorMethod<[], bigint>,
+  'get_expired_tasks' : ActorMethod<[GetTasksArgs], Result_4>,
   'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_4>,
   'get_space_info' : ActorMethod<[], SpaceInfo>,
   'get_state' : ActorMethod<[], State>,

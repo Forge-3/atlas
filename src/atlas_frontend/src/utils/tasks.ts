@@ -6,10 +6,10 @@ export const getTaskType = (
   time: number
 ): "closed" | "expired" | "starting" | "ongoing" => {
   const isRefunded = "refunded" in task;
-  const isClosed = Number(task.end_time) < Number(time);
+  const isExpired = "expired" in task;
   const isStarting = Number(task.start_time) > Number(time);
   if (isRefunded) return "closed";
-  if (isClosed) return "expired";
+  if (isExpired) return "expired";
   if (isStarting) return "starting";
   return "ongoing";
 };
