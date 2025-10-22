@@ -54,7 +54,7 @@ const SpaceInfoBar = ({ userInfo, spacePrincipal }: SpaceInfoBarProps) => {
         </div>
     ) : isUserInDifferentHub ? (
         <div className="text-sm sm:text-base text-light font-montserrat font-medium bg-background px-4 sm:px-12 mt-6 py-3 sm:py-4">
-            <h2>You cannot perform tasks in a different hub.</h2>
+            <h2>You cannot perform tasks in this HUB. You are in a different HUB.</h2>
         </div>
     ) : null
   );

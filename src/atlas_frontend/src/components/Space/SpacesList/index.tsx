@@ -125,7 +125,7 @@ const SpacesList = () => {
           </div>
           <div className="flex flex-row justify-end items-end  gap-3">
             <h3 className="text-light2 font-montserrat font-medium lg:text-h3 mt-8 mb-1">
-              Want to be the ambassador?
+              Join our space and become a champion!
             </h3>
             {userCanCreateSpace && (
             <Button
