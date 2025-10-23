@@ -80,4 +80,7 @@ pub enum Error {
 
     #[error("Failed to clean up space {principal}: {err}")]
     FailedToCleanSpace { principal: Principal, err: String },
+
+    #[error("WASM bytecode for version {0} does not exist")]
+    WasmVersionNotExist(u64),
 }

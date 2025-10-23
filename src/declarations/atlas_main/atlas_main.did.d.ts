@@ -38,6 +38,7 @@ export type Error = { 'UserRankNoMatch' : Array<Rank> } |
   { 'FailedToDecodeArgs' : string } |
   { 'UserRankToHigh' : { 'found' : Rank, 'expected' : Rank } } |
   { 'UserAlreadyHaveExpectedRank' : Rank } |
+  { 'WasmVersionNotExist' : bigint } |
   { 'UserNotAnOwner' : Principal } |
   { 'CountToHigh' : { 'max' : bigint, 'found' : bigint } } |
   { 'SpaceNotExist' : null } |
@@ -107,6 +108,7 @@ export interface _SERVICE {
     Result
   >,
   'delete_space' : ActorMethod<[Principal], Result_1>,
+  'get_bytecode_hash_by_version' : ActorMethod<[bigint], [] | [string]>,
   'get_current_space_bytecode_version' : ActorMethod<[], bigint>,
   'get_space_bytecode_by_version' : ActorMethod<
     [bigint],
@@ -118,6 +120,7 @@ export interface _SERVICE {
   'get_user_hub' : ActorMethod<[Principal], [] | [Space]>,
   'get_users_count' : ActorMethod<[], Result_2>,
   'join_space' : ActorMethod<[Principal], Result_1>,
+  'remove_space_bytecode' : ActorMethod<[bigint], Result_1>,
   'set_user_admin' : ActorMethod<[Principal], Result_1>,
   'set_user_space_lead' : ActorMethod<[Principal], Result_1>,
   'transfer_space' : ActorMethod<[TransferSpace], Result_1>,

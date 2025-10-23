@@ -1,6 +1,7 @@
 use candid::{CandidType, Principal};
 use ic_cdk::query;
 use serde::Deserialize;
+use sha2::{Digest, Sha256};
 
 use crate::{
     config::Config,
@@ -105,6 +106,15 @@ pub fn get_current_space_bytecode_version() -> u64 {
 #[query]
 pub fn get_space_bytecode_by_version(version: u64) -> Option<Vec<u8>> {
     memory::get_bytecode_by_version(&version)
+}
+
+#[query]
+pub fn get_bytecode_hash_by_version(version: u64) -> Option<String> {
+    let bytecode = memory::get_bytecode_by_version(&version)?;
+    let hash = Sha256::digest(&bytecode);
+    let mut hash_bytes = [0u8; 32];
+    hash_bytes.copy_from_slice(&hash);
+    Some(format!("{hash:x}"))
 }
 
 #[query]

@@ -63,6 +63,7 @@ export const idlFactory = ({ IDL }) => {
     'FailedToDecodeArgs' : IDL.Text,
     'UserRankToHigh' : IDL.Record({ 'found' : Rank, 'expected' : Rank }),
     'UserAlreadyHaveExpectedRank' : Rank,
+    'WasmVersionNotExist' : IDL.Nat64,
     'UserNotAnOwner' : IDL.Principal,
     'CountToHigh' : IDL.Record({ 'max' : IDL.Nat64, 'found' : IDL.Nat64 }),
     'SpaceNotExist' : IDL.Null,
@@ -121,6 +122,11 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'delete_space' : IDL.Func([IDL.Principal], [Result_1], []),
+    'get_bytecode_hash_by_version' : IDL.Func(
+        [IDL.Nat64],
+        [IDL.Opt(IDL.Text)],
+        ['query'],
+      ),
     'get_current_space_bytecode_version' : IDL.Func([], [IDL.Nat64], ['query']),
     'get_space_bytecode_by_version' : IDL.Func(
         [IDL.Nat64],
@@ -133,6 +139,7 @@ export const idlFactory = ({ IDL }) => {
     'get_user_hub' : IDL.Func([IDL.Principal], [IDL.Opt(Space)], ['query']),
     'get_users_count' : IDL.Func([], [Result_2], ['query']),
     'join_space' : IDL.Func([IDL.Principal], [Result_1], []),
+    'remove_space_bytecode' : IDL.Func([IDL.Nat64], [Result_1], []),
     'set_user_admin' : IDL.Func([IDL.Principal], [Result_1], []),
     'set_user_space_lead' : IDL.Func([IDL.Principal], [Result_1], []),
     'transfer_space' : IDL.Func([TransferSpace], [Result_1], []),
