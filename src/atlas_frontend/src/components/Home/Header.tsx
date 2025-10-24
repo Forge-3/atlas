@@ -15,7 +15,8 @@ const Header = () => {
         items-end
         pt-60
         h-[500px]
-        md:h-[740px]
+        md:h-[640px]
+        lg:h-[740px]
         bg-no-repeat bg-center bg-contain 
         container mx-auto
         overflow-hidden
@@ -31,8 +32,8 @@ const Header = () => {
           h-[400px]
           sm:w-[700px]
           sm:h-[400px]
-          md:w-[900px]
-          md:h-[600px]
+          md:w-auto
+          md:h-[500px]
           lg:w-[1530px] 
           lg:h-auto 
           max-w-none 

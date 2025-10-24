@@ -484,7 +484,7 @@ const Task = () => {
               </div>
             </div>
           </div>
-          <div className="flex flex-col w-auto  max-h-min bg-black/20 p-4 md:p-8 rounded-lg mx-6 sm:self-start ">
+          <div className="flex flex-col w-auto  max-h-min bg-black/20 p-4 md:p-8 rounded-lg mx-6 md:self-start ">
             <div className="flex flex-col xl:flex-row justify-between">
               {type === "ongoing" && (
                 <div className="mb-2 w-full">

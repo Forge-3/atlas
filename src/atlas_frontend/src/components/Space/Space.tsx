@@ -21,7 +21,7 @@ import { nowInSeconds } from "../../utils/date.ts";
 import LocalBlurOverlay from "../Shared/LocalBlurOverlay.tsx";
 import { getStartingIn, getTaskType } from "../../utils/tasks.ts";
 import { AiFillStar } from "react-icons/ai";
-import { RiAddLine, RiExchangeLine, RiSortDesc } from "react-icons/ri";
+import { RiAddLine, RiExchangeLine, RiSortDesc, RiArrowDownSFill } from "react-icons/ri";
 import { FiEdit2 } from "react-icons/fi";
 
 type SortMode = "newest" | "sorting" | "sorting-reverse";
@@ -159,7 +159,7 @@ const makeCompareByStatus = (direction: "asc" | "desc") =>
 
   return (
     <div className="relative w-full rounded-b-xl">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 px-10 py-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-10 px-10 py-6">
         <LocalBlurOverlay isLoading={!tasks} />
         {sortedIds.map((taskId) => {
           const task = tasks[taskId];
@@ -268,14 +268,14 @@ const Space = ({
             </Button>
             </div>
             <div className="flex flex-1 justify-end mx-4 md:mx-10 my-4">
-            <div className="hidden sm:flex gap-2">
+            <div className="hidden lg:flex gap-2">
               {userInfo?.ownSpaces(parsedSpacePrincipal) ? (
                 <Button
                   variant="primary"
                   className="flex-1 md:flex-none px-3 py-1 font-montserrat font-medium md:justify-end md:gap-2"
                   onClick={toggleTransferModal}
                 >
-                  <RiExchangeLine className="h-5 w-5 shrink-0" />
+                  <RiExchangeLine className="h-6 w-6 shrink-0" />
                   Transfer space
                 </Button>
               ) : (
@@ -290,7 +290,7 @@ const Space = ({
                       className="flex-1 px-3 py-1 gap-2 md:flex-none font-montserrat font-medium"
                       onClick={() => navigate(getSpaceEditPath(parsedSpacePrincipal))}
                     >
-                      <FiEdit2 className="h-4 w-5 shrink-0" />
+                      <FiEdit2 className="h-5 w-6 shrink-0" />
                       Edit space
                     </Button>
                   )}
@@ -299,24 +299,24 @@ const Space = ({
                       className="flex-1 md:flex-none px-3 py-1 gap-2 font-montserrat font-medium"
                       onClick={() => navigate(getCreateTaskPath(parsedSpacePrincipal))}
                     >
-                      <RiAddLine className="h-5 w-5 shrink-0" />
+                      <RiAddLine className="h-6 w-6 shrink-0" />
                       Create new task
                     </Button>
                   )}
                 </div>
               )}
             </div>
-            <div className="relative sm:hidden">
+            <div className="relative lg:hidden">
               <Button
                 variant="primary"
-                className="px-3 py-1 font-montserrat font-medium flex items-center gap-2 text-[12px]"
+                className="px-3 py-1 font-montserrat font-medium flex items-center gap-1 text-[12px] md:text-base"
                 onClick={() => setActionsOpen((v) => !v)}
               >
                 Manage
                 <span
                   className={`inline-block transition-transform duration-200 ${isActionsOpen ? "rotate-180" : "rotate-0"}`}
                 >
-                  ▾
+                  <RiArrowDownSFill className="h-6 w-6 shrink-0" />
                 </span>
               </Button>
               {isActionsOpen && (
@@ -327,15 +327,15 @@ const Space = ({
                   />
                   <div
                     role="menu"
-                    className="absolute right-0 z-50 mt-2 text-white w-48 rounded-md bg-dark/60 backdrop-blur-2xl"
+                    className="absolute right-0 z-50 mt-2 text-white w-48 md:w-96 rounded-md bg-dark/60 backdrop-blur-2xl"
                   >
                     {userInfo?.ownSpaces(parsedSpacePrincipal) && (
                       <button
                       role="menuitem"
-                      className="w-full text-left px-3 py-2 rounded-md font-montserrat flex items-center gap-2"
+                      className="w-full text-left px-3 py-2 md:text-2xl rounded-md font-montserrat flex items-center gap-2"
                       onClick={() => { setActionsOpen(false); toggleTransferModal(); }}
                     >
-                      <RiExchangeLine className="h-5 w-5 shrink-0" />
+                      <RiExchangeLine className="h-5 w-5 md:h-7 md:w-7 shrink-0" />
                       Transfer space
                     </button>
                     )}
@@ -346,10 +346,10 @@ const Space = ({
                         {didUserCanAdministrate && userBlockchainData && !inHub && (
                           <button
                             role="menuitem"
-                            className="w-full text-left px-3 py-2 rounded-md flex items-center gap-2 font-montserrat"
+                            className="w-full text-left px-3 py-2 md:text-2xl rounded-md flex items-center gap-2 font-montserrat"
                             onClick={() => { setActionsOpen(false); navigate(getSpaceEditPath(parsedSpacePrincipal)); }}
                           >
-                            <FiEdit2 className="h-4 w-5 shrink-0" />
+                            <FiEdit2 className="h-4 w-5 md:h-6 md:w-7 shrink-0" />
                             Edit space
                           </button>
                         )}
@@ -357,10 +357,10 @@ const Space = ({
                         {didUserCanAdministrate && (
                           <button
                             role="menuitem"
-                            className="w-full text-left px-3 py-2 rounded-md flex items-center gap-2 font-montserrat"
+                            className="w-full text-left px-3 py-2 md:text-2xl rounded-md flex items-center gap-2 font-montserrat"
                             onClick={() => { setActionsOpen(false); navigate(getCreateTaskPath(parsedSpacePrincipal)); }}
                           >
-                            <RiAddLine className="h-5 w-5 shrink-0" />
+                            <RiAddLine className="h-5 w-5 md:h-7 md:w-7 shrink-0" />
                             Create new task
                           </button>
                         )}

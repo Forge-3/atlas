@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 import type { Spaces, Space } from "../../../store/slices/spacesSlice";
 import LocalBlurOverlay from "../../Shared/LocalBlurOverlay";
 import Button from "../../Shared/Button";
-import { RiSearchEyeLine } from 'react-icons/ri';
+import { RiSearchEyeLine, RiCloseLine } from 'react-icons/ri';
 import { useSpaceNavigation } from "../../../hooks/useSpaceNavigation";
 
 const SpacesList = () => {
@@ -62,6 +62,12 @@ const SpacesList = () => {
     setIsSearching(true);
   };
 
+  const clearSearch = () => {
+    setSearchKeyword("");
+    setFilteredSpaces([]);
+    setIsSearching(false);
+  }
+
   useEffect(() => {
     if (!spaces || fetchedSpacesData || !agent) return;
     Object.keys(spaces).map(async (spaceId) => {
@@ -96,32 +102,43 @@ const SpacesList = () => {
           every step you take.
         </h4>
       </div>
-      <div className="w-full h-[1px] bg-light2/20 my-8 md:my-20" />
+      <div className="w-full h-[1px] bg-light2/20 my-8 sm:my-12 md:my-20" />
       <div className="flex flex-1 mx-6 md:mx-12 bg-primary/100 rounded-xl p-4 md:p-6 mb-8">
         <div className="flex flex-col w-full">
           <h4 className="text-white font-montserrat font-medium text-h3 lg:text-h4 mb-4">
           Search hubs and projects
           </h4>
-          <div className="flex flex-row flex-wrap gap-2">
-          <input
-            type="text"
-            placeholder="Enter a Keyword"
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
-            onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleSearch();
-                          }
-                        }}
-            className="w-[140px] lg:w-[260px] px-4 py-1 rounded-md bg-background/20 text-white text-[12px] lg:text-base not-last:font-montserrat font-medium placeholder:text-white focus:outline-2 focus:outline-background"
-            />
-          <Button
-          variant="dark"
-          className="px-4 text-[12px] lg:text-base font-medium bg-dark gap-1"
-          onClick={handleSearch}
-          >
-            <RiSearchEyeLine className="h-4 w-4 lg:h-6 lg:w-6"/> Search
-          </Button>
+          <div className="flex flex-row w-full justify-between min-[420px]:justify-normal flex-wrap gap-2">
+            <div className="relative min-[300px]:w-[140px] min-[374px]:w-[190px] lg:w-[280px]">
+              <input
+                type="text"
+                placeholder="Enter a Keyword"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSearch();
+                  if (e.key === 'Escape') clearSearch();
+                }}
+                className="w-full pr-8 px-4 py-2 rounded-md bg-background/20 text-white text-[12px] lg:text-base not-last:font-montserrat font-medium placeholder:text-white focus:outline-2 focus:outline-background"
+              />
+              {searchKeyword && (
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={clearSearch}
+                  className="absolute right-1 top-[7px] lg:top-[8px] xl:top-[8px] flex items-center"
+                >
+                  <RiCloseLine className="w-5 h-5 lg:w-6 lg:h-6 text-white hover:opacity-100" />
+                </button>
+              )}
+            </div>
+            <Button
+              variant="dark"
+              className="px-4 text-[12px] lg:text-base font-medium bg-dark gap-1"
+              onClick={handleSearch}
+            >
+              <RiSearchEyeLine className="h-4 w-4 lg:h-6 lg:w-6" /> Search
+            </Button>
           </div>
           <div className="flex flex-row justify-end items-end  gap-3">
             <h3 className="text-light2 font-montserrat font-medium lg:text-h3 mt-8 mb-1">
