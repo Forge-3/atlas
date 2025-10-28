@@ -1,24 +1,8 @@
 import type {
-  SubmissionData,
   SubmissionState,
   TaskType,
 } from "../../../../declarations/atlas_space/atlas_space.did";
-
-export interface TaskData {
-  submissionData: SubmissionData;
-  taskType: keyof TaskType;
-}
-
-export interface TasksData {
-  [key: string]: {
-    submissionData: SubmissionData;
-    taskType: keyof TaskType;
-  };
-}
-
-export interface UserSubmissionsData {
-  [key: string]: TasksData;
-}
+import type { UserSubmissionsData } from "./types";
 
 export const getUsersSubmissions = (tasks: TaskType[]) => {
   const data = tasks.reduce((acc, task, index) => {

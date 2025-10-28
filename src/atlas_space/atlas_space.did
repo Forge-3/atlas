@@ -1,33 +1,84 @@
+type AnswerFormat = variant { Small; List; Long; Paragraph };
 type CkUsdcLedger = record { fee : opt nat; "principal" : principal };
+type CkUsdcLedger_1 = record { fee : opt nat; "principal" : principal };
+type ClosedTask = record {
+  tasks : vec TaskType;
+  creator : principal;
+  task_title : text;
+  refunded : bool;
+  token_reward : TokenReward;
+  end_time : nat64;
+  start_time : nat64;
+  rewarded : vec principal;
+  number_of_uses : nat64;
+};
+type Config = record {
+  owner : principal;
+  ckusdc_ledger : CkUsdcLedger;
+  current_wasm_version : nat64;
+  parent : principal;
+};
 type CreateTaskArgs = record {
   task_title : text;
   token_reward : TokenReward;
+  end_time : nat64;
   task_content : vec TaskContent;
+  start_time : nat64;
   number_of_uses : nat64;
+};
+type EditSpaceArgs = record {
+  external_links : vec record { text; text };
+  space_background : opt text;
+  space_logo : opt text;
+  space_name : text;
+  space_description : text;
+};
+type EditTaskArgs = record {
+  task_id : nat64;
+  task_title : opt text;
+  token_reward : opt TokenReward;
+  end_time : opt nat64;
+  task_content : opt vec opt TaskContent;
+  start_time : opt nat64;
+  number_of_uses : opt nat64;
 };
 type Error = variant {
   BytecodeUpToDate;
+  NotTaskCreator;
   NotParent;
   UsageLimitExceeded;
+  FailedToQueryBalance : text;
   UserSubmissionNotFound;
   FailedToUpdateConfig : text;
   UserDoesNotBelongToSpace;
+  TaskNotActive;
+  AllRewardsClaimed;
   TaskAlreadyExists : nat64;
   FailedToCallMain : text;
   ConfigNotSet;
   UserAlreadyRewarded;
+  TaskNotFound : nat64;
+  FailedToClaimRewards : vec record { nat64; Error };
   NotAdminNorOwnerNorParent;
   UserAlreadySubmitted;
+  BalanceInconsistency : text;
+  RewardAlreadyRefunded;
   NotAdmin;
   IncorrectSubmission : text;
   CountToHigh : record { max : nat64; found : nat64 };
   SubtaskDoNotExists : nat64;
   NotOwner;
   FailedToTransfer : text;
+  TaskExpired;
+  FailedToParse : text;
   InvalidTaskContent : text;
   TaskDoNotExists : nat64;
   AnonymousCaller;
   SubmissionNotAccepted;
+};
+type GetClosedTasksRes = record {
+  tasks : vec record { nat64; ClosedTask };
+  tasks_count : nat64;
 };
 type GetTasksArgs = record { count : nat64; start : nat64 };
 type GetTasksRes = record {
@@ -35,15 +86,19 @@ type GetTasksRes = record {
   tasks_count : nat64;
 };
 type Result = variant { Ok; Err : Error };
-type Result_1 = variant { Ok : nat64; Err : Error };
-type Result_2 = variant { Ok : GetTasksRes; Err : Error };
+type Result_1 = variant { Ok; Err : text };
+type Result_2 = variant { Ok : nat64; Err : Error };
+type Result_3 = variant { Ok : GetClosedTasksRes; Err : Error };
+type Result_4 = variant { Ok : GetTasksRes; Err : Error };
 type SpaceArgs = variant {
   UpgradeArg : record { version : nat64 };
   InitArg : SpaceInitArg;
 };
+type SpaceInfo = record { version : nat64; state : State };
 type SpaceInitArg = record {
+  external_links : vec record { text; text };
   owner : principal;
-  ckusdc_ledger : CkUsdcLedger;
+  ckusdc_ledger : CkUsdcLedger_1;
   space_symbol : opt text;
   space_background : opt text;
   current_wasm_version : nat64;
@@ -52,6 +107,7 @@ type SpaceInitArg = record {
   space_description : text;
 };
 type State = record {
+  external_links : vec record { text; text };
   space_symbol : opt text;
   space_background : opt text;
   space_logo : opt text;
@@ -59,22 +115,35 @@ type State = record {
   tasks_count : nat64;
   space_description : text;
 };
-type Submission = variant { Text : record { content : text } };
+type Submission = variant {
+  Empty;
+  List : record { items : vec text };
+  Text : record { content : text };
+};
 type SubmissionData = record {
   state : SubmissionState;
+  rejection_reason : opt text;
   submission : Submission;
 };
 type SubmissionState = variant { Rejected; WaitingForReview; Accepted };
 type Task = record {
+  timer_id : opt nat64;
   tasks : vec TaskType;
   creator : principal;
   task_title : text;
   token_reward : TokenReward;
+  end_time : nat64;
+  start_time : nat64;
   rewarded : vec principal;
   number_of_uses : nat64;
 };
 type TaskContent = variant {
-  TitleAndDescription : record { task_description : text; task_title : text };
+  TitleAndDescription : record {
+    answer_format : AnswerFormat;
+    task_description : text;
+    task_title : text;
+    allow_resubmit : bool;
+  };
 };
 type TaskType = variant {
   GenericTask : record {
@@ -86,17 +155,27 @@ type TokenReward = variant { CkUsdc : record { amount : nat } };
 type WalletReceiveResult = record { accepted : nat64 };
 service : (SpaceArgs) -> {
   accept_subtask_submission : (principal, nat64, nat64) -> (Result);
-  create_task : (CreateTaskArgs) -> (Result_1);
-  get_closed_tasks : (GetTasksArgs) -> (Result_2) query;
+  clean_up_space_before_deletion : () -> (Result_1);
+  close_task : (nat64) -> (Result);
+  create_task : (CreateTaskArgs) -> (Result_2);
+  delete_closed_task : (nat64) -> (Result);
+  edit_space : (EditSpaceArgs) -> (Result);
+  edit_task : (EditTaskArgs) -> (Result);
+  force_expire_task : (nat64) -> (Result);
+  get_closed_tasks : (GetTasksArgs) -> (Result_3) query;
+  get_config : () -> (Config) query;
   get_current_bytecode_version : () -> (nat64) query;
-  get_open_tasks : (GetTasksArgs) -> (Result_2) query;
+  get_expired_tasks : (GetTasksArgs) -> (Result_4) query;
+  get_open_tasks : (GetTasksArgs) -> (Result_4) query;
+  get_space_info : () -> (SpaceInfo) query;
   get_state : () -> (State) query;
-  reject_subtask_submission : (principal, nat64, nat64) -> (Result);
+  reject_subtask_submission : (principal, nat64, nat64, opt text) -> (Result);
   set_space_background : (text) -> (Result);
   set_space_description : (text) -> (Result);
   set_space_logo : (text) -> (Result);
   set_space_name : (text) -> (Result);
   submit_subtask_submission : (nat64, nat64, Submission) -> (Result);
+  transfer_space : (principal) -> ();
   wallet_balance : () -> (nat) query;
   wallet_receive : () -> (WalletReceiveResult);
   withdraw_reward : (nat64) -> (Result);

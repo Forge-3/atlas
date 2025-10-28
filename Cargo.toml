@@ -4,7 +4,7 @@ resolver = "2"
 
 [workspace.dependencies]
 candid = "0.10"
-ic-cdk = "0.17"
+ic-cdk = "0.18.5"
 serde = "1.0.219"
 hex = "0.4.3"
 ic-stable-structures = "0.6.8"

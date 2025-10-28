@@ -20,10 +20,30 @@
     "src/atlas_frontend"
   ],
   "devDependencies": {
-    "eslint": "^9.24.0",
+    "@eslint/js": "^9.35.0",
+    "eslint": "^9.35.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-react": "^7.37.5",
     "husky": "^9.1.7",
-    "typescript-eslint": "^8.29.0"
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.44.0"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.3.2",
+    "@shikijs/vscode-textmate": "^10.0.2",
+    "@tailwindcss/vite": "^4.1.11",
+    "hast-util-to-text": "^4.0.2",
+    "mdast-util-definitions": "^6.0.0",
+    "oniguruma-parser": "^0.12.1",
+    "prismjs": "^1.30.0",
+    "regex-utilities": "^2.3.0",
+    "rehype-raw": "^7.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-rehype": "^11.1.2",
+    "remark-smartypants": "^3.0.2",
+    "tailwindcss": "^4.1.11",
+    "unist-util-remove-position": "^5.0.0"
   }
 }

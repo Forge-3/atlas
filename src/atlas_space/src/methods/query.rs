@@ -4,14 +4,31 @@ use candid::CandidType;
 use ic_cdk::query;
 use serde::Deserialize;
 
-use crate::{
-    errors::Error,
-    memory,
-    state::State,
-    task::{Task, TaskId},
-};
+use crate::tasks::closed_task::ClosedTask;
+use crate::tasks::task::Task;
+use crate::tasks::task_types::TaskId;
+use crate::{config::Config, errors::Error, memory, state::State};
 
 const MAX_TASKS_PER_RESPONSE: u8 = 200;
+
+#[derive(Debug, CandidType)]
+pub struct SpaceInfo {
+    version: u64,
+    state: State,
+}
+
+#[query]
+pub fn get_space_info() -> SpaceInfo {
+    SpaceInfo {
+        version: memory::read_config(|config| config.current_wasm_version),
+        state: memory::read_state(|state| state.clone()),
+    }
+}
+
+#[query]
+pub fn get_config() -> Config {
+    memory::read_config(|config| config.clone())
+}
 
 #[query]
 pub fn get_state() -> State {
@@ -30,6 +47,12 @@ pub struct GetTasksRes {
     pub tasks: BTreeMap<TaskId, Task>,
 }
 
+#[derive(Debug, CandidType)]
+pub struct GetClosedTasksRes {
+    pub tasks_count: usize,
+    pub tasks: BTreeMap<TaskId, ClosedTask>,
+}
+
 #[query]
 pub fn get_open_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
     if args.count > MAX_TASKS_PER_RESPONSE as usize {
@@ -39,7 +62,7 @@ pub fn get_open_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
         });
     }
 
-    let tasks = memory::with_open_tasks_iter(|tasks| {
+    let tasks: BTreeMap<TaskId, Task> = memory::with_open_tasks_iter(|tasks| {
         tasks
             .skip(args.start)
             .take(args.count.min(MAX_TASKS_PER_RESPONSE as usize))
@@ -53,7 +76,7 @@ pub fn get_open_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
 }
 
 #[query]
-pub fn get_closed_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
+pub fn get_closed_tasks(args: GetTasksArgs) -> Result<GetClosedTasksRes, Error> {
     if args.count > MAX_TASKS_PER_RESPONSE as usize {
         return Err(Error::CountToHigh {
             max: MAX_TASKS_PER_RESPONSE as usize,
@@ -68,9 +91,31 @@ pub fn get_closed_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
             .collect()
     });
 
-    Ok(GetTasksRes {
+    Ok(GetClosedTasksRes {
         tasks,
         tasks_count: memory::get_closed_tasks_len() as usize,
+    })
+}
+
+#[query]
+pub fn get_expired_tasks(args: GetTasksArgs) -> Result<GetTasksRes, Error> {
+    if args.count > MAX_TASKS_PER_RESPONSE as usize {
+        return Err(Error::CountToHigh {
+            max: MAX_TASKS_PER_RESPONSE as usize,
+            found: args.count,
+        });
+    }
+
+    let tasks = memory::with_expired_tasks_iter(|tasks| {
+        tasks
+            .skip(args.start)
+            .take(args.count.min(MAX_TASKS_PER_RESPONSE as usize))
+            .collect()
+    });
+
+    Ok(GetTasksRes {
+        tasks,
+        tasks_count: memory::get_expired_tasks_len() as usize,
     })
 }
 

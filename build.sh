@@ -24,7 +24,8 @@ ic-wasm "$BASE_DIR/target/wasm32-unknown-unknown/release/$canister.wasm" \
     -o "$BASE_DIR/target/wasm32-unknown-unknown/release/$canister-opt.wasm" \
     shrink
 
-    gzip -fn "$BASE_DIR/target/wasm32-unknown-unknown/release/$canister-opt.wasm" 
+    gzip -fn "$BASE_DIR/target/wasm32-unknown-unknown/release/$canister-opt.wasm"
+    sha256sum "$BASE_DIR/target/wasm32-unknown-unknown/release/$canister-opt.wasm.gz"
 }
 
 # The list of canisters of your project

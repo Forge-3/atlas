@@ -90,7 +90,7 @@ pub mod vec {
         Ok(())
     }
 
-    pub fn decode<'b, Ctx>(d: &mut Decoder<'b>, _ctx: &mut Ctx) -> Result<Vec<Principal>, Error> {
+    pub fn decode<Ctx>(d: &mut Decoder<'_>, _ctx: &mut Ctx) -> Result<Vec<Principal>, Error> {
         let len = d
             .array()?
             .ok_or(Error::message("Failed to get array length"))?;

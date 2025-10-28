@@ -1,30 +1,34 @@
 import React from "react";
-import { useSelector } from "react-redux";
 import Navbar from "./Navbar";
-import type { RootState } from "../store/store";
 import Router from "../router";
 import Footer from "./Footer";
+import ScreenLoadingOverlay from "./Shared/ScreenLoadingOverlay";
+import ScreenBlurOverlay from "./Shared/ScreenBlurOverlay";
+import { useLocation } from "react-router-dom";
 
 const Main = () => {
-  const isScreenBlur = useSelector(
-    (state: RootState) => state.app.isScreenBlur
-  );
+  const location = useLocation();
+
+  const isCreateTaskPage = location.pathname.endsWith('/create-task');
+  const isSubmissionsPage = location.pathname.endsWith('/summations');
+  const isSpacePage = location.pathname.includes('/space/');
+  
+  const bgMain = !isSpacePage ?
+    { backgroundImage: 'linear-gradient(to bottom, var(--color-background) 0%, var(--color-primary) 100%)' } :
+    (isCreateTaskPage || isSubmissionsPage) ?
+    { backgroundImage: 'linear-gradient(to bottom, var(--color-background) 0%, var(--color-primary) 100%)' } :
+    { backgroundColor: `var(--color-background)` };
 
   return (
-    <>
-      <div
-        className={`absolute inset-0 flex items-center justify-center bg-black bg-opacity-25 sm:backdrop-blur-sm backdrop-blur-none z-40 ${isScreenBlur ? "" : "hidden"}`}
-      ></div>
-      <div className="relative bg-gradient-to-b from-[#1E0F33] to-[#9173FF]/50 bg-[#1E0F33] min-h-screen flex flex-col justify-between w-screen">
-        <div>
-          <Navbar />
-          <main>
-            <Router />
-          </main>
-        </div>
-        <Footer />
+    <div className="min-h-screen flex flex-col justify-between">
+      <ScreenLoadingOverlay />
+      <ScreenBlurOverlay />
+      <div style = {bgMain}>
+        <Navbar />
+          <Router />
       </div>
-    </>
+      <Footer/>
+    </div>
   );
 };
 

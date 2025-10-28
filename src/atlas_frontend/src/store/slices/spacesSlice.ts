@@ -1,12 +1,13 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { StorableState } from "../../canisters/atlasSpace/storable";
-import type { Task } from "../../../../declarations/atlas_space/atlas_space.did";
+import type { StorableState } from "../../canisters/atlasSpace/types";
+import type { AnyTask } from "../../canisters/atlasSpace/api";
 
-type Spaces = {
-  [key: string]: {
-    state: null | StorableState;
-    tasks: null | { [key: string]: Task };
-  };
+export type Space = {
+  state: null | StorableState;
+  tasks: null | { [key: string]: AnyTask };
+};
+export type Spaces = {
+  [key: string]: Space;
 };
 
 interface SpacesState {
@@ -22,37 +23,59 @@ export const spaceSlice = createSlice({
   initialState,
   reducers: {
     setSpaces: (state, action: PayloadAction<Spaces>) => {
-      state.spaces = action.payload;
+      state.spaces = {
+        ...state.spaces,
+        ...action.payload,
+      };
     },
     setSpace: (
       state,
       action: PayloadAction<{ state: StorableState; spaceId: string }>
     ) => {
-      const spaceId = action.payload.spaceId;
-      const spaceState = action.payload.state;
+      const { spaceId, state: spaceState } = action.payload;
 
       if (!state.spaces) {
-        state.spaces = {
-          [spaceId]: { state: spaceState, tasks: null },
-        };
-      } else if (!state.spaces[spaceId]) {
+        state.spaces = {};
+      }
+
+      if (!state.spaces[spaceId]) {
         state.spaces[spaceId] = { state: spaceState, tasks: null };
-      } else if (!state.spaces[spaceId].state) {
+      } else {
         state.spaces[spaceId].state = spaceState;
       }
     },
     setTasks: (
       state,
       action: PayloadAction<{
-        tasks: { [key: string]: Task };
+        tasks: { [key: string]: AnyTask };
         spaceId: string;
       }>
     ) => {
-      const spaceId = action.payload.spaceId;
-      const tasks = action.payload.tasks;
+      const { spaceId, tasks } = action.payload;
       if (state.spaces?.[spaceId]?.state) {
-        state.spaces[spaceId].tasks = tasks;
+        state.spaces[spaceId].tasks = {
+          ...state.spaces[spaceId].tasks,
+          ...tasks,
+        };
       }
+    },
+    deleteSpace: (
+      state,
+      action: PayloadAction<{ spaceId: string }>
+    ) => {
+      if (state.spaces && state.spaces[action.payload.spaceId]) {
+        delete state.spaces[action.payload.spaceId];
+      }
+    },
+    deleteTask: (
+      state,
+      action: PayloadAction<{
+        taskId: string;
+        spaceId: string;
+      }>
+    ) => {
+      const { spaceId, taskId } = action.payload;
+      delete state.spaces?.[spaceId].tasks?.[taskId];
     },
   },
   selectors: {
@@ -61,7 +84,7 @@ export const spaceSlice = createSlice({
   },
 });
 
-export const { setSpaces, setSpace, setTasks } = spaceSlice.actions;
+export const { setSpaces, setSpace, setTasks, deleteTask, deleteSpace } = spaceSlice.actions;
 export const { getSpace } = spaceSlice.selectors;
 
 export default spaceSlice.reducer;

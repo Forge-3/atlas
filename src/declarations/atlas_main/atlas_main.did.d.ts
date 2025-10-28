@@ -9,6 +9,14 @@ export type AtlasArgs = {
     }
   } |
   { 'InitArg' : Config };
+export interface CandidUser {
+  'integrations' : Integrations,
+  'rank' : Rank,
+  'in_hub' : [] | [Space],
+  'space_creation_in_progress' : boolean,
+  'belonging_to_spaces' : Array<Space>,
+  'owned_spaces' : Array<Space>,
+}
 export interface CkUsdcLedger { 'fee' : [] | [bigint], 'principal' : Principal }
 export interface CkUsdcLedger_1 {
   'fee' : [] | [bigint],
@@ -22,11 +30,16 @@ export interface Config {
 export type Error = { 'UserRankNoMatch' : Array<Rank> } |
   { 'FailedToCallSpace' : { 'err' : string, 'principal' : Principal } } |
   { 'FailedToSaveSpace' : string } |
+  { 'UserNotOwner' : null } |
   { 'FailedToUpdateConfig' : string } |
+  { 'FailedToResetSpaceVec' : string } |
+  { 'FailedToCleanSpace' : { 'err' : string, 'principal' : Principal } } |
   { 'UserRichSpaceLimit' : { 'found' : bigint, 'expected' : bigint } } |
+  { 'FailedToDecodeArgs' : string } |
   { 'UserRankToHigh' : { 'found' : Rank, 'expected' : Rank } } |
   { 'UserAlreadyHaveExpectedRank' : Rank } |
-  { 'UserNotAnOwner' : Space } |
+  { 'WasmVersionNotExist' : bigint } |
+  { 'UserNotAnOwner' : Principal } |
   { 'CountToHigh' : { 'max' : bigint, 'found' : bigint } } |
   { 'SpaceNotExist' : null } |
   { 'FailedToGetCanisterInfo' : string } |
@@ -37,6 +50,8 @@ export type Error = { 'UserRankNoMatch' : Array<Rank> } |
   { 'UserDoNotExist' : null } |
   { 'FailedToUpdateCanisterSettings' : string } |
   { 'UserAlreadyIsHubMember' : null } |
+  { 'FailedToParse' : string } |
+  { 'NotEnoughCycles' : { 'owned' : bigint, 'expected' : bigint } } |
   { 'AnonymousCaller' : null };
 export interface GetSpacesArgs { 'count' : bigint, 'start' : bigint }
 export interface GetSpacesRes {
@@ -51,14 +66,17 @@ export type Rank = { 'SpaceLead' : null } |
   { 'Admin' : null };
 export type Result = { 'Ok' : Space } |
   { 'Err' : Error };
-export type Result_1 = { 'Ok' : GetSpacesRes } |
+export type Result_1 = { 'Ok' : null } |
   { 'Err' : Error };
-export type Result_2 = { 'Ok' : null } |
+export type Result_2 = { 'Ok' : bigint } |
+  { 'Err' : Error };
+export type Result_3 = { 'Ok' : GetSpacesRes } |
   { 'Err' : Error };
 export interface Space { 'id' : Principal, 'space_type' : SpaceType }
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
   { 'InitArg' : SpaceInitArg };
 export interface SpaceInitArg {
+  'external_links' : Array<[string, string]>,
   'owner' : Principal,
   'ckusdc_ledger' : CkUsdcLedger_1,
   'space_symbol' : [] | [string],
@@ -69,36 +87,44 @@ export interface SpaceInitArg {
   'space_description' : string,
 }
 export type SpaceType = { 'HUB' : null };
+export interface TransferSpace { 'to' : Principal, 'space_id' : Principal }
 export interface UpdateConfig {
   'spaces_per_space_lead' : [] | [number],
   'ckusdc_ledger' : [] | [CkUsdcLedger_1],
-}
-export interface User {
-  'integrations' : Integrations,
-  'rank' : Rank,
-  'space_creation_in_progress' : boolean,
-  'belonging_to_spaces' : BigUint64Array | bigint[],
-  'owned_spaces' : BigUint64Array | bigint[],
 }
 export interface WalletReceiveResult { 'accepted' : bigint }
 export interface _SERVICE {
   'app_config' : ActorMethod<[], Config>,
   'create_new_space' : ActorMethod<
-    [string, string, [] | [string], [] | [string], [] | [string], SpaceType],
+    [
+      string,
+      string,
+      [] | [string],
+      [] | [string],
+      [] | [string],
+      SpaceType,
+      Array<[string, string]>,
+    ],
     Result
   >,
+  'delete_space' : ActorMethod<[Principal], Result_1>,
+  'get_bytecode_hash_by_version' : ActorMethod<[bigint], [] | [string]>,
   'get_current_space_bytecode_version' : ActorMethod<[], bigint>,
   'get_space_bytecode_by_version' : ActorMethod<
     [bigint],
     [] | [Uint8Array | number[]]
   >,
-  'get_spaces' : ActorMethod<[GetSpacesArgs], Result_1>,
-  'get_user' : ActorMethod<[GetUserBy], User>,
+  'get_space_users_count' : ActorMethod<[Principal], Result_2>,
+  'get_spaces' : ActorMethod<[GetSpacesArgs], Result_3>,
+  'get_user' : ActorMethod<[GetUserBy], CandidUser>,
   'get_user_hub' : ActorMethod<[Principal], [] | [Space]>,
-  'join_space' : ActorMethod<[Principal], Result_2>,
-  'set_user_admin' : ActorMethod<[Principal], Result_2>,
-  'set_user_space_lead' : ActorMethod<[Principal], Result_2>,
-  'upgrade_space' : ActorMethod<[Space], Result_2>,
+  'get_users_count' : ActorMethod<[], Result_2>,
+  'join_space' : ActorMethod<[Principal], Result_1>,
+  'remove_space_bytecode' : ActorMethod<[bigint], Result_1>,
+  'set_user_admin' : ActorMethod<[Principal], Result_1>,
+  'set_user_space_lead' : ActorMethod<[Principal], Result_1>,
+  'transfer_space' : ActorMethod<[TransferSpace], Result_1>,
+  'upgrade_space' : ActorMethod<[Principal], Result_1>,
   'user_is_admin' : ActorMethod<[Principal], boolean>,
   'user_is_in_hub' : ActorMethod<[Principal], boolean>,
   'user_is_in_space' : ActorMethod<[Principal, Principal], boolean>,

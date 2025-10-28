@@ -1,8 +1,12 @@
 import type { ActorSubclass } from "@dfinity/agent";
 import type {
   _SERVICE,
-  GetTasksRes,
+  AnswerFormat,
+  ClosedTask,
+  EditTaskArgs,
+  State,
   Submission,
+  SubmissionData,
   Task,
   TaskContent,
 } from "../../../../declarations/atlas_space/atlas_space.did.js";
@@ -10,10 +14,19 @@ import { unwrapCall } from "../delegatedCall.js";
 import { setSpace, setTasks } from "../../store/slices/spacesSlice.js";
 import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
-import { storableState } from "./storable.js";
-import { serify } from "@karmaniverous/serify-deserify";
-import { customSerify } from "../../store/store.js";
 import type { Principal } from "@dfinity/principal";
+import type { ExternalLinks } from "./types.js";
+export interface ExpiredTask extends Task {
+  expired: true;
+}
+
+interface CreateSubtaskArg {
+  task_type: string;
+  title: string;
+  description: string;
+  allow_resubmit: boolean;
+  answer_format: AnswerFormat
+}
 
 interface GetAtlasSpaceArgs {
   unAuthAtlasSpace: ActorSubclass<_SERVICE>;
@@ -26,12 +39,36 @@ export const getAtlasSpace = async ({
   spaceId,
   dispatch,
 }: GetAtlasSpaceArgs) => {
-  const state = await unAuthAtlasSpace.get_state();
+  let state: State;
+  let version: bigint;
+
+  try {
+    ({ state, version } = await unAuthAtlasSpace.get_space_info());
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_) {
+    [state, version] = await Promise.all([
+      unAuthAtlasSpace.get_state(),
+      unAuthAtlasSpace.get_current_bytecode_version(),
+    ]);
+  }
+  const externalLinksObj = Object.fromEntries(state.external_links);
 
   dispatch(
     setSpace({
-      state: storableState(state),
       spaceId,
+      state: {
+        ...state,
+        version,
+        space_symbol: state.space_symbol.pop() ?? null,
+        space_background: state.space_background.pop() ?? null,
+        space_logo: state.space_logo.pop() ?? null,
+        external_links: {
+          x: externalLinksObj?.x ?? null,
+          telegram: externalLinksObj?.telegram ?? null,
+          discord: externalLinksObj?.discord ?? null,
+          linkedIn: externalLinksObj?.linkedIn ?? null,
+        },
+      },
     })
   );
 };
@@ -40,8 +77,10 @@ interface CreateNewSpaceTaskArgs {
   authAtlasSpaceActor: ActorSubclass<_SERVICE>;
   numberOfUses: bigint;
   rewardPerUsage: bigint;
-  tasks: TaskContent[];
+  tasks: CreateSubtaskArg[];
   taskTitle: string;
+  startTime: bigint;
+  endTime: bigint;
 }
 
 export const createNewTask = async ({
@@ -50,7 +89,18 @@ export const createNewTask = async ({
   rewardPerUsage,
   tasks,
   taskTitle,
+  startTime,
+  endTime,
 }: CreateNewSpaceTaskArgs) => {
+  const transformedTasks: TaskContent[] = tasks.map((arg) => ({
+    TitleAndDescription: {
+      task_title: arg.title,
+      task_description: arg.description,
+      allow_resubmit: arg.allow_resubmit,
+      answer_format: arg.answer_format
+    },
+  }));
+
   const call = authAtlasSpaceActor.create_task({
     task_title: taskTitle,
     token_reward: {
@@ -58,71 +108,130 @@ export const createNewTask = async ({
         amount: rewardPerUsage,
       },
     },
-    task_content: tasks,
+    task_content: transformedTasks,
     number_of_uses: numberOfUses,
+    start_time: startTime,
+    end_time: endTime,
   });
 
-  return await unwrapCall<bigint>({
+  return unwrapCall<bigint>({
     call,
     errMsg: "Failed to create new task",
   });
 };
 
-export type Tasks = { [key: string]: Task };
+export type AnyTask = Task | ExpiredTask | ClosedTask;
+export type Tasks = { [key: string]: AnyTask };
+export enum TaskTypeEnum {
+  Open = "Open",
+  Expired = "Expired",
+  Closed = "Closed",
+}
+
+const fetchTasks = async ({
+  taskType,
+  unAuthAtlasSpace,
+  start: initialStart = 0n,
+  count = 200n,
+}: {
+  taskType: TaskTypeEnum,
+  unAuthAtlasSpace: ActorSubclass<_SERVICE>;
+  start?: bigint;
+  count?: bigint;
+}): Promise<Tasks> => {
+  const result: [bigint, AnyTask][] = [];
+  let totalCount = 0n;
+  let start = initialStart;
+
+  const unwrapMessage = (() => {
+    switch (taskType) {
+      case TaskTypeEnum.Open:
+        return "Failed to fetch open tasks";
+      case TaskTypeEnum.Expired:
+        return "Failed to fetch expired tasks";
+      case TaskTypeEnum.Closed:
+        return "Failed to fetch closed tasks";
+      default:
+        return "Failed to fetch tasks";
+    }
+  })();
+
+  const fetchFn = () => {
+    switch (taskType) {
+      case TaskTypeEnum.Open:
+        return unAuthAtlasSpace.get_open_tasks({ start, count });
+      case TaskTypeEnum.Expired:
+        return unAuthAtlasSpace.get_expired_tasks({ start, count });
+      case TaskTypeEnum.Closed:
+        return unAuthAtlasSpace.get_closed_tasks({ start, count });
+      default:
+        throw new Error(`Unsupported TaskTypeEnum: ${taskType}`);
+    }
+  };
+
+  const handleExpiredTasks = (tasks: [bigint, AnyTask][]): [bigint, AnyTask][] => {
+    if (taskType !== TaskTypeEnum.Expired) return tasks;
+    return tasks.map(([id, task]) => [
+      id,
+      { ...task, expired: true } as ExpiredTask,
+    ]);
+  };
+
+  const res = await unwrapCall<{ tasks_count: bigint; tasks: [bigint, AnyTask][] }>({
+    call: fetchFn(),
+    errMsg: unwrapMessage,
+  });
+
+  totalCount = res.tasks_count;
+  result.push(...handleExpiredTasks(res.tasks));
+  start += count;
+
+  while (totalCount > result.length) {
+    const res = await unwrapCall<{ tasks_count: bigint; tasks: [bigint, AnyTask][] }>({
+      call: fetchFn(),
+      errMsg: unwrapMessage,
+    });
+    result.push(...handleExpiredTasks(res.tasks));
+    start += count;
+  }
+
+  return result.reduce((acc, [id, val]) => {
+    acc[id.toString()] = val;
+    return acc;
+  }, {} as Tasks);
+};
 
 export const getSpaceTasks = async ({
   unAuthAtlasSpace,
   spaceId,
   dispatch,
 }: GetAtlasSpaceArgs) => {
-  const tasks: [bigint, Task][] = [];
-  let tasksCount = 0n;
-  let start = 0n;
-  const count = 200n;
-  const call = unAuthAtlasSpace.get_open_tasks({
-    start,
-    count,
-  });
-  const res = await unwrapCall<GetTasksRes>({
-    call,
-    errMsg: "Failed to get data from blockchain",
-  });
-
-  tasksCount = res.tasks_count;
-  tasks.push(...res.tasks);
-  start += count;
-
-  while (tasksCount < tasks.length) {
-    const call = unAuthAtlasSpace.get_open_tasks({
-      start,
-      count,
-    });
-    const res = await unwrapCall<GetTasksRes>({
-      call,
-      errMsg: "Failed to get data from blockchain",
-    });
-    tasks.push(...res.tasks);
-    start += count;
-  }
-
-  const storableTasks = tasks.reduce(
-    (acc, [id, val]) => ({
-      ...acc,
-      [id.toString()]: val,
+  const [openTasks, expiredTasks, closedTasks] = await Promise.all([
+    fetchTasks({
+      taskType: TaskTypeEnum.Open,
+      unAuthAtlasSpace,
     }),
-    {}
-  );
+    fetchTasks({
+      taskType: TaskTypeEnum.Expired,
+      unAuthAtlasSpace,
+    }),
+    fetchTasks({
+      taskType: TaskTypeEnum.Closed,
+      unAuthAtlasSpace,
+    }),
+  ]);
+
+  const mergedTasks = {
+    ...openTasks,
+    ...expiredTasks,
+    ...closedTasks,
+  } as { [key: string]: AnyTask };
 
   dispatch(
-    setTasks(
-      serify(
-        {
-          tasks: storableTasks,
-          spaceId,
-        },
-        customSerify
-      ) as { tasks: { [key: string]: Task }; spaceId: string }
-    )
+    setTasks({
+        tasks: mergedTasks,
+        spaceId,
+      })
   );
 };
 
@@ -151,7 +260,15 @@ export const submitSubtaskSubmission = async ({
   });
 };
 
-interface SubtaskSubmission {
+export interface RejectSubtaskSubmission {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  userPrincipal: Principal;
+  taskId: bigint;
+  subtaskId: bigint;
+  reason: string | null;
+}
+
+export interface AcceptSubtaskSubmission {
   authAtlasSpace: ActorSubclass<_SERVICE>;
   userPrincipal: Principal;
   taskId: bigint;
@@ -163,7 +280,7 @@ export const acceptSubtaskSubmission = async ({
   userPrincipal,
   taskId,
   subtaskId,
-}: SubtaskSubmission) => {
+}: AcceptSubtaskSubmission) => {
   const call = authAtlasSpace.accept_subtask_submission(
     userPrincipal,
     taskId,
@@ -181,17 +298,37 @@ export const rejectSubtaskSubmission = async ({
   userPrincipal,
   taskId,
   subtaskId,
-}: SubtaskSubmission) => {
+  reason,
+}: RejectSubtaskSubmission) => {
   const call = authAtlasSpace.reject_subtask_submission(
     userPrincipal,
     taskId,
-    subtaskId
+    subtaskId,
+    reason ? [reason] : []
   );
 
   await unwrapCall<null>({
     call,
     errMsg: "Failed to accept submission",
   });
+};
+
+export const getRejectionInfo = (
+  submissionData: SubmissionData | null,
+  submissionState: "Rejected" | "WaitingForReview" | "Accepted" | null
+) => {
+  if (!submissionData || submissionState !== "Rejected") {
+    return { reasonText: null, showRejectionReason: false };
+  }
+
+  const rejectionReason = submissionData.rejection_reason.at(-1);
+
+  const showRejectionReason =
+    typeof rejectionReason === "string" && rejectionReason.length > 0;
+
+  const reasonText = showRejectionReason ? rejectionReason : null;
+
+  return { reasonText, showRejectionReason };
 };
 
 interface WithdrawReward {
@@ -208,5 +345,94 @@ export const withdrawReward = async ({
   await unwrapCall<null>({
     call,
     errMsg: "Failed to withdraw rewards",
+  });
+};
+
+interface EditSpaceArgs {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  name: string;
+  description: string;
+  logo: string | null;
+  background: string | null;
+  externalLinks: ExternalLinks;
+}
+
+export const editSpace = async ({
+  authAtlasSpace,
+  name,
+  description,
+  logo,
+  background,
+  externalLinks,
+}: EditSpaceArgs) => {
+  const call = authAtlasSpace.edit_space({
+    external_links: Object.entries(externalLinks).filter(([, val]) => !!val),
+    space_background: background ? [background] : [],
+    space_logo: logo ? [logo] : [],
+    space_name: name,
+    space_description: description,
+  });
+
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to edit space",
+  });
+};
+
+interface EditTaskCallArgs {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  args: EditTaskArgs;
+}
+
+export const editTask = async ({
+  authAtlasSpace,
+  args,
+}: EditTaskCallArgs) => {
+  const call = authAtlasSpace.edit_task(args);
+
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to edit task",
+  });
+};
+
+interface CloseTaskArgs {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  taskId: bigint;
+}
+
+export const closeTask = async ({
+  authAtlasSpace,
+  taskId,
+}: CloseTaskArgs) => {
+  const call = authAtlasSpace.close_task(taskId);
+
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to close task",
+  });
+};
+
+export const forceExpireTask = async ({
+  authAtlasSpace,
+  taskId,
+}: CloseTaskArgs) => {
+  const call = authAtlasSpace.force_expire_task(taskId);
+
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to close task",
+  });
+};
+
+export const deleteClosedTask = async ({
+  authAtlasSpace,
+  taskId,
+}: CloseTaskArgs) => {
+  const call = authAtlasSpace.delete_closed_task(taskId);
+
+  await unwrapCall<null>({
+    call,
+    errMsg: "Failed to delete closed task",
   });
 };

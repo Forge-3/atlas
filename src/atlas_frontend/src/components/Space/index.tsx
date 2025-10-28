@@ -11,30 +11,34 @@ import {
 } from "../../hooks/identityKit.ts";
 import { useSpaceId } from "../../hooks/space.ts";
 import { useDispatch, useSelector } from "react-redux";
-import { customSerify, type RootState } from "../../store/store.ts";
-import { deserify } from "@karmaniverous/serify-deserify";
-import type { Task } from "../../../../declarations/atlas_space/atlas_space.did";
+import { deserialize, type RootState } from "../../store/store.ts";
+import type { Space as SpaceType } from "../../store/slices/spacesSlice.ts";
 
 const SpacePage = () => {
   const dispatch = useDispatch();
   const { spacePrincipal } = useParams();
   const navigate = useNavigate();
+  const agent = useUnAuthAgent();
 
   const principal = useSpaceId({
     spacePrincipal,
     navigate,
   });
-  if (!principal) return <></>;
+  if (!principal) {
+    navigate("/")
+    return <></>;
+  }
   const spaceId = principal.toString();
-  const space = useSelector(
-    (state: RootState) => state.spaces?.spaces?.[principal.toString()] ?? null
-  );
-  const tasks = space?.tasks ? deserify(space?.tasks, customSerify) as {
-    [key: string]: Task;
-  } : null;
-  const spaceData = space?.state;
+  const space =  
+    deserialize<SpaceType>(
+      useSelector(
+        (state: RootState) => state.spaces?.spaces?.[principal.toString()] ?? null
+      )) 
 
-  const agent = useUnAuthAgent();
+  const tasks = space?.tasks
+    ? (space?.tasks)
+    : null;
+  const spaceData = space?.state;
 
   useEffect(() => {
     if (!agent || spaceData) return;
@@ -47,14 +51,14 @@ const SpacePage = () => {
   }, [dispatch, agent, spaceData, principal]);
 
   useEffect(() => {
-    if (!agent || tasks) return;
+    if (!agent || tasks || !space) return;
     const unAuthAtlasSpace = getUnAuthAtlasSpaceActor(agent, principal);
     getSpaceTasks({
       spaceId,
       unAuthAtlasSpace,
       dispatch,
     });
-  }, [dispatch, agent, tasks, principal]);
+  }, [dispatch, agent, tasks, principal, space]);
 
   if (!spaceData) {
     return <></>;
@@ -65,10 +69,10 @@ const SpacePage = () => {
       spaceId={principal}
       name={spaceData.space_name}
       description={spaceData.space_description}
-      symbol={spaceData.space_symbol}
       backgroundImg={spaceData.space_background}
       avatarImg={spaceData.space_logo}
-      tasks={tasks === null ? undefined : tasks}
+      externalLinks={spaceData.external_links}
+      tasks={tasks || {}}
     />
   );
 };

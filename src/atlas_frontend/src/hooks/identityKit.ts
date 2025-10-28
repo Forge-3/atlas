@@ -6,7 +6,8 @@ import { atlasMainActor } from "../canisters/atlasMain/actors.ts";
 import { HttpAgent } from "@dfinity/agent";
 import { atlasSpaceActor } from "../canisters/atlasSpace/actors.ts";
 import type { Principal } from "@dfinity/principal";
-import { ckUSDCActor } from "../canisters/ckUSDC/actors.ts";
+import { ckUsdcActor } from "../canisters/ckUsdcLedger/actors.ts";
+import { ckUsdcIndexActor } from "../canisters/ckUsdcIndex/actors.ts";
 
 export const useAuthAgent = () => {
   const tempAgent = useIdentityKitAgent({
@@ -24,7 +25,7 @@ export const useAuthAgent = () => {
     }
   );
 
-  return useMemo(() => agent ?? null, [agent]);
+  return useMemo(() => agent ? agent : tempAgent, [agent, tempAgent]);
 };
 
 export const useUnAuthAgent = () => {
@@ -41,8 +42,10 @@ export const useUnAuthAgent = () => {
     }
   );
 
-  return useMemo(() => agent ?? null, [agent]);
+  return useMemo(() => agent ?? tempAgent, [agent]);
 };
+
+// Main
 
 export const useAuthAtlasMainActor = () => {
   const agent = useAuthAgent();
@@ -54,15 +57,26 @@ export const useUnAuthAtlasMainActor = () => {
   return agent && atlasMainActor(agent)
 };
 
-export const useAuthCkUSDCActor = () => {
+// CkUsdc Ledger
+
+export const useAuthCkUsdcLedgerActor = () => {
   const agent = useAuthAgent();
-  return agent && ckUSDCActor(agent)
+  return agent && ckUsdcActor(agent)
 };
 
-export const useUnAuthCkUSDCActor = () => {
+export const useUnAuthCkUsdcLedgerActor = () => {
   const agent = useUnAuthAgent();
-  return agent && ckUSDCActor(agent)
+  return agent && ckUsdcActor(agent)
 };
+
+// CkUsdc Indexer
+
+export const useUnAuthCkUsdcIndexerActor = () => {
+  const agent = useUnAuthAgent();
+  return agent && ckUsdcIndexActor(agent)
+};
+
+// AtlasSpace
 
 export const useAuthAtlasSpaceActor = (canisterId: Principal) => {
   const agent = useAuthAgent();

@@ -14,13 +14,17 @@ pub struct Integrations {
 impl Storable for Integrations {
     fn to_bytes(&self) -> Cow<[u8]> {
         let mut buf = vec![];
-        minicbor::encode(self, &mut buf).expect("User encoding should always succeed");
+        minicbor::encode(self, &mut buf).expect("Integrations encoding should always succeed");
         Cow::Owned(buf)
     }
 
     fn from_bytes(bytes: Cow<[u8]>) -> Self {
-        minicbor::decode(bytes.as_ref())
-            .unwrap_or_else(|e| panic!("failed to decode User bytes {}: {e}", hex::encode(bytes)))
+        minicbor::decode(bytes.as_ref()).unwrap_or_else(|e| {
+            panic!(
+                "failed to decode Integrations bytes {}: {e}",
+                hex::encode(bytes)
+            )
+        })
     }
 
     const BOUND: Bound = Bound::Unbounded;
@@ -99,12 +103,12 @@ impl User {
             }
             Rank::Admin => Err(Error::UserAlreadyHaveExpectedRank(Rank::Admin)),
             Rank::SpaceLead => Err(Error::UserRankToHigh {
-                expected: self.rank().clone(),
-                found: Rank::User,
+                expected: Rank::User,
+                found: self.rank().clone(),
             }),
             Rank::SuperAdmin => Err(Error::UserRankToHigh {
-                expected: self.rank().clone(),
-                found: Rank::User,
+                expected: Rank::User,
+                found: self.rank().clone(),
             }),
         }
     }
@@ -116,13 +120,13 @@ impl User {
                 Ok(())
             }
             Rank::Admin => Err(Error::UserRankToHigh {
-                expected: self.rank().clone(),
-                found: Rank::User,
+                expected: Rank::User,
+                found: self.rank().clone(),
             }),
             Rank::SpaceLead => Err(Error::UserAlreadyHaveExpectedRank(Rank::SpaceLead)),
             Rank::SuperAdmin => Err(Error::UserRankToHigh {
-                expected: self.rank().clone(),
-                found: Rank::User,
+                expected: Rank::User,
+                found: self.rank().clone(),
             }),
         }
     }

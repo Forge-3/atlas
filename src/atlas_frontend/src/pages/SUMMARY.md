@@ -1,0 +1,8 @@
+- [Eligibility](/eligibility)
+- [Responsibilities](/responsibilities)
+- [Content Guidelines](/content-guidelines)
+- [Intellectual Property](/intellectual-property)
+- [Legal Compliance](/legal-compliance)
+- [Restrictions](/restrictions)
+- [Termination](/termination)
+- [Data Privacy](/data-privacy)

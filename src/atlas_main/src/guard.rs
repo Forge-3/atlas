@@ -8,7 +8,7 @@ use crate::{
 
 #[inline(always)]
 pub fn authenticated_guard() -> Result<Principal, Error> {
-    let principal = ic_cdk::caller();
+    let principal = ic_cdk::api::msg_caller();
     if principal == Principal::anonymous() {
         return Err(Error::AnonymousCaller);
     }
@@ -28,4 +28,16 @@ pub fn admin_or_space_lead_guard() -> Result<(Principal, User), Error> {
         Rank::Admin => Ok((principal, user)),
         Rank::SuperAdmin => Ok((principal, user)),
     }
+}
+
+pub fn super_admin_guard() -> Result<Principal, Error> {
+    let principal = authenticated_guard()?;
+    let user = memory::get_user(&principal).ok_or(Error::UserDoNotExist)?;
+    if user.rank() != &Rank::SuperAdmin {
+        return Err(Error::UserRankToLow {
+            expected: Rank::SuperAdmin,
+            found: user.rank().clone(),
+        });
+    }
+    Ok(principal)
 }

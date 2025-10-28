@@ -1,6 +1,7 @@
 use ic_cdk::{init, post_upgrade};
 use shared::SpaceArgs;
 
+use crate::tasks::timer_logic::reinitialize_task_timers_after_upgrade;
 use crate::{config::Config, guard::authenticated_guard, memory};
 
 #[init]
@@ -17,10 +18,13 @@ pub fn init(args: SpaceArgs) {
 
 #[post_upgrade]
 async fn post_upgrade(minter_arg: Option<SpaceArgs>) {
+    crate::migration::migrate().await;
     if let Some(SpaceArgs::InitArg(_)) = minter_arg {
         ic_cdk::trap("Cannot upgrade canister state with init args!");
     }
     if let Some(SpaceArgs::UpgradeArg { version }) = minter_arg {
         memory::mut_config(|config| config.current_wasm_version = version)
     }
+
+    reinitialize_task_timers_after_upgrade().await;
 }

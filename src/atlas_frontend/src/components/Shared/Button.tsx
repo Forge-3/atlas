@@ -1,6 +1,5 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { IoArrowForwardCircleOutline } from "react-icons/io5";
 
 interface ButtonProps {
   children: React.ReactNode;
@@ -8,24 +7,28 @@ interface ButtonProps {
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
   arrow?: boolean;
   smallText?: string
-  light?: boolean
+  disabled?: boolean;
+  variant?: 'primary' | 'publish' | 'saveDraft' | 'vivid' | 'dark' | 'red';
 }
 
-const Button = ({children, arrow, onClick, className, light}: ButtonProps) => {
+const Button = ({children, onClick, className, variant = 'primary', disabled = false,}: ButtonProps) => {
+  const baseClasses = "cursor-pointer flex justify-center rounded items-center py-1 md:py-2 font-montserrat";
+  const variantClasses = {
+    primary: "bg-primary text-white",
+    publish: "bg-white text-dark",
+    saveDraft: "bg-dark text-white",
+    vivid: "bg-background text-white",
+    dark: "bg-dark text-white",
+    red: "bg-red-500 text-white"
+  };
+
   return (
-    <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
-      <button
-        onClick={onClick}
-        className={`cursor-pointer flex justify-center items-center font-medium bg-[#9173FF] px-6 py-2 rounded-xl text-white ${light ? "bg-[#9173FF]/20" : "bg-[#9173FF]"} ${className}`}
-      >
-        {arrow && (
-          <span className="mr-2 text-white">
-            <IoArrowForwardCircleOutline />
-          </span>
-        )}
+    <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={onClick}
+      className={`${baseClasses} ${variantClasses[variant]} ${className ?? ""}`}
+      disabled={disabled}
+    >
         {children}
-      </button>
-    </motion.div>
+    </motion.button>
   );
 };
 
