@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm, useFieldArray, type SubmitHandler, type FieldErrorsImpl } from "react-hook-form";
 import Button from "../components/Shared/Button";
@@ -49,6 +49,9 @@ import {
   selectUserBlockchainData,
   type StorableUser,
 } from "../store/slices/userSlice";
+import DiscordTask from "./tasks/DiscordTask";
+import TwitterTask from "./tasks/TwitterTask";
+import { mapTasks, TaskType, type TaskInput } from "../utils/taskMapper";
 
 export const getAnswerFormatKey = (format: AnswerFormat): string => Object.keys(format)[0];
 const answerFormatDescriptions: Record<string, string> = {
@@ -57,9 +60,6 @@ const answerFormatDescriptions: Record<string, string> = {
   Long: "Up to 2500 characters",
   List: "Multiple items, each up to 254 characters",
 };
-
-type TaskType = "generic";
-const allowedTaskTypes = ["generic"] as const;
 
 interface CreateNewTaskFormInput {
   numberOfUses: number;
@@ -71,8 +71,10 @@ interface CreateNewTaskFormInput {
     taskType: TaskType;
     title: string;
     description: string;
+    guildId?: string;
+    inviteLink?: string;
     allowResubmit: boolean;
-    answerFormat: keyof typeof answerFormatDescriptions;
+    answerFormat?: keyof typeof answerFormatDescriptions;
   } | { disabled: boolean })[];
 }
 
@@ -97,7 +99,7 @@ const answerFormatKeys = Object.keys(answerFormatDescriptions) as Array<
 >;
 
 const taskSchema = yup.object({
-  taskType: yup.mixed<TaskType>().oneOf(allowedTaskTypes).required(),
+  taskType: yup.mixed<TaskType>().oneOf(Object.values(TaskType)).required(),
   title: yup
     .string()
     .trim()
@@ -111,6 +113,27 @@ const taskSchema = yup.object({
     .min(2)
     .required()
     .label("Task description"),
+  guildId: yup
+    .string()
+    .when("taskType", {
+      is: (value: TaskType) => value === TaskType.Discord,
+      then: (schema: yup.StringSchema) =>
+        schema
+          .typeError("Guild ID must be a valid string")
+          .required("Guild ID is required for Discord tasks"),
+    })
+    .label("Guild ID"),
+  inviteLink: yup
+    .string()
+    .when("taskType", {
+      is: (value: TaskType) => value === TaskType.Discord,
+      then: (schema: yup.StringSchema) =>
+        schema
+          .trim()
+          .matches(/^(https?:\/\/)?(www\.)?discord\.(gg|com\/invite)\/[a-zA-Z0-9-]+$/, "Invalid invite link format")
+          .required("Invite link is required for Discord tasks"),
+    })
+    .label("Invite Link"),
   allowResubmit: yup.boolean().required(),
   answerFormat: yup
     .string()
@@ -119,13 +142,56 @@ const taskSchema = yup.object({
     .label("Answer format"),
 });
 
+const genericTaskSchema = yup.object({
+  taskType: yup.mixed<TaskType>().oneOf([TaskType.Generic]).required(),
+  title: yup.string().trim().max(maxSubtitleLength).required(),
+  description: yup.string().trim().max(maxDescriptionLength).required(),
+  allowResubmit: yup.boolean().required(),
+  answerFormat: yup.string().oneOf(answerFormatKeys).required(),
+});
+
+const twitterTaskSchema = yup.object({
+  taskType: yup.mixed<TaskType>().oneOf([TaskType.Twitter]).required(),
+  title: yup.string().trim().max(maxSubtitleLength).required(),
+  description: yup.string().trim().max(maxDescriptionLength).required(),
+  tweetUrl: yup
+    .string()
+    .url("Must be a valid Twitter post URL")
+    .required("Twitter post URL is required"),
+  allowResubmit: yup.boolean().required(),
+});
+
+const discordTaskSchema = yup.object({
+  taskType: yup.mixed<TaskType>().oneOf([TaskType.Discord]).required(),
+  title: yup.string().trim().max(maxSubtitleLength).required(),
+  description: yup.string().trim().max(maxDescriptionLength).required(),
+  guildId: yup
+    .string()
+    .required("Guild ID is required for Discord tasks"),
+  inviteLink: yup
+    .string()
+    .matches(
+      /^(https?:\/\/)?(www\.)?discord\.(gg|com\/invite)\/[a-zA-Z0-9-]+$/,
+      "Invalid Discord invite link"
+    )
+    .required("Invite link is required for Discord tasks"),
+  allowResubmit: yup.boolean().required(),
+});
+
 const taskOrDisabledSchema = yup.lazy((value) => {
   if (value && "disabled" in value) {
-    return yup.object({
-      disabled: yup.boolean().required(),
-    });
+    return yup.object({ disabled: yup.boolean().required() });
   }
-  return taskSchema;
+
+  switch (value?.taskType) {
+    case TaskType.Twitter:
+      return twitterTaskSchema;
+    case TaskType.Discord:
+      return discordTaskSchema;
+    case TaskType.Generic:
+    default:
+      return genericTaskSchema;
+  }
 });
 
 export interface EditableTask extends Task {
@@ -137,7 +203,8 @@ const CreateNewTaskModal = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const title = pathname.endsWith("/edit") ? "Edit mission" : "Create new mission";
-
+  const [isInviteValid, setInviteValid] = useState(false);
+  
   const principal = useSpaceId({
     spacePrincipal,
     navigate,
@@ -234,7 +301,7 @@ const CreateNewTaskModal = () => {
         endTime: '',
         tasks: [
           {
-            taskType: "generic",
+            taskType: TaskType.Generic,
             title: "",
             description: "",
             allowResubmit: false,
@@ -345,33 +412,37 @@ const CreateNewTaskModal = () => {
       return;
     }
 
-    const toAnswerFormat = (key: string): AnswerFormat => {
-      switch (key) {
-        case "Small":
-          return { Small: null };
-        case "Paragraph":
-          return { Paragraph: null };
-        case "Long":
-          return { Long: null };
-        case "List":
-          return { List: null };
-        default:
-          throw new Error(`Unknown AnswerFormat key: ${key}`);
-      }
-    };
+    // const toAnswerFormat = (key: string): AnswerFormat => {
+    //   switch (key) {
+    //     case "Small":
+    //       return { Small: null };
+    //     case "Paragraph":
+    //       return { Paragraph: null };
+    //     case "Long":
+    //       return { Long: null };
+    //     case "List":
+    //       return { List: null };
+    //     default:
+    //       throw new Error(`Unknown AnswerFormat key: ${key}`);
+    //   }
+    // };
 
-    const taskContent = tasks.map((task) => {
-      if ("disabled" in task) {
-        return null;
-      }
-      return {
-        task_type: "generic",
-        title: task.title,
-        description: task.description,
-        allow_resubmit: task.allowResubmit,
-        answer_format: toAnswerFormat(task.answerFormat),
-      };
-    });
+    // const taskContent = tasks.map((task) => {
+    //   if ("disabled" in task) {
+    //     return null;
+    //   }
+    //   return {
+    //     task_type: "generic",
+    //     title: task.title,
+    //     description: task.description,
+    //     allow_resubmit: task.allowResubmit,
+    //     answer_format: toAnswerFormat(task.answerFormat),
+    //   };
+    // });
+    const taskContent = mapTasks(
+      (tasks ?? [])
+        .filter((t): t is TaskInput => "taskType" in t)
+    );
 
     if (!taskContent || taskContent.length === 0) {
       toast.error("Invalid subtasks: the minimum number of subtasks is one.");
@@ -790,9 +861,41 @@ const CreateNewTaskModal = () => {
                       >
                         Generic Task
                       </Button>
+                      <Button
+                        variant="primary"
+                        className="text-white px-3 sm:px-4 rounded font-medium text-sm sm:text-base"
+                      >
+                        Discord Task
+                      </Button>
+                      <Button
+                        variant="primary"
+                        className="text-white px-3 sm:px-4 rounded font-medium text-sm sm:text-base"
+                      >
+                        Twitter Task
+                      </Button>
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-6 justify-between">
+                    {currentTask.taskType === TaskType.Discord && (
+                      <DiscordTask
+                        register={register}
+                        index={index}
+                        errors={errors}
+                        maxTitleLength={maxSubtitleLength}
+                        maxDescriptionLength={maxDescriptionLength}
+                        spacePrincipal={principal}
+                        setInviteValid={setInviteValid}
+                      />
+                    )}
+                    {currentTask.taskType === TaskType.Twitter && (
+                      <TwitterTask
+                        register={register}
+                        index={index}
+                        errors={errors}
+                        maxTitleLength={maxSubtitleLength}
+                        maxDescriptionLength={maxDescriptionLength}
+                      />
+                    )}
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -832,7 +935,7 @@ const CreateNewTaskModal = () => {
           className="text-white bg-white/20 px-3 rounded font-semibold text-sm sm:text-base w-full sm:w-auto mb-2 sm:mb-0"
           onClick={() =>
             append({
-              taskType: "generic",
+              taskType: TaskType.Generic,
               title: "",
               description: "",
               allowResubmit: false,
@@ -853,6 +956,11 @@ const CreateNewTaskModal = () => {
         </Button> */}
         <Button
           variant="publish"
+          disabled={
+              watch("tasks")?.some(
+                (task) => "taskType" in task && task.taskType === TaskType.Discord
+              ) && !isInviteValid
+            }
           className="px-3 font-semibold text-sm sm:text-base w-full sm:w-auto"
         >
           Publish

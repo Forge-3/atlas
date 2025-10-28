@@ -6,14 +6,14 @@ export enum TaskType {
   Twitter = "twitter",
 }
 
-type TaskInput = {
+export type TaskInput = {
   taskType: TaskType;
   title: string;
   description: string;
   guildId?: string;
   inviteLink?: string;
   allowResubmit: boolean;
-  answerFormat?: AnswerFormat;
+  answerFormat?: string;
 };
 
 interface BaseTaskContent  {
@@ -41,13 +41,28 @@ type TaskContent = GenericTaskContent | DiscordTaskContent | TwitterTaskContent;
 
 type MapperFn = (task: TaskInput) => TaskContent;
 
+const toAnswerFormat = (key: string): AnswerFormat => {
+  switch (key) {
+    case "Small":
+      return { Small: null };
+    case "Paragraph":
+      return { Paragraph: null };
+    case "Long":
+      return { Long: null };
+    case "List":
+      return { List: null };
+    default:
+      throw new Error(`Unknown AnswerFormat key: ${key}`);
+  }
+};
+
 const taskMappers: Record<TaskType, MapperFn> = {
   [TaskType.Generic]: (task) => ({
     task_type: "generic",
     title: task.title,
     description: task.description,
     allow_resubmit: task.allowResubmit,
-    answer_format: task.answerFormat!,
+    answer_format: toAnswerFormat(task.answerFormat!),
   }),
 
   [TaskType.Discord]: (task) => ({
