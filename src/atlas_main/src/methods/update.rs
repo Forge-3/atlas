@@ -11,7 +11,7 @@ use ic_cdk::update;
 use serde::Deserialize;
 use shared::{SpaceArgs, SpaceInitArg};
 
-use crate::guard::admin_or_space_lead_guard;
+use crate::guard::{admin_or_space_lead_guard, super_admin_guard};
 use crate::{
     errors::Error,
     guard::authenticated_guard,
@@ -368,4 +368,10 @@ pub async fn delete_space(space_id: Principal) -> Result<(), Error> {
     });
 
     Ok(())
+}
+
+#[update]
+pub fn remove_space_bytecode(version: u64) -> Result<(), Error> {
+    super_admin_guard()?;
+    memory::remove_bytecode_by_version(&version)
 }

@@ -191,3 +191,12 @@ pub fn get_bytecode_by_version(version: &u64) -> Option<Vec<u8>> {
 pub fn get_bytecode_map_len() -> u64 {
     WASM_SPACES_MAP.with_borrow(|code_map| code_map.len())
 }
+
+pub fn remove_bytecode_by_version(version: &u64) -> Result<(), Error> {
+    WASM_SPACES_MAP.with_borrow_mut(|code_map| {
+        if code_map.remove(version).is_none() {
+            return Err(Error::WasmVersionNotExist(*version));
+        }
+        Ok(())
+    })
+}
