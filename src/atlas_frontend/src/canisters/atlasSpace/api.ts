@@ -18,11 +18,12 @@ import type { Principal } from "@dfinity/principal";
 import type { ExternalLinks } from "./types.js";
 import type { DiscordTaskContent, GenericTaskContent, TwitterTaskContent } from "../../utils/taskMapper.js";
 import type { DiscordGuild, DiscordInviteApiResponse } from "../../components/Integrations/discord/types.js";
-import { getUserGuilds } from "../../components/Integrations/discord/userGuilds.js";
+
 export interface ExpiredTask extends Task {
   expired: true;
 }
 import { validateDiscordInvite as validateInvite } from "../../components/Integrations/discord/inviteLink.js";
+import { getUserGuilds } from "../../components/Integrations/discord/userGuilds.js";
 
 type CreateSubtaskArg = GenericTaskContent | DiscordTaskContent | TwitterTaskContent;
 

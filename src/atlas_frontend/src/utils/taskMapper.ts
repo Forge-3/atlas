@@ -1,10 +1,12 @@
 import type { AnswerFormat } from "../../../declarations/atlas_space/atlas_space.did";
 
-export enum TaskType {
-  Generic = "generic",
-  Discord = "discord",
-  Twitter = "twitter",
-}
+export const TaskType = {
+  Generic: "generic",
+  Discord: "discord",
+  Twitter: "twitter",
+} as const;
+
+export type TaskType = typeof TaskType[keyof typeof TaskType];
 
 export type TaskInput = {
   taskType: TaskType;

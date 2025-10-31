@@ -19,7 +19,6 @@ import {
   type AnyTask,
   type ExpiredTask,
 } from "../../canisters/atlasSpace/api";
-import GenericTask from "./tasks/GenericTask";
 import TimeRemaining from "./TimeRemaining";
 import { useAuth } from "@nfid/identitykit/react";
 import {

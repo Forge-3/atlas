@@ -11,31 +11,6 @@ import { Principal } from "@dfinity/principal";
 import { useDiscordAdmin } from "../../hooks/useDiscordAdmin";
 import { useDiscordAuth } from "../../hooks/useDiscordAuth";
 
-interface DiscordGuildProps {
-  guild: DiscordGuildType;
-  onClick: () => void;
-}
-
-const DiscordGuild: React.FC<DiscordGuildProps> = ({ guild, onClick }) => {
-  const iconUrl = guild.icon?.[0]
-    ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.${
-        guild.icon?.startsWith('a_') ? 'gif' : 'png'
-      }?size=64`
-    : null;
-
-  return (
-    <div
-      className="flex items-center p-2 cursor-pointer hover:bg-gray-100"
-      onClick={onClick}
-    >
-      {iconUrl && (
-        <img src={iconUrl} alt={guild.name} className="w-8 h-8 rounded-full mr-2" />
-      )}
-      <span>{guild.name}</span>
-    </div>
-  );
-};
-
 interface DiscordGuildDropdownProps {
   guilds: DiscordGuildType[];
   selectedGuild: DiscordGuildType | null;
@@ -55,43 +30,79 @@ const DiscordGuildDropdown: React.FC<DiscordGuildDropdownProps> = ({
   };
 
   const selectedGuildIconUrl = selectedGuild?.icon?.[0]
-    ? `https://cdn.discordapp.com/icons/${selectedGuild.id}/${
-        selectedGuild.icon
-      }.${
-        selectedGuild.icon?.startsWith('a_') ? 'gif' : 'png'
+    ? `https://cdn.discordapp.com/icons/${selectedGuild.id}/${selectedGuild.icon}.${
+        selectedGuild.icon?.startsWith("a_") ? "gif" : "png"
       }?size=64`
     : null;
 
   return (
-    <div className="relative">
+    <div className="relative w-full font-montserrat">
       <div
-        className="border-2 p-2 rounded-xl bg-white text-black w-full mb-2 flex items-center cursor-pointer"
         onClick={() => setIsOpen(!isOpen)}
+        className="w-full p-3 rounded-lg bg-primary text-white flex items-center justify-between cursor-pointer transition-all duration-200 hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-white/50"
       >
-        {selectedGuild && selectedGuildIconUrl && (
-          <img
-            src={selectedGuildIconUrl}
-            alt={selectedGuild.name}
-            className="w-8 h-8 rounded-full mr-2"
-          />
-        )}
-        <span>{selectedGuild ? selectedGuild.name : '-- Select a guild --'}</span>
-      </div>
-      {isOpen && (
-        <div className="absolute z-10 w-full bg-white border rounded-xl mt-1">
-          {guilds.map((guild) => (
-            <DiscordGuild
-              key={guild.id}
-              guild={guild}
-              onClick={() => handleSelect(guild)}
+        <div className="flex items-center">
+          {selectedGuild && selectedGuildIconUrl && (
+            <img
+              src={selectedGuildIconUrl}
+              alt={selectedGuild.name}
+              className="w-6 h-6 rounded-full mr-2"
             />
-          ))}
+          )}
+          <span className="text-sm sm:text-base font-medium">
+            {selectedGuild ? selectedGuild.name : "-- Select a guild --"}
+          </span>
+        </div>
+        <svg
+          className={`w-4 h-4 ml-2 transition-transform ${
+            isOpen ? "rotate-180" : "rotate-0"
+          }`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-10 mt-1 w-full rounded-lg bg-primary/90 backdrop-blur-sm border border-white/20 shadow-lg max-h-56 overflow-y-auto animate-fadeIn">
+          {guilds.length > 0 ? (
+            guilds.map((guild) => {
+              const iconUrl = guild.icon?.[0]
+                ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.${
+                    guild.icon?.startsWith("a_") ? "gif" : "png"
+                  }?size=64`
+                : null;
+
+              return (
+                <div
+                  key={guild.id}
+                  onClick={() => handleSelect(guild)}
+                  className="flex items-center p-2 hover:bg-white/10 cursor-pointer transition-colors"
+                >
+                  {iconUrl && (
+                    <img
+                      src={iconUrl}
+                      alt={guild.name}
+                      className="w-6 h-6 rounded-full mr-2"
+                    />
+                  )}
+                  <span className="text-white text-sm">{guild.name}</span>
+                </div>
+              );
+            })
+          ) : (
+            <div className="p-2 text-gray-300 text-sm text-center">
+              No guilds found
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 };
-
 
 interface DiscordTaskProps<TFormValues extends FieldValues> {
   register: UseFormRegister<TFormValues>;
@@ -112,7 +123,6 @@ const DiscordTask = <TFormValues extends FieldValues>({
   maxTitleLength,
   maxDescriptionLength,
   guildId,
-  spacePrincipal,
   setInviteValid,
 }: DiscordTaskProps<TFormValues>) => {
   const [selectedGuild, setSelectedGuild] = useState<DiscordGuildType | null>(null);
@@ -129,7 +139,6 @@ const DiscordTask = <TFormValues extends FieldValues>({
 
   const { signIn, accessToken } = useDiscordAuth();
   const { adminGuilds, validationState, fetchAdminGuilds } = useDiscordAdmin(
-    spacePrincipal,
     inviteLink,
     selectedGuild?.id,
     !inviteLinkError
@@ -159,90 +168,118 @@ const DiscordTask = <TFormValues extends FieldValues>({
     `tasks.${index}.inviteLink` as Path<TFormValues>
   );
 
-  return (
-    <div className="flex flex-col ml-4 mt-2">
-      <p className="text-gray-600">Title:</p>
-      <input
-        type="text"
-        maxLength={maxTitleLength}
-        {...register(`tasks.${index}.title` as Path<TFormValues>)}
-        className={`border-2 p-2 rounded-xl ${
-          titleError && "border-red-500"
-        }`}
-      />
-      {titleError && <span className="text-red-500">{titleError}</span>}
-
-      <p className="text-gray-600">Description:</p>
-      <textarea
-        maxLength={maxDescriptionLength}
-        {...register(`tasks.${index}.description` as Path<TFormValues>)}
-        className={`border-2 p-2 rounded-xl ${
-          descriptionError && "border-red-500"
-        }`}
-      ></textarea>
-      {descriptionError && (
-        <span className="text-red-500">{descriptionError}</span>
-      )}
-      <p className="text-gray-600">Guild ID:</p>
-        <DiscordGuildDropdown
-          guilds={adminGuilds}
-          selectedGuild={selectedGuild}
-          onSelect={(guild) => {
-            setSelectedGuild(guild);
-            onChange({
-              target: { name: `tasks.${index}.guildId`, value: guild.id },
-            });
-          }}
+return (
+    <>
+      <div className="mb-4">
+        <label className="block text-white font-montserrat text-base sm:text-lg font-semibold mb-1">
+          Task Title
+        </label>
+        <input
+          type="text"
+          maxLength={maxTitleLength}
+          {...register(`tasks.${index}.title` as Path<TFormValues>)}
+          className={`w-full p-3 rounded-lg bg-primary/20 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50 ${
+            titleError ? "ring-2 ring-red-500" : ""
+          }`}
+          placeholder="Enter task title"
         />
-        {guildIdError && (
-        <span className="text-red-500">{guildIdError}</span>
+        {titleError && (
+          <p className="text-sm text-red-300 font-montserrat font-medium mt-1">
+            {titleError.toString()}
+          </p>
         )}
-        {!accessToken && (
-        <Button onClick={signIn} className="w-half">
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-white font-montserrat text-base sm:text-lg font-semibold mb-1">
+          Description
+        </label>
+        <textarea
+          maxLength={maxDescriptionLength}
+          {...register(`tasks.${index}.description` as Path<TFormValues>)}
+          className={`w-full p-3 rounded-lg bg-primary/20 text-white h-24 resize-none md:overflow-hidden placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50 ${
+            descriptionError ? "ring-2 ring-red-500" : ""
+          }`}
+          placeholder="Describe your Discord mission"
+          rows={3}
+        />
+        {descriptionError && (
+          <p className="text-sm text-red-300 font-montserrat font-medium mt-1">
+            {descriptionError.toString()}
+          </p>
+        )}
+      </div>
+
+      <label className="block text-white font-montserrat text-base sm:text-lg font-semibold mb-1">
+        Discord Guild
+      </label>
+      <DiscordGuildDropdown
+        guilds={adminGuilds}
+        selectedGuild={selectedGuild}
+        onSelect={(guild) => {
+          setSelectedGuild(guild);
+          onChange({
+            target: { name: `tasks.${index}.guildId`, value: guild.id },
+          });
+        }}
+      />
+      {guildIdError && (
+        <p className="text-sm text-red-300 font-montserrat font-medium mt-1">
+          {guildIdError.toString()}
+        </p>
+      )}
+
+      {!accessToken && (
+        <Button
+          onClick={signIn}
+          className="text-white font-semibold mt-2 mb-4 px-4 py-2 rounded bg-primary/30"
+        >
           Sign in with Discord
         </Button>
+      )}
+
+      <label className="block text-white font-montserrat text-base sm:text-lg font-semibold mb-1">
+        Invitation Link
+      </label>
+      <input
+        {...inviteLinkProps}
+        onChange={(e) => {
+          setInviteLink(e.target.value);
+          onInviteLinkChange(e);
+        }}
+        disabled={!selectedGuild}
+        className={`w-full p-3 rounded-lg bg-primary/20 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50 ${
+          !selectedGuild ? "opacity-50 cursor-not-allowed" : ""
+        } ${
+          validationState.status === "validating"
+            ? "ring-yellow-400"
+            : validationState.status === "invalid"
+            ? "ring-red-500"
+            : validationState.status === "valid"
+            ? "ring-green-500"
+            : ""
+        } ${inviteLinkError ? "ring-2 ring-red-500" : ""}`}
+        placeholder="Paste your Discord invite link"
+      />
+
+      <div className="h-5 mt-1">
+        {validationState.status === "validating" && (
+          <span className="text-yellow-400 font-montserrat">Validating...</span>
         )}
-        <p className="text-gray-600">Invitation Link:</p>
-        <input
-          {...inviteLinkProps}
-          onChange={(e) => {
-            setInviteLink(e.target.value);
-            onInviteLinkChange(e);
-          }}
-          disabled={!selectedGuild}
-          className={`border-2 p-2 rounded-xl bg-white text-black w-full ${
-            !selectedGuild ? "bg-gray-200" : ""
-          } ${
-            validationState.status === "validating"
-              ? "border-yellow-500"
-              : validationState.status === "invalid"
-              ? "border-red-500"
-              : validationState.status === "valid"
-              ? "border-green-500"
-              : ""
-          } ${inviteLinkError && "border-red-500"}`}
-        />
-        <div className="h-5 mt-1">
-          {validationState.status === "validating" && (
-            <span className="text-yellow-500">Validating...</span>
-          )}
-          {validationState.status === "invalid" && (
-            <span className="text-red-500">{validationState.error}</span>
-          )}
-          {validationState.status === "valid" && (
-            <span className="text-green-500">
-              Invite link is valid!
-              {' Expires at: '}
-              {validationState.expiresAt
-                ? new Date(validationState.expiresAt).toLocaleString()
-                : 'Never'}
-            </span>
-          )}
-          {validationState.status === "idle" && inviteLinkError && (
-            <span className="text-red-500">{inviteLinkError}</span>
-          )}
-        </div>
-    </div>
+        {validationState.status === "invalid" && (
+          <span className="text-red-400 font-montserrat">{validationState.error}</span>
+        )}
+        {validationState.status === "valid" && (
+          <span className="text-green-400 font-montserrat">
+            Invite link is valid!{" "}
+            {validationState.expiresAt
+              ? `(Expires: ${new Date(validationState.expiresAt).toLocaleString()})`
+              : "(Never expires)"}
+          </span>
+        )}
+      </div>
+    </>
   );
 };
+
 export default DiscordTask;

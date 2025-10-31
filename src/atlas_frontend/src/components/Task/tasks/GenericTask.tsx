@@ -30,7 +30,10 @@ import { FaCaretRight } from "react-icons/fa6";
 import { shortPrincipal } from "../../../utils/icp";
 import { FiCopy } from "react-icons/fi";
 
-type GenericTaskType = Extract<TaskType, { GenericTask: unknown }>['GenericTask'];
+type GenericTaskType = Extract<
+  TaskType,
+  { GenericTask: unknown }
+>["GenericTask"];
 
 interface GenericTaskProps {
   genericTask: GenericTaskType;
@@ -66,13 +69,13 @@ const GenericTask = ({
   const dispatch = useDispatch();
   const { user, connect } = useAuth();
   const [openSubmission, setSubmission] = useState(false);
-  const answerFormatKey = "TitleAndDescription" in genericTask.task_content
-    ? (Object.keys(genericTask.task_content.TitleAndDescription.answer_format)[0] as
-        | "Small"
-        | "Paragraph"
-        | "Long"
-        | "List")
-    : null;
+  const [openReview, SetReview] = useState(false);
+  const answerFormatKey =
+    "TitleAndDescription" in genericTask.task_content
+      ? (Object.keys(
+          genericTask.task_content.TitleAndDescription.answer_format
+        )[0] as "Small" | "Paragraph" | "Long" | "List")
+      : null;
 
   const maxTextLength = useMemo(() => {
     switch (answerFormatKey) {
@@ -99,71 +102,77 @@ const GenericTask = ({
   const textForm = useForm<TextFormData>({
     resolver: yupResolver(textSchema),
     defaultValues: {
-      taskSubmission: ""
+      taskSubmission: "",
     },
   });
-  const [openReview, SetReview] = useState(false);
-  
+
   const userBlockchainData = deserialize<StorableUser>(
     useSelector(selectUserBlockchainData)
   );
   const userInfo = userBlockchainData
     ? new BlockchainUser(userBlockchainData)
     : null;
-  const isUserAdmin = isAdmin || (userInfo?.canAdministrate(spacePrincipal) ?? false);
+  const isUserAdmin =
+    isAdmin || (userInfo?.canAdministrate(spacePrincipal) ?? false);
 
   const copyPrincipal = (user: string) => {
     navigator.clipboard.writeText(user);
     toast.success("Copied full principal");
   };
 
-  const onSubmitText: SubmitHandler<TextFormData> = async ({ taskSubmission }) => {
+  const onSubmitText: SubmitHandler<TextFormData> = async ({
+    taskSubmission,
+  }) => {
     if (!authAtlasSpace || !unAuthAtlasSpace) return;
 
-    await runWithLoading(async () => {
-      const call = submitSubtaskSubmission({
-        authAtlasSpace,
-        taskId: BigInt(taskId),
-        subtaskId: BigInt(subtaskId),
-        submission: { Text: { content: taskSubmission } },
-      });
-      await toast.promise(call, {
-        loading: "Submitting response...",
-        success: "Submitted response.",
-        error: getErrorWithInfoToast("Failed to submit response."),
-      });
+    await runWithLoading(
+      async () => {
+        const call = submitSubtaskSubmission({
+          authAtlasSpace,
+          taskId: BigInt(taskId),
+          subtaskId: BigInt(subtaskId),
+          submission: { Text: { content: taskSubmission } },
+        });
+        await toast.promise(call, {
+          loading: "Submitting response...",
+          success: "Submitted response.",
+          error: getErrorWithInfoToast("Failed to submit response."),
+        });
 
-      setSubmission(false);
-      await getSpaceTasks({
-        spaceId: spacePrincipal.toString(),
-        unAuthAtlasSpace,
-        dispatch,
-      });
-    }, dispatch, () => setSubmission(false));
+        setSubmission(false);
+        await getSpaceTasks({
+          spaceId: spacePrincipal.toString(),
+          unAuthAtlasSpace,
+          dispatch,
+        });
+      },
+      dispatch,
+      () => setSubmission(false)
+    );
   };
 
   const listSchema = yup.object({
-  items: yup
-    .array()
-    .of(
-      yup.object({
-        value: yup
-          .string()
-          .trim()
-          .max(254, "Item too long")
-          .required("Item cannot be empty"),
-      })
-    )
-    .max(25, "Max 25 items allowed")
-    .required(),
-});
+    items: yup
+      .array()
+      .of(
+        yup.object({
+          value: yup
+            .string()
+            .trim()
+            .max(254, "Item too long")
+            .required("Item cannot be empty"),
+        })
+      )
+      .max(25, "Max 25 items allowed")
+      .required(),
+  });
 
-const listForm = useForm<ListFormData>({
-  resolver: yupResolver(listSchema),
-  defaultValues: {
-    items: [{ value: "" }]
-  },
-});
+  const listForm = useForm<ListFormData>({
+    resolver: yupResolver(listSchema),
+    defaultValues: {
+      items: [{ value: "" }],
+    },
+  });
 
   const { fields, append, remove } = useFieldArray({
     control: listForm.control,
@@ -173,49 +182,56 @@ const listForm = useForm<ListFormData>({
   const onSubmitList = async () => {
     if (!authAtlasSpace || !unAuthAtlasSpace) return;
 
-    const items = listForm.getValues().items.map(item => item.value.trim());
-    await runWithLoading(async () => {
-      const call = submitSubtaskSubmission({
-        authAtlasSpace,
-        taskId: BigInt(taskId),
-        subtaskId: BigInt(subtaskId),
-        submission: { List: { items } },
-      });
-      await toast.promise(call, {
-        loading: "Submitting list...",
-        success: "Submitted response.",
-        error: getErrorWithInfoToast("Failed to submit response."),
-      });
+    const items = listForm.getValues().items.map((item) => item.value.trim());
+    await runWithLoading(
+      async () => {
+        const call = submitSubtaskSubmission({
+          authAtlasSpace,
+          taskId: BigInt(taskId),
+          subtaskId: BigInt(subtaskId),
+          submission: { List: { items } },
+        });
+        await toast.promise(call, {
+          loading: "Submitting list...",
+          success: "Submitted response.",
+          error: getErrorWithInfoToast("Failed to submit response."),
+        });
 
-      setSubmission(false);
-      await getSpaceTasks({
-        spaceId: spacePrincipal.toString(),
-        unAuthAtlasSpace,
-        dispatch,
-      });
-    }, dispatch, () => setSubmission(false));
+        setSubmission(false);
+        await getSpaceTasks({
+          spaceId: spacePrincipal.toString(),
+          unAuthAtlasSpace,
+          dispatch,
+        });
+      },
+      dispatch,
+      () => setSubmission(false)
+    );
   };
 
   const [, submissionData] = user?.principal
-    ? (genericTask.submission.find(
+    ? genericTask.submission.find(
         ([principal]) => principal.toString() === user.principal.toString()
-      ) ?? [])
+      ) ?? []
     : [];
   const allSubmissions = genericTask.submission;
 
   const currentSubmissionState = submissionData?.state
-  ? Object.keys(submissionData?.state)[0]
-  : null;
+    ? Object.keys(submissionData?.state)[0]
+    : null;
 
-  const canSubmit = user && isUserInHub && (
-    currentSubmissionState === null ||
-    (currentSubmissionState === "Rejected" && ("TitleAndDescription" in genericTask.task_content
-      ? genericTask.task_content.TitleAndDescription.allow_resubmit : "N/A"))
-  );
-  
+  const canSubmit =
+    user &&
+    isUserInHub &&
+    (currentSubmissionState === null ||
+      (currentSubmissionState === "Rejected" &&
+        ("TitleAndDescription" in genericTask.task_content
+          ? genericTask.task_content.TitleAndDescription.allow_resubmit
+          : "N/A")));
+
   const rawState = Object.keys(submissionData?.state || {})[0] ?? null;
   const validStates = ["Rejected", "WaitingForReview", "Accepted"] as const;
-  type SubmissionState = typeof validStates[number];
+  type SubmissionState = (typeof validStates)[number];
 
   const STATUS_LABELS: Record<typeof rawState, string> = {
     WaitingForReview: "Waiting for review",
@@ -228,13 +244,15 @@ const listForm = useForm<ListFormData>({
   const submissionState = validStates.includes(rawState as SubmissionState)
     ? (rawState as SubmissionState)
     : null;
-  
+
   const badgeCls = (s?: string) =>
-  ({
-    Accepted: "bg-green-500/20 text-green-300 border border-green-500/30",
-    Rejected: "bg-red-500/20 text-red-300 border border-red-500/30",
-    WaitingForReview: "bg-primary/20 border border-white/10",
-  } as Record<string, string>)[s ?? ""];
+    ((
+      {
+        Accepted: "bg-green-500/20 text-green-300 border border-green-500/30",
+        Rejected: "bg-red-500/20 text-red-300 border border-red-500/30",
+        WaitingForReview: "bg-primary/20 border border-white/10",
+      } as Record<string, string>
+    )[s ?? ""]);
 
   const userState = Object.keys(submissionData?.state ?? {})[0];
 
@@ -243,15 +261,21 @@ const listForm = useForm<ListFormData>({
     el.style.height = `${el.scrollHeight}px`;
   };
 
-   return (
+  return (
     <div className="flex mt-8">
       <div className="flex flex-col mr-2 md:mr-8">
         <div className="bg-black/20 flex justify-center items-center w-[26px] h-[26px] sm:w-[32px] sm:h-[32px] rounded-lg relative">
           {submissionState === "WaitingForReview" && (
-            <img src="/icons/check-in-box.svg" className="w-5 h-5 sm:w-6 sm:h-6 relative"/>
+            <img
+              src="/icons/check-in-box.svg"
+              className="w-5 h-5 sm:w-6 sm:h-6 relative"
+            />
           )}
           {submissionState === "Accepted" && (
-            <img src="/icons/check-in-box.svg" className="w-5 h-5 sm:w-6 sm:h-6 relative"/>
+            <img
+              src="/icons/check-in-box.svg"
+              className="w-5 h-5 sm:w-6 sm:h-6 relative"
+            />
           )}
         </div>
       </div>
@@ -259,12 +283,16 @@ const listForm = useForm<ListFormData>({
         <div className="mb-4">
           <div className="hidden sm:flex items-baseline gap-2">
             <h3 className="flex-1 text-[20px] md:text-h3 font-medium font-montserrat text-light break-all">
-              {"TitleAndDescription" in genericTask.task_content 
+              {"TitleAndDescription" in genericTask.task_content
                 ? genericTask.task_content.TitleAndDescription.task_title
                 : "N/A"}
             </h3>
             {user && !isUserAdmin && submissionData && (
-              <span className={`shrink-0 sm:ml-2 ${badgeCls(userState)} px-3 py-2 rounded-lg text-light`}>
+              <span
+                className={`shrink-0 sm:ml-2 ${badgeCls(
+                  userState
+                )} px-3 py-2 rounded-lg text-light`}
+              >
                 {prettyStatus}
               </span>
             )}
@@ -272,19 +300,23 @@ const listForm = useForm<ListFormData>({
           <div className="sm:hidden flex-col items-baseline">
             {user && !isUserAdmin && submissionData && (
               <div className="mb-3">
-                <span className={`shrink-0 text-[12px] ${badgeCls(userState)} px-3 py-2 rounded-lg text-light`}>
+                <span
+                  className={`shrink-0 text-[12px] ${badgeCls(
+                    userState
+                  )} px-3 py-2 rounded-lg text-light`}
+                >
                   {prettyStatus}
                 </span>
               </div>
             )}
             <h3 className="flex-1 text-[20px] md:text-h3 font-medium font-montserrat text-light break-all">
-              {"TitleAndDescription" in genericTask.task_content 
+              {"TitleAndDescription" in genericTask.task_content
                 ? genericTask.task_content.TitleAndDescription.task_title
                 : "N/A"}
             </h3>
           </div>
           <p className="mt-1 text-[14px] md:text-base text-light/80 font-montserrat break-all">
-            {"TitleAndDescription" in genericTask.task_content 
+            {"TitleAndDescription" in genericTask.task_content
               ? genericTask.task_content.TitleAndDescription.task_description
               : "N/A"}
           </p>
@@ -293,9 +325,11 @@ const listForm = useForm<ListFormData>({
         {canSubmit && openSubmission && !disabled && (
           <>
             {answerFormatKey !== "List" ? (
-               <form onSubmit={textForm.handleSubmit(onSubmitText)}>
-                 <div>
-                  <p className="flex flex-col w-full text-xs md:text-base text-light font-semibold mb-1">Submit response:</p>
+              <form onSubmit={textForm.handleSubmit(onSubmitText)}>
+                <div>
+                  <p className="flex flex-col w-full text-xs md:text-base text-light font-semibold mb-1">
+                    Submit response:
+                  </p>
                   <textarea
                     {...textForm.register("taskSubmission")}
                     className="border-2 border-primary/20 outline-none focus:outline-none resize-none overflow-hidden p-2 md:p-4 rounded-xl w-full max mb-2 bg-primary/20 text-light"
@@ -313,7 +347,12 @@ const listForm = useForm<ListFormData>({
                         {`Answer format: ${answerFormatKey} (max ${maxTextLength} chars)`}
                       </span>
                     )}
-                    <Button variant="vivid" className="text-[12px] md:text-base font-medium px-2 rounded-md sm:mb-4">Submit</Button>
+                    <Button
+                      variant="vivid"
+                      className="text-[12px] md:text-base font-medium px-2 rounded-md sm:mb-4"
+                    >
+                      Submit
+                    </Button>
                   </div>
                 </div>
               </form>
@@ -328,19 +367,27 @@ const listForm = useForm<ListFormData>({
                       className="border-2 border-primary/20 p-1 md:p-2 rounded-xl w-full bg-primary/20 text-light placeholder-gray-300 outline-none focus:outline-none"
                       defaultValue={field.value}
                     />
-                    <button type="button" onClick={() => remove(idx)}
-                      className="w-8 h-8 flex items-center justify-center rounded-full text-red-500 text-xl font-bold cursor-pointer hover:bg-red-500/20 transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => remove(idx)}
+                      className="w-8 h-8 flex items-center justify-center rounded-full text-red-500 text-xl font-bold cursor-pointer hover:bg-red-500/20 transition-colors"
+                    >
                       −
                     </button>
                   </div>
                 ))}
                 {fields.length < 25 && (
-                  <Button onClick={() => append({ value: "" })} className="w-5 h-5 md:w-8 md:h-8 flex items-center justify-center rounded-full text-light text-lg">
-                    + 
+                  <Button
+                    onClick={() => append({ value: "" })}
+                    className="w-5 h-5 md:w-8 md:h-8 flex items-center justify-center rounded-full text-light text-lg"
+                  >
+                    +
                   </Button>
                 )}
                 {listForm.formState.errors.items && (
-                  <p className="text-red-400 text-sm">{(listForm.formState.errors.items)?.message}</p>
+                  <p className="text-red-400 text-sm">
+                    {listForm.formState.errors.items?.message}
+                  </p>
                 )}
                 <div className="flex justify-between items-center mt-2">
                   {answerFormatKey && (
@@ -348,17 +395,28 @@ const listForm = useForm<ListFormData>({
                       {"Answer format: List (max 25 items)"}
                     </span>
                   )}
-                  <Button variant="vivid" className="text-[12px] md:text-base font-medium px-2 rounded-md sm:mb-4">Submit</Button>
+                  <Button
+                    variant="vivid"
+                    className="text-[12px] md:text-base font-medium px-2 rounded-md sm:mb-4"
+                  >
+                    Submit
+                  </Button>
                 </div>
               </form>
             )}
           </>
-         )}
-         
-        {canSubmit  && !openSubmission && !disabled && (
+        )}
+
+        {canSubmit && !openSubmission && !disabled && (
           <div className="flex md:py-2">
-            <Button onClick={() => setSubmission(true)} variant="vivid" className="text-[12px] md:text-base font-medium px-2 rounded-md">
-              {submissionState === "Rejected" ? "Re-submit message" : "Submit message"}
+            <Button
+              onClick={() => setSubmission(true)}
+              variant="vivid"
+              className="text-[12px] md:text-base font-medium px-2 rounded-md"
+            >
+              {submissionState === "Rejected"
+                ? "Re-submit message"
+                : "Submit message"}
             </Button>
           </div>
         )}
@@ -367,8 +425,10 @@ const listForm = useForm<ListFormData>({
             <Button onClick={() => connect()}>Connect</Button>
           </div>
         )}
-        {user && !isUserAdmin && submissionData && (
-          Object.keys(submissionData.state)[0] === "Rejected" &&
+        {user &&
+          !isUserAdmin &&
+          submissionData &&
+          (Object.keys(submissionData.state)[0] === "Rejected" &&
           submissionData.rejection_reason[0] &&
           submissionData.rejection_reason[0].trim().length > 0 ? (
             <div className="border-t border-white/20">
@@ -379,61 +439,81 @@ const listForm = useForm<ListFormData>({
                 </p>
               </div>
             </div>
-          ) : null
-        )}
-        {isUserAdmin && allSubmissions.length > 0 && authAtlasSpace && unAuthAtlasSpace && (
-          <div className="pt-4 border-t border-white/20">
-            <button className="flex text-[12px] sm:text-base text-white font-semibold mb-2"
-            onClick={() => SetReview(!openReview)}
-            >
-              <FaCaretRight className={`${openReview && `rotate-90`} mt-[5px] mr-1`}/> Review Submissions ({allSubmissions.length})
-            </button>
-            {openReview && (
-            <div className="space-y-4">
-              {allSubmissions.map(([principal, submissionData]) => {
-                const rowState = Object.keys(submissionData.state ?? {})[0];
-                return (
-                <div key={principal.toString()} className="border border-white/10 rounded-lg p-3">
-                  <div className="flex flex-row justify-between mb-2">
-                    <span className="flex gap-2 py-1 text-white text-[12px] sm:text-base font-medium text-center"
-                    onClick={() => copyPrincipal(principal.toString())}
-                    >
-                      User: {shortPrincipal(principal.toString())} <FiCopy className="my-1"/></span>
-                    <span className={`text-xs sm:text-base font-medium w-fit ${badgeCls(rowState)} px-2 py-1 text-white rounded`}>
-                      {rowState}
-                    </span>
-                  </div>
-                  <ReviewSubmission
-                    submission={{
-                      submissionData: submissionData,
-                      taskType: "GenericTask" as keyof TaskType,
-                    }}
-                    authAtlasSpace={authAtlasSpace}
-                    taskId={taskId}
-                    subtaskId={subtaskId.toString()}
-                    unAuthAtlasSpace={unAuthAtlasSpace}
-                    spaceId={spacePrincipal.toString()}
-                    userPrincipal={principal.toString()}
-                    onReviewComplete={() => {
-                      getSpaceTasks({
-                        spaceId: spacePrincipal.toString(),
-                        unAuthAtlasSpace,
-                        dispatch,
-                      });
-                    }}
-                  />
+          ) : null)}
+        {isUserAdmin &&
+          allSubmissions.length > 0 &&
+          authAtlasSpace &&
+          unAuthAtlasSpace && (
+            <div className="pt-4 border-t border-white/20">
+              <button
+                className="flex text-[12px] sm:text-base text-white font-semibold mb-2"
+                onClick={() => SetReview(!openReview)}
+              >
+                <FaCaretRight
+                  className={`${openReview && `rotate-90`} mt-[5px] mr-1`}
+                />{" "}
+                Review Submissions ({allSubmissions.length})
+              </button>
+              {openReview && (
+                <div className="space-y-4">
+                  {allSubmissions.map(([principal, submissionData]) => {
+                    const rowState = Object.keys(submissionData.state ?? {})[0];
+                    return (
+                      <div
+                        key={principal.toString()}
+                        className="border border-white/10 rounded-lg p-3"
+                      >
+                        <div className="flex flex-row justify-between mb-2">
+                          <span
+                            className="flex gap-2 py-1 text-white text-[12px] sm:text-base font-medium text-center"
+                            onClick={() => copyPrincipal(principal.toString())}
+                          >
+                            User: {shortPrincipal(principal.toString())}{" "}
+                            <FiCopy className="my-1" />
+                          </span>
+                          <span
+                            className={`text-xs sm:text-base font-medium w-fit ${badgeCls(
+                              rowState
+                            )} px-2 py-1 text-white rounded`}
+                          >
+                            {rowState}
+                          </span>
+                        </div>
+                        <ReviewSubmission
+                          submission={{
+                            submissionData: submissionData,
+                            taskType: "GenericTask" as keyof TaskType,
+                          }}
+                          authAtlasSpace={authAtlasSpace}
+                          taskId={taskId}
+                          subtaskId={subtaskId.toString()}
+                          unAuthAtlasSpace={unAuthAtlasSpace}
+                          spaceId={spacePrincipal.toString()}
+                          userPrincipal={principal.toString()}
+                          onReviewComplete={() => {
+                            getSpaceTasks({
+                              spaceId: spacePrincipal.toString(),
+                              unAuthAtlasSpace,
+                              dispatch,
+                            });
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              )}
             </div>
-            )}
-          </div>
-        )}
-        
+          )}
+
         {isUserAdmin && allSubmissions.length === 0 && (
           <div className="pt-4 border-t border-white/20">
-            <h4 className="text-white font-semibold mb-2">Review Submissions</h4>
-            <p className="text-white/70">No submissions yet for this subtask.</p>
+            <h4 className="text-white font-semibold mb-2">
+              Review Submissions
+            </h4>
+            <p className="text-white/70">
+              No submissions yet for this subtask.
+            </p>
           </div>
         )}
       </div>
