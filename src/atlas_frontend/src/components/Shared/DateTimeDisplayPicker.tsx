@@ -47,6 +47,7 @@ const DateTimeDisplayPicker = forwardRef<HTMLInputElement, DateTimeDisplayPicker
     const [time, setTime] = useState<string>(toLocalTime(formatted.time));
 
     useEffect(() => {
+      if (!isFirefox) return;
       const v = (inputProps?.value as string) ?? "";
       if (!v) return;
       const date = v.split("T")[0] || "";
@@ -54,6 +55,12 @@ const DateTimeDisplayPicker = forwardRef<HTMLInputElement, DateTimeDisplayPicker
       setDate(date);
       setTime(time);
     }, [inputProps?.value]);
+
+    useEffect(() => {
+      if (!isFirefox) return;
+      setDate(toLocalDate(formatted.date));
+      setTime(toLocalTime(formatted.time));
+    }, [formatted]);
 
     const merged = date && time ? `${date}T${time}` : "";
 
