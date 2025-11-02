@@ -11,7 +11,7 @@ use ic_cdk::update;
 use serde::Deserialize;
 use shared::{SpaceArgs, SpaceInitArg};
 
-use crate::guard::{admin_or_space_lead_guard, super_admin_guard};
+use crate::guard::{admin_or_space_lead_guard, space_caller_guard, super_admin_guard};
 use crate::{
     errors::Error,
     guard::authenticated_guard,
@@ -354,7 +354,7 @@ pub async fn delete_space(space_id: Principal) -> Result<(), Error> {
                 .iter()
                 .position(|&i| i == space_index)
             {
-                user.belonging_to_spaces.remove(pos);
+                user.leave_space(pos);
                 changed = true;
             }
             if changed {
@@ -374,4 +374,36 @@ pub async fn delete_space(space_id: Principal) -> Result<(), Error> {
 pub fn remove_space_bytecode(version: u64) -> Result<(), Error> {
     super_admin_guard()?;
     memory::remove_bytecode_by_version(&version)
+}
+
+#[update]
+pub async fn register_referral_reward(
+    user: Principal,
+    space_principal: Principal,
+    task_id: u64,
+    invitee: Principal,
+    amount: u64,
+) -> Result<(), Error> {
+    space_caller_guard()?;
+    let space_index =
+        memory::space_principal_to_index(space_principal).ok_or(Error::SpaceNotExist)?;
+    memory::mut_user(user, |maybe_user| {
+        let mut user_data = maybe_user.ok_or(Error::UserDoNotExist)?;
+        user_data.register_referral_reward(space_index, task_id, invitee, amount);
+        Ok(user_data)
+    })?;
+
+    Ok(())
+}
+
+#[update]
+pub fn add_task_reward_xp(user: Principal, reward_amount: u64) -> Result<(), Error> {
+    space_caller_guard()?;
+    memory::mut_user(user, |maybe_user| {
+        let mut user_data = maybe_user.ok_or(Error::UserDoNotExist)?;
+        user_data.add_xp(reward_amount);
+        Ok(user_data)
+    })?;
+
+    Ok(())
 }

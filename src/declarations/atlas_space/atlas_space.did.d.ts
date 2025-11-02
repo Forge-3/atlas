@@ -14,9 +14,11 @@ export interface CkUsdcLedger_1 {
 export interface ClosedTask {
   'tasks' : Array<TaskType>,
   'creator' : Principal,
+  'affiliate_uses' : bigint,
   'task_title' : string,
   'refunded' : boolean,
   'token_reward' : TokenReward,
+  'referrals' : Array<[Principal, ReferralEntry]>,
   'end_time' : bigint,
   'start_time' : bigint,
   'rewarded' : Array<Principal>,
@@ -57,6 +59,7 @@ export type Error = { 'BytecodeUpToDate' : null } |
   { 'NotParent' : null } |
   { 'UsageLimitExceeded' : null } |
   { 'FailedToQueryBalance' : string } |
+  { 'ReferralRewardsLimitReached' : null } |
   { 'UserSubmissionNotFound' : null } |
   { 'FailedToUpdateConfig' : string } |
   { 'UserDoesNotBelongToSpace' : null } |
@@ -78,7 +81,9 @@ export type Error = { 'BytecodeUpToDate' : null } |
   { 'SubtaskDoNotExists' : bigint } |
   { 'NotOwner' : null } |
   { 'FailedToTransfer' : string } |
+  { 'ReferralAlreadyExists' : null } |
   { 'TaskExpired' : null } |
+  { 'InvalidReferral' : string } |
   { 'FailedToParse' : string } |
   { 'InvalidTaskContent' : string } |
   { 'TaskDoNotExists' : bigint } |
@@ -92,6 +97,10 @@ export interface GetTasksArgs { 'count' : bigint, 'start' : bigint }
 export interface GetTasksRes {
   'tasks' : Array<[bigint, Task]>,
   'tasks_count' : bigint,
+}
+export interface ReferralEntry {
+  'reward_claimed' : boolean,
+  'inviter' : Principal,
 }
 export type Result = { 'Ok' : null } |
   { 'Err' : Error };
@@ -141,8 +150,10 @@ export interface Task {
   'timer_id' : [] | [bigint],
   'tasks' : Array<TaskType>,
   'creator' : Principal,
+  'affiliate_uses' : bigint,
   'task_title' : string,
   'token_reward' : TokenReward,
+  'referrals' : Array<[Principal, ReferralEntry]>,
   'end_time' : bigint,
   'start_time' : bigint,
   'rewarded' : Array<Principal>,
@@ -183,6 +194,7 @@ export interface _SERVICE {
   'get_open_tasks' : ActorMethod<[GetTasksArgs], Result_4>,
   'get_space_info' : ActorMethod<[], SpaceInfo>,
   'get_state' : ActorMethod<[], State>,
+  'register_task_referral' : ActorMethod<[bigint, Principal], Result>,
   'reject_subtask_submission' : ActorMethod<
     [Principal, bigint, bigint, [] | [string]],
     Result

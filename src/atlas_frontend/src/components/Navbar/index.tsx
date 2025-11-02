@@ -28,6 +28,7 @@ import {
 import { getAtlasConfig, getAtlasUser } from "../../canisters/atlasMain/api.ts";
 import {
   ADMIN_PATH,
+  REFERRALS_PATH,
   getCreateTaskPath,
   SPACES_PATH,
   WALLET_PATH,
@@ -39,6 +40,7 @@ import { RiAddLine, RiWalletFill, RiLogoutBoxRLine } from 'react-icons/ri';
 import { getCkUsdcBalance } from "../../hooks/balances.ts";
 import { FaGear } from 'react-icons/fa6';
 import { useSpaceNavigation } from "../../hooks/useSpaceNavigation.ts";
+import { championLevels, deciXPtoXP, getChampionLevel, getNextLevelInfo } from "../../utils/xp.ts";
 
 const ConnectButton = (props: ConnectWalletButtonProps) => (
   <Button
@@ -111,6 +113,14 @@ const DropdownMenuComponent = ({
   const parsedUserCkUsdc =
     userCkUsdc !== null ? formatUnits(userCkUsdc, DECIMALS) : null;
 
+  const xpNumber = deciXPtoXP(userInfo?.deci_xp_points ?? 0n);
+  const levelKey = getChampionLevel(xpNumber);
+  const levelInfo = championLevels[levelKey];
+  const nextLevelInfo = getNextLevelInfo(xpNumber);
+  const progress = nextLevelInfo.xpNeeded !== null
+    ? (xpNumber - levelInfo.minXp) / (nextLevelInfo.xpNeeded + (xpNumber - levelInfo.minXp))
+    : 1;
+
   return (
     <>
       <Menu>
@@ -148,17 +158,28 @@ const DropdownMenuComponent = ({
             </div>
           </MenuItem>
         </div>
-        {/* <div className="w-full h-[1px] bg-light2/20 my-2" />
-          <div className="flex flex-col px-3 pt-2">
-            <p className="text-primary font-montserrat font-medium">
-            Rank
-            </p>
-            <p className="text-light font-montserrat font-medium">
-            {rank}
-            </p>
-          </div>
-          <ExperienceProgressBar exp={324} expToLvlUp={500} /> */}
         <div className="w-full h-[1px] bg-light2/20 my-2" />
+          {!userInfo?.isAdmin() && xpNumber !== null && (
+            <MenuItem>
+              <div className="flex flex-col gap-2 mt-2 w-full">
+                <div className="bg-[#1E0F33] px-4 py-2 rounded-md text-center font-montserrat font-medium">
+                  {xpNumber} XP • {levelInfo.title}
+                </div>
+                <div className="w-full bg-gray-300 h-3 overflow-hidden">
+                  <div
+                    className="bg-[#9173FF] h-3 transition-all"
+                    style={{ width: `${progress * 100}%` }}
+                  />
+                </div>
+                {nextLevelInfo.xpNeeded !== null && (
+                  <div className="text-xs text-center">
+                    {nextLevelInfo.xpNeeded} XP to {nextLevelInfo.nextTitle}
+                  </div>
+                )}
+              </div>
+            </MenuItem>
+          )}
+
           {parsedUserCkUsdc !== null && (
             <MenuItem>
               <div
@@ -301,7 +322,7 @@ const Navbar = () => {
         </a>
         <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4">
           {user && (
-            <div className="flex">
+            <div className="flex gap-2 sm:gap-3 md:gap-4">
               <Button
                 variant={location?.pathname !== "/space" ? "publish" : "primary"}
                 onClick={() => navigate(SPACES_PATH)}
@@ -312,26 +333,32 @@ const Navbar = () => {
               {/* <Button light={location?.pathname !== "/space/leaderboard"}>
                 Leaderboard
               </Button> */}
-                {/* <Button light={location?.pathname !== "/space/referrals"}>
-                Referrals
-              </Button> */}
-              </div>
-            )}
-            <ConnectWallet
-              connectButtonComponent={ConnectButton}
-              dropdownMenuComponent={DropdownMenuComponent}
-            />
+              {!userInfo?.isAdmin() && (
+                <Button
+                  variant={location?.pathname !== "/referrals" ? "publish" : "primary"}
+                  onClick={() => navigate(REFERRALS_PATH)}
+                  className="font-medium text-[12px] md:text-base px-4 md:px-6 "
+                >
+                  Referrals
+                </Button>
+              )}
+            </div>
+          )}
+          <ConnectWallet
+            connectButtonComponent={ConnectButton}
+            dropdownMenuComponent={DropdownMenuComponent}
+          />
             {!user && (
             <Button
-            variant="saveDraft"
-            className="text-[14px] px-3 md:text-[18px] md:w-[110px] md:h-[33px] md:px-4 md:2my-2 sm:my-0"
-            onClick={() => navigate(SPACES_PATH)}>
-            Discover
+              variant="saveDraft"
+              className="text-[14px] px-3 md:text-[18px] md:w-[110px] md:h-[33px] md:px-4 md:2my-2 sm:my-0"
+              onClick={() => navigate(SPACES_PATH)}>
+              Discover
             </Button>
             )}
-          </div>
         </div>
       </div>
+    </div>
   );
 };
 

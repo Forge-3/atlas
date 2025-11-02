@@ -290,8 +290,23 @@ const CreateNewTaskModal = () => {
     useSelector(selectBlockchainConfig)
   );
 
-  const calculateDepositAmount = (amount: bigint, fee: bigint, numberOfUses: bigint) => {
-    return amount * numberOfUses + fee * numberOfUses + fee;
+  const calculateDepositAmount = (rewardPerUsageBn: bigint, ckUsdcFee: bigint, numberOfUsesBn: bigint) => {
+    const PERCENTAGE_FOR_AFFILIATION_REWARDS = 20n; // 20%
+    const SINGLE_AFFILIATION_REWARD = 2_000_000n;
+
+    const baseReward = numberOfUsesBn * rewardPerUsageBn;
+    const affiliateBase = (baseReward * PERCENTAGE_FOR_AFFILIATION_REWARDS) / 100n;
+
+    let affiliateUses = affiliateBase / SINGLE_AFFILIATION_REWARD;
+    if (affiliateUses > numberOfUsesBn) {
+      affiliateUses = numberOfUsesBn;
+    }
+
+    const affiliateAdjusted = affiliateUses * SINGLE_AFFILIATION_REWARD;
+    const feeAdjusted =
+      numberOfUsesBn * ckUsdcFee + affiliateUses * ckUsdcFee + ckUsdcFee;
+
+    return baseReward + affiliateAdjusted + feeAdjusted;
   };
 
   const ckUsdcFee = blockchainConfig

@@ -12,10 +12,12 @@ export type AtlasArgs = {
 export interface CandidUser {
   'integrations' : Integrations,
   'rank' : Rank,
+  'deci_xp_points' : bigint,
   'in_hub' : [] | [Space],
   'space_creation_in_progress' : boolean,
   'belonging_to_spaces' : Array<Space>,
   'owned_spaces' : Array<Space>,
+  'referral_rewards' : Array<ReferralReward>,
 }
 export interface CkUsdcLedger { 'fee' : [] | [bigint], 'principal' : Principal }
 export interface CkUsdcLedger_1 {
@@ -52,7 +54,8 @@ export type Error = { 'UserRankNoMatch' : Array<Rank> } |
   { 'UserAlreadyIsHubMember' : null } |
   { 'FailedToParse' : string } |
   { 'NotEnoughCycles' : { 'owned' : bigint, 'expected' : bigint } } |
-  { 'AnonymousCaller' : null };
+  { 'AnonymousCaller' : null } |
+  { 'NotASpace' : null };
 export interface GetSpacesArgs { 'count' : bigint, 'start' : bigint }
 export interface GetSpacesRes {
   'spaces' : Array<Space>,
@@ -64,13 +67,21 @@ export type Rank = { 'SpaceLead' : null } |
   { 'User' : null } |
   { 'SuperAdmin' : null } |
   { 'Admin' : null };
-export type Result = { 'Ok' : Space } |
+export interface ReferralReward {
+  'task_id' : bigint,
+  'invitee' : Principal,
+  'space_id' : bigint,
+  'points' : bigint,
+}
+export type Result = { 'Ok' : null } |
   { 'Err' : Error };
-export type Result_1 = { 'Ok' : null } |
+export type Result_1 = { 'Ok' : Space } |
   { 'Err' : Error };
 export type Result_2 = { 'Ok' : bigint } |
   { 'Err' : Error };
 export type Result_3 = { 'Ok' : GetSpacesRes } |
+  { 'Err' : Error };
+export type Result_4 = { 'Ok' : number } |
   { 'Err' : Error };
 export interface Space { 'id' : Principal, 'space_type' : SpaceType }
 export type SpaceArgs = { 'UpgradeArg' : { 'version' : bigint } } |
@@ -94,6 +105,7 @@ export interface UpdateConfig {
 }
 export interface WalletReceiveResult { 'accepted' : bigint }
 export interface _SERVICE {
+  'add_task_reward_xp' : ActorMethod<[Principal, bigint], Result>,
   'app_config' : ActorMethod<[], Config>,
   'create_new_space' : ActorMethod<
     [
@@ -105,9 +117,9 @@ export interface _SERVICE {
       SpaceType,
       Array<[string, string]>,
     ],
-    Result
+    Result_1
   >,
-  'delete_space' : ActorMethod<[Principal], Result_1>,
+  'delete_space' : ActorMethod<[Principal], Result>,
   'get_bytecode_hash_by_version' : ActorMethod<[bigint], [] | [string]>,
   'get_current_space_bytecode_version' : ActorMethod<[], bigint>,
   'get_space_bytecode_by_version' : ActorMethod<
@@ -118,13 +130,21 @@ export interface _SERVICE {
   'get_spaces' : ActorMethod<[GetSpacesArgs], Result_3>,
   'get_user' : ActorMethod<[GetUserBy], CandidUser>,
   'get_user_hub' : ActorMethod<[Principal], [] | [Space]>,
+  'get_user_remaining_referrals' : ActorMethod<
+    [Principal, Principal, bigint],
+    Result_4
+  >,
   'get_users_count' : ActorMethod<[], Result_2>,
-  'join_space' : ActorMethod<[Principal], Result_1>,
-  'remove_space_bytecode' : ActorMethod<[bigint], Result_1>,
-  'set_user_admin' : ActorMethod<[Principal], Result_1>,
-  'set_user_space_lead' : ActorMethod<[Principal], Result_1>,
-  'transfer_space' : ActorMethod<[TransferSpace], Result_1>,
-  'upgrade_space' : ActorMethod<[Principal], Result_1>,
+  'join_space' : ActorMethod<[Principal], Result>,
+  'register_referral_reward' : ActorMethod<
+    [Principal, Principal, bigint, Principal, bigint],
+    Result
+  >,
+  'remove_space_bytecode' : ActorMethod<[bigint], Result>,
+  'set_user_admin' : ActorMethod<[Principal], Result>,
+  'set_user_space_lead' : ActorMethod<[Principal], Result>,
+  'transfer_space' : ActorMethod<[TransferSpace], Result>,
+  'upgrade_space' : ActorMethod<[Principal], Result>,
   'user_is_admin' : ActorMethod<[Principal], boolean>,
   'user_is_in_hub' : ActorMethod<[Principal], boolean>,
   'user_is_in_space' : ActorMethod<[Principal, Principal], boolean>,

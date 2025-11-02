@@ -101,4 +101,13 @@ pub enum Error {
 
     #[error("Failed to claim rewards for tasks: {0:?}")]
     FailedToClaimRewards(Vec<(TaskId, Error)>),
+
+    #[error("Invalid Referral (Error: {0})")]
+    InvalidReferral(String),
+
+    #[error("Referral already exists for this invitee")]
+    ReferralAlreadyExists,
+
+    #[error("Referral rewards limit reached")]
+    ReferralRewardsLimitReached,
 }

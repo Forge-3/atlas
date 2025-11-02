@@ -8,7 +8,7 @@ use crate::{
     errors::Error,
     memory,
     space::{Space, SpaceType},
-    user::{Integrations, Rank},
+    user::{Integrations, Rank, ReferralReward},
 };
 
 const MAX_SPACES_PER_RESPONSE: u8 = 200;
@@ -31,6 +31,8 @@ pub struct CandidUser {
     pub(crate) owned_spaces: Vec<Space>,
     pub(crate) belonging_to_spaces: Vec<Space>,
     pub(crate) in_hub: Option<Space>,
+    pub(crate) deci_xp_points: u64,
+    pub(crate) referral_rewards: Vec<ReferralReward>,
 }
 
 #[query]
@@ -61,6 +63,8 @@ pub fn get_user(by: GetUserBy) -> CandidUser {
         owned_spaces,
         belonging_to_spaces,
         in_hub,
+        deci_xp_points: user.deci_xp_points,
+        referral_rewards: user.referral_rewards,
     }
 }
 
@@ -170,4 +174,18 @@ pub fn get_users_count() -> Result<usize, Error> {
     let count = memory::with_users_iter(|users_iter| users_iter.count());
 
     Ok(count)
+}
+
+#[query]
+pub fn get_user_remaining_referrals(
+    user_principal: Principal,
+    space_principal: Principal,
+    task_id: u64,
+) -> Result<u16, Error> {
+    let user = memory::get_user(&user_principal).ok_or(Error::UserDoNotExist)?;
+    let space_index =
+        memory::space_principal_to_index(space_principal).ok_or(Error::SpaceNotExist)?;
+    let remaining = user.remaining_referral_rewards_for_task(space_index, task_id);
+
+    Ok(remaining)
 }

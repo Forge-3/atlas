@@ -11,6 +11,14 @@ use serde::Serialize;
 use slotmap::Key;
 use slotmap::KeyData;
 
+#[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType)]
+pub struct ReferralEntry {
+    #[cbor(n(0), with = "shared::cbor::principal")]
+    pub inviter: Principal,
+    #[n(1)]
+    pub reward_claimed: bool,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, CandidType, Serialize, Deserialize, Decode, Encode)]
 pub struct TimerKeyData(#[n(0)] pub u64);
 

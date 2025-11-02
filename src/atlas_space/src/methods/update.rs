@@ -1,3 +1,4 @@
+use crate::guard::user_has_available_referrals;
 use crate::tasks::task::validate_task_time_edit;
 use crate::tasks::task::EditTaskArgs;
 use crate::tasks::task::Task;
@@ -398,6 +399,19 @@ pub async fn clean_up_space_before_deletion() -> Result<(), String> {
             errors
         ));
     }
+
+    Ok(())
+}
+
+#[update]
+pub async fn register_task_referral(task_id: TaskId, inviter: Principal) -> Result<(), Error> {
+    let invitee: Principal = user_is_in_space().await?;
+    user_has_available_referrals(task_id.u64(), inviter).await?;
+    memory::mut_open_task(task_id, |maybe_task| {
+        let task = maybe_task.as_mut().ok_or(Error::TaskDoNotExists(task_id))?;
+        task.register_referral(inviter, invitee)?;
+        Ok(())
+    })??;
 
     Ok(())
 }

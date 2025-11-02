@@ -1,9 +1,10 @@
 use std::{borrow::Cow, fmt};
 
 use crate::errors::Error;
-use candid::{CandidType, Deserialize};
+use candid::{CandidType, Deserialize, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
 use minicbor::{Decode, Encode};
+use std::cmp::min;
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Default, CandidType, Clone)]
 pub struct Integrations {
@@ -54,6 +55,58 @@ impl fmt::Display for Rank {
     }
 }
 
+const MAX_REFERRALS_PER_TASK: u16 = 5;
+
+#[derive(Eq, PartialEq, Debug, Decode, Encode, Default, CandidType, Clone)]
+pub enum ChampionLevel {
+    #[default]
+    #[n(0)]
+    Level1,
+    #[n(1)]
+    Level2,
+    #[n(2)]
+    Level3,
+    #[n(3)]
+    Level4,
+    #[n(4)]
+    Level5,
+}
+
+impl ChampionLevel {
+    pub fn from_points(points: u64) -> Self {
+        match points {
+            0..=99 => ChampionLevel::Level1,
+            100..=499 => ChampionLevel::Level2,
+            500..=699 => ChampionLevel::Level3,
+            700..=999 => ChampionLevel::Level4,
+            _ => ChampionLevel::Level5,
+        }
+    }
+
+    pub fn global_invite_cap(&self) -> u16 {
+        match self {
+            ChampionLevel::Level1 => 0,
+            ChampionLevel::Level2 => 5,
+            ChampionLevel::Level3 => 7,
+            ChampionLevel::Level4 => 10,
+            ChampionLevel::Level5 => 15,
+        }
+    }
+}
+
+#[derive(Eq, PartialEq, Debug, Decode, Encode, CandidType, Clone)]
+pub struct ReferralReward {
+    //what should be stored? might as well store just space_principal, time or task_title
+    #[n(0)]
+    pub space_id: u64,
+    #[n(1)]
+    pub task_id: u64,
+    #[cbor(n(2), with = "shared::cbor::principal")]
+    pub invitee: Principal,
+    #[n(3)]
+    pub points: u64,
+}
+
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Default, CandidType, Clone)]
 pub struct User {
     #[n(0)]
@@ -66,6 +119,12 @@ pub struct User {
     pub(crate) space_creation_in_progress: bool,
     #[n(4)]
     pub(crate) belonging_to_spaces: Vec<u64>,
+
+    // Affiliation
+    #[n(5)]
+    pub(crate) deci_xp_points: u64, // stored as deciXP (XP * 10), e.g. 15 = 1.5 XP
+    #[n(6)]
+    pub(crate) referral_rewards: Vec<ReferralReward>,
 }
 
 impl User {
@@ -76,6 +135,8 @@ impl User {
             owned_spaces: Vec::new(),
             space_creation_in_progress: false,
             belonging_to_spaces: Vec::new(),
+            deci_xp_points: 0u64,
+            referral_rewards: Vec::new(),
         }
     }
 
@@ -85,6 +146,11 @@ impl User {
 
     pub fn join_space(&mut self, space_id: u64) {
         self.belonging_to_spaces.push(space_id);
+    }
+
+    pub fn leave_space(&mut self, position: usize) {
+        self.belonging_to_spaces.remove(position);
+        self.deci_xp_points = 0;
     }
 
     pub fn rank(&self) -> &Rank {
@@ -145,6 +211,51 @@ impl User {
 
     pub fn space_creation_in_progress(&self) -> bool {
         self.space_creation_in_progress
+    }
+
+    pub fn champion_level(&self) -> ChampionLevel {
+        ChampionLevel::from_points(self.deci_xp_points)
+    }
+
+    pub fn add_xp(&mut self, reward_e8s: u64) {
+        // minimum 0.1 USDC
+        let xp_to_add = reward_e8s / 100_000;
+        self.deci_xp_points += xp_to_add;
+    }
+
+    pub fn register_referral_reward(
+        &mut self,
+        space_index: u64,
+        task_id: u64,
+        invitee: Principal,
+        reward_e8s: u64,
+    ) {
+        let points = reward_e8s / 100_000;
+        self.referral_rewards.push(ReferralReward {
+            space_id: space_index,
+            task_id,
+            invitee,
+            points,
+        });
+
+        self.add_xp(reward_e8s);
+    }
+
+    pub fn remaining_referral_rewards_for_task(&self, space_id: u64, task_id: u64) -> u16 {
+        let claimed_for_task = self
+            .referral_rewards
+            .iter()
+            .filter(|r| r.space_id == space_id && r.task_id == task_id)
+            .count() as u16;
+
+        let claimed_total = self.referral_rewards.len() as u16;
+        let global_cap = self.champion_level().global_invite_cap();
+        let task_limit = MAX_REFERRALS_PER_TASK;
+
+        let remaining_task_limit = task_limit.saturating_sub(claimed_for_task);
+        let remaining_global_limit = global_cap.saturating_sub(claimed_total);
+
+        min(remaining_task_limit, remaining_global_limit)
     }
 }
 

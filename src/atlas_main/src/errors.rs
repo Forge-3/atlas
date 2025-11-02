@@ -83,4 +83,7 @@ pub enum Error {
 
     #[error("WASM bytecode for version {0} does not exist")]
     WasmVersionNotExist(u64),
+
+    #[error("Caller is not a registered space canister")]
+    NotASpace,
 }

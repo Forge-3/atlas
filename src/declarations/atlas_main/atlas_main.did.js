@@ -34,8 +34,6 @@ export const idlFactory = ({ IDL }) => {
     }),
     'InitArg' : Config,
   });
-  const SpaceType = IDL.Variant({ 'HUB' : IDL.Null });
-  const Space = IDL.Record({ 'id' : IDL.Principal, 'space_type' : SpaceType });
   const Rank = IDL.Variant({
     'SpaceLead' : IDL.Null,
     'User' : IDL.Null,
@@ -78,9 +76,12 @@ export const idlFactory = ({ IDL }) => {
     'FailedToParse' : IDL.Text,
     'NotEnoughCycles' : IDL.Record({ 'owned' : IDL.Nat, 'expected' : IDL.Nat }),
     'AnonymousCaller' : IDL.Null,
+    'NotASpace' : IDL.Null,
   });
-  const Result = IDL.Variant({ 'Ok' : Space, 'Err' : Error });
-  const Result_1 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });
+  const Result = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : Error });
+  const SpaceType = IDL.Variant({ 'HUB' : IDL.Null });
+  const Space = IDL.Record({ 'id' : IDL.Principal, 'space_type' : SpaceType });
+  const Result_1 = IDL.Variant({ 'Ok' : Space, 'Err' : Error });
   const Result_2 = IDL.Variant({ 'Ok' : IDL.Nat64, 'Err' : Error });
   const GetSpacesArgs = IDL.Record({
     'count' : IDL.Nat64,
@@ -93,20 +94,30 @@ export const idlFactory = ({ IDL }) => {
   const Result_3 = IDL.Variant({ 'Ok' : GetSpacesRes, 'Err' : Error });
   const GetUserBy = IDL.Variant({ 'Principal' : IDL.Principal });
   const Integrations = IDL.Record({ 'discord_id' : IDL.Opt(IDL.Text) });
+  const ReferralReward = IDL.Record({
+    'task_id' : IDL.Nat64,
+    'invitee' : IDL.Principal,
+    'space_id' : IDL.Nat64,
+    'points' : IDL.Nat64,
+  });
   const CandidUser = IDL.Record({
     'integrations' : Integrations,
     'rank' : Rank,
+    'deci_xp_points' : IDL.Nat64,
     'in_hub' : IDL.Opt(Space),
     'space_creation_in_progress' : IDL.Bool,
     'belonging_to_spaces' : IDL.Vec(Space),
     'owned_spaces' : IDL.Vec(Space),
+    'referral_rewards' : IDL.Vec(ReferralReward),
   });
+  const Result_4 = IDL.Variant({ 'Ok' : IDL.Nat16, 'Err' : Error });
   const TransferSpace = IDL.Record({
     'to' : IDL.Principal,
     'space_id' : IDL.Principal,
   });
   const WalletReceiveResult = IDL.Record({ 'accepted' : IDL.Nat64 });
   return IDL.Service({
+    'add_task_reward_xp' : IDL.Func([IDL.Principal, IDL.Nat64], [Result], []),
     'app_config' : IDL.Func([], [Config], ['query']),
     'create_new_space' : IDL.Func(
         [
@@ -118,10 +129,10 @@ export const idlFactory = ({ IDL }) => {
           SpaceType,
           IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
         ],
-        [Result],
+        [Result_1],
         [],
       ),
-    'delete_space' : IDL.Func([IDL.Principal], [Result_1], []),
+    'delete_space' : IDL.Func([IDL.Principal], [Result], []),
     'get_bytecode_hash_by_version' : IDL.Func(
         [IDL.Nat64],
         [IDL.Opt(IDL.Text)],
@@ -137,13 +148,23 @@ export const idlFactory = ({ IDL }) => {
     'get_spaces' : IDL.Func([GetSpacesArgs], [Result_3], ['query']),
     'get_user' : IDL.Func([GetUserBy], [CandidUser], ['query']),
     'get_user_hub' : IDL.Func([IDL.Principal], [IDL.Opt(Space)], ['query']),
+    'get_user_remaining_referrals' : IDL.Func(
+        [IDL.Principal, IDL.Principal, IDL.Nat64],
+        [Result_4],
+        ['query'],
+      ),
     'get_users_count' : IDL.Func([], [Result_2], ['query']),
-    'join_space' : IDL.Func([IDL.Principal], [Result_1], []),
-    'remove_space_bytecode' : IDL.Func([IDL.Nat64], [Result_1], []),
-    'set_user_admin' : IDL.Func([IDL.Principal], [Result_1], []),
-    'set_user_space_lead' : IDL.Func([IDL.Principal], [Result_1], []),
-    'transfer_space' : IDL.Func([TransferSpace], [Result_1], []),
-    'upgrade_space' : IDL.Func([IDL.Principal], [Result_1], []),
+    'join_space' : IDL.Func([IDL.Principal], [Result], []),
+    'register_referral_reward' : IDL.Func(
+        [IDL.Principal, IDL.Principal, IDL.Nat64, IDL.Principal, IDL.Nat64],
+        [Result],
+        [],
+      ),
+    'remove_space_bytecode' : IDL.Func([IDL.Nat64], [Result], []),
+    'set_user_admin' : IDL.Func([IDL.Principal], [Result], []),
+    'set_user_space_lead' : IDL.Func([IDL.Principal], [Result], []),
+    'transfer_space' : IDL.Func([TransferSpace], [Result], []),
+    'upgrade_space' : IDL.Func([IDL.Principal], [Result], []),
     'user_is_admin' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
     'user_is_in_hub' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
     'user_is_in_space' : IDL.Func(

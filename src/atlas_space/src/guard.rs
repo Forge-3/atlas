@@ -58,3 +58,21 @@ pub fn parent_guard() -> Result<Principal, Error> {
     }
     Err(Error::NotParent)
 }
+
+#[inline(always)]
+pub async fn user_has_available_referrals(task_id: u64, inviter: Principal) -> Result<(), Error> {
+    let parent = memory::read_config(|config| config.parent());
+
+    let remaining = Call::bounded_wait(parent, "get_user_remaining_referrals")
+        .with_args(&(inviter, ic_cdk::api::canister_self(), task_id))
+        .await
+        .map_err(|err| Error::FailedToCallMain(err.to_string()))?
+        .candid::<Result<u16, Error>>()
+        .map_err(|err| Error::FailedToParse(err.to_string()))??;
+
+    if remaining == 0 {
+        return Err(Error::ReferralRewardsLimitReached);
+    }
+
+    Ok(())
+}

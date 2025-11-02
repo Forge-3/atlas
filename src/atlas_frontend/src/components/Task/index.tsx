@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSpaceId } from "../../hooks/space";
 import { useDispatch, useSelector } from "react-redux";
 import type { ClosedTask } from "../../../../declarations/atlas_space/atlas_space.did";
@@ -7,6 +7,7 @@ import { deserialize, type RootState } from "../../store/store";
 import { useEffect } from "react";
 import {
   useAuthAtlasSpaceActor,
+  useAuthAtlasSpaceActorForceRootKey,
   useUnAuthAtlasSpaceActor,
 } from "../../hooks/identityKit";
 import {
@@ -15,6 +16,7 @@ import {
   forceExpireTask,
   getAtlasSpace,
   getSpaceTasks,
+  registerReferral,
   withdrawReward,
   type AnyTask,
   type ExpiredTask,
@@ -51,6 +53,9 @@ import { RiWalletFill } from "react-icons/ri";
 import { formatUnits } from "ethers";
 import { DECIMALS } from "../../canisters/ckUsdcLedger/constans";
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa6";
+import { Principal } from "@dfinity/principal";
+import { copy } from "../../utils/shared";
+import { deciXPtoXP, getChampionLevel } from "../../utils/xp";
 
 const Task = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -61,6 +66,9 @@ const Task = () => {
     useSelector(selectUserBlockchainData)
   );
   const [time, setTime] = useState(nowInSeconds());
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const referrer = queryParams.get("referrer");
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -73,6 +81,8 @@ const Task = () => {
   const userInfo = userBlockchainData
     ? new BlockchainUser(userBlockchainData)
     : null;
+  const xp = deciXPtoXP(userInfo?.deci_xp_points ?? 0n);
+  const canRefer = getChampionLevel(xp) !== "Level1";
   const inHub = userInfo?.in_hub ?? null;
   const parsedSpacePrincipal = useSpaceId({
     spacePrincipal,
@@ -81,6 +91,8 @@ const Task = () => {
   if (!parsedSpacePrincipal) return <></>;
   const spaceId = parsedSpacePrincipal.toString();
   const authAtlasSpace = useAuthAtlasSpaceActor(parsedSpacePrincipal);
+  const authAtlasSpaceForced  = useAuthAtlasSpaceActorForceRootKey(parsedSpacePrincipal);
+  const hasRegisteredReferral = useRef(false);
   const space = deserialize<Space>(
     useSelector((state: RootState) => state.spaces?.spaces?.[spaceId] ?? null)
   );
@@ -131,6 +143,36 @@ const Task = () => {
     }
   };
 
+  useEffect(() => {
+    const handleRegisterReferral = async () => {
+      if (!referrer) return;
+      if (hasRegisteredReferral.current) return;
+      if (!authAtlasSpaceForced) return;
+
+      hasRegisteredReferral.current = true;
+      
+      await runWithLoading(async () => {
+        if (!taskId) return;
+        const call = registerReferral({
+          authAtlasSpace: authAtlasSpaceForced,
+          taskId: BigInt(taskId),
+          inviter: Principal.fromText(referrer),
+        });
+        await toast.promise(call, {
+          loading: "Registering referral...",
+          success: "Referral registered successfully!",
+          error: getErrorWithInfoToast("Failed to register referral."),
+        });
+      }, dispatch);
+      await getSpaceTasks({
+        spaceId,
+        unAuthAtlasSpace,
+        dispatch,
+      });
+    };
+    handleRegisterReferral();
+  }, [referrer, authAtlasSpaceForced]);
+
   if (!tasks || !taskId) return <></>;
   const currentTask = tasks[taskId];
   
@@ -162,6 +204,11 @@ const Task = () => {
   const userAlreadyRewarded = currentTask.rewarded
       .map((p) => p.toText())
       .includes(user.principal.toText());
+
+  const referralEntry = currentTask.referrals.find(
+    ([referee]) => referee.toText() === user.principal.toText()
+  );
+  const inviterPrincipal = referralEntry ? referralEntry[1].inviter.toText() : null;
 
   const withdraw = async () => {
     if (!authAtlasSpace) {
@@ -287,6 +334,14 @@ const Task = () => {
     }, dispatch);
 
     navigate(getSpacePath(parsedSpacePrincipal));
+  };
+
+  const generateReferralLink = async () => {
+    if (!user?.principal) return;
+
+    const currentUrl = `${window.location.origin}${location.pathname}`;
+    const link = `${currentUrl}?referrer=${user.principal.toText()}`;
+    copy(link);
   };
 
   const startTime = bigintToDate(currentTask.start_time);
@@ -441,6 +496,18 @@ const Task = () => {
                   </div>
                 </div>
               </div>
+            </div>
+            <div className="flex flex-col items-end">
+              {inviterPrincipal && (
+                <div className="text-sm text-white/80 mb-1 italic">
+                  You were referred by <span className="font-semibold">{inviterPrincipal}</span>
+                </div>
+              )}
+              {userInfo && !didUserCanAdministrate && isUserInHub && canRefer && (
+                <Button onClick={generateReferralLink} className="ml-2 px-3 py-1 text-sm">
+                  Generate referral link
+                </Button>
+              )}
             </div>
             <div>
               <div>

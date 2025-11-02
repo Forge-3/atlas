@@ -1,9 +1,10 @@
 use crate::errors::Error;
+use std::collections::BTreeMap;
 use std::{borrow::Cow, collections::HashSet};
 
 use crate::tasks::submission::SubmissionState;
 use crate::tasks::task::Task;
-use crate::tasks::task_types::{TaskId, TaskType};
+use crate::tasks::task_types::{ReferralEntry, TaskId, TaskType};
 use crate::tasks::token_reward::TokenReward;
 use candid::{CandidType, Nat, Principal};
 use ic_stable_structures::{storable::Bound, Storable};
@@ -30,6 +31,10 @@ pub struct ClosedTask {
     pub(crate) end_time: u64, // in seconds
     #[n(8)]
     pub(crate) refunded: bool, // Indicates if creator has claimed unused rewards
+    #[cbor(n(9), with = "shared::cbor::principal::b_tree_map")]
+    pub(crate) referrals: BTreeMap<Principal, ReferralEntry>, // <invitee → (inviter, reward_claimed: bool)>
+    #[n(10)]
+    pub(crate) affiliate_uses: u64,
 }
 
 impl ClosedTask {
@@ -90,19 +95,31 @@ impl ClosedTask {
             return Err(Error::RewardAlreadyRefunded);
         }
 
-        let rewarded_count = self.rewarded.len() as u64;
-        if rewarded_count >= self.number_of_uses {
-            return Ok(());
-        }
-
         if self.tasks.is_empty() {
             self.token_reward
-                .withdraw_remains(self.creator, subaccount, self.number_of_uses)
+                .withdraw_remains(
+                    self.creator,
+                    subaccount,
+                    self.number_of_uses,
+                    self.affiliate_uses,
+                )
                 .await?;
             self.refunded = true;
             return Ok(());
         }
 
+        let claimed_affiliate_rewards =
+            self.referrals.values().filter(|r| r.reward_claimed).count() as u64;
+
+        let rewarded_count = self.rewarded.len() as u64;
+        if rewarded_count >= self.number_of_uses && claimed_affiliate_rewards >= self.affiliate_uses
+        {
+            return Ok(());
+        }
+
+        let unused_affiliate_rewards = self
+            .affiliate_uses
+            .saturating_sub(claimed_affiliate_rewards);
         let first_task_accepted_users: HashSet<_> = self
             .tasks
             .first()
@@ -133,13 +150,18 @@ impl ClosedTask {
         let mut combined: HashSet<Principal> = accepted_users;
         combined.extend(self.rewarded.iter().cloned());
 
-        let unused = self.number_of_uses - combined.len() as u64;
-        if unused == 0 {
+        let unused_task_rewards = self.number_of_uses.saturating_sub(combined.len() as u64);
+        if unused_task_rewards == 0 && unused_affiliate_rewards == 0 {
             return Err(Error::AllRewardsClaimed);
         }
 
         self.token_reward
-            .withdraw_remains(self.creator, subaccount, unused)
+            .withdraw_remains(
+                self.creator,
+                subaccount,
+                unused_task_rewards,
+                unused_affiliate_rewards,
+            )
             .await?;
         self.refunded = true;
         Ok(())
@@ -162,6 +184,8 @@ impl From<Task> for ClosedTask {
             start_time: task.start_time,
             end_time: task.end_time,
             refunded: false,
+            referrals: task.referrals,
+            affiliate_uses: task.affiliate_uses,
         }
     }
 }

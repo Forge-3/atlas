@@ -1,20 +1,39 @@
+use crate::errors::Error;
+use crate::memory;
+use crate::tasks::token_reward::{PERCENTAGE_FOR_AFFILIATION_REWARDS, SINGLE_AFFILIATION_REWARD};
 use candid::{Nat, Principal};
 use ic_cdk::call::Call;
 use icrc_ledger_types::icrc1::account::Account;
 use icrc_ledger_types::icrc1::transfer::TransferArg;
 use icrc_ledger_types::icrc2::transfer_from::{TransferFromArgs, TransferFromError};
-
-use crate::errors::Error;
-use crate::memory;
+use std::cmp::min;
 
 pub fn calculate_deposit_amount(reward: Nat, fee: Option<Nat>, number_of_uses: u64) -> Nat {
-    let expected_deposit = number_of_uses * reward;
+    let base_reward = number_of_uses * reward.clone();
+
+    let affiliate_uses = calculate_affiliate_uses(reward, number_of_uses);
+    let affiliate_adjusted = affiliate_uses * Nat::from(SINGLE_AFFILIATION_REWARD);
+
     let expected_fee = if let Some(fee) = fee {
-        number_of_uses * fee
+        number_of_uses * fee.clone() + affiliate_uses * fee
     } else {
         0u8.into()
     };
-    expected_deposit + expected_fee
+
+    base_reward + affiliate_adjusted + expected_fee
+}
+
+pub fn calculate_affiliate_uses(reward: Nat, number_of_uses: u64) -> u64 {
+    let base_reward = number_of_uses * reward;
+    let affiliate_base =
+        (base_reward.clone() * PERCENTAGE_FOR_AFFILIATION_REWARDS) / Nat::from(100u64);
+    let affiliate_uses_nat = affiliate_base.clone() / Nat::from(SINGLE_AFFILIATION_REWARD);
+    let digits = affiliate_uses_nat.0.to_u64_digits();
+    let affiliate_uses = digits.first().copied().unwrap_or(0);
+    if digits.len() > 1 {
+        panic!("affiliate_uses does not fit in u64");
+    }
+    min(number_of_uses, affiliate_uses)
 }
 
 pub async fn deposit_ckusdc(

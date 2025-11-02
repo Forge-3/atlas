@@ -46,6 +46,7 @@ dependencies = [
  "minicbor 0.26.5",
  "minicbor-derive 0.16.2",
  "num-bigint",
+ "num-traits",
  "serde",
  "sha2",
  "shared",
