@@ -119,7 +119,7 @@ export interface _SERVICE {
     ],
     Result_1
   >,
-  'delete_space' : ActorMethod<[Principal], Result_1>,
+  'delete_space' : ActorMethod<[Principal], Result>,
   'get_bytecode_hash_by_version' : ActorMethod<[bigint], [] | [string]>,
   'get_current_space_bytecode_version' : ActorMethod<[], bigint>,
   'get_space_bytecode_by_version' : ActorMethod<
@@ -135,12 +135,16 @@ export interface _SERVICE {
     Result_4
   >,
   'get_users_count' : ActorMethod<[], Result_2>,
-  'join_space' : ActorMethod<[Principal], Result_1>,
-  'remove_space_bytecode' : ActorMethod<[bigint], Result_1>,
-  'set_user_admin' : ActorMethod<[Principal], Result_1>,
-  'set_user_space_lead' : ActorMethod<[Principal], Result_1>,
-  'transfer_space' : ActorMethod<[TransferSpace], Result_1>,
-  'upgrade_space' : ActorMethod<[Principal], Result_1>,
+  'join_space' : ActorMethod<[Principal], Result>,
+  'register_referral_reward' : ActorMethod<
+    [Principal, Principal, bigint, Principal, bigint],
+    Result
+  >,
+  'remove_space_bytecode' : ActorMethod<[bigint], Result>,
+  'set_user_admin' : ActorMethod<[Principal], Result>,
+  'set_user_space_lead' : ActorMethod<[Principal], Result>,
+  'transfer_space' : ActorMethod<[TransferSpace], Result>,
+  'upgrade_space' : ActorMethod<[Principal], Result>,
   'user_is_admin' : ActorMethod<[Principal], boolean>,
   'user_is_in_hub' : ActorMethod<[Principal], boolean>,
   'user_is_in_space' : ActorMethod<[Principal, Principal], boolean>,

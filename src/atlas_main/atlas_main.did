@@ -122,7 +122,7 @@ service : (AtlasArgs) -> {
       principal,
       nat64,
     ) -> (Result);
-  remove_space_bytecode : (nat64) -> (Result_1);
+  remove_space_bytecode : (nat64) -> (Result);
   set_user_admin : (principal) -> (Result);
   set_user_space_lead : (principal) -> (Result);
   transfer_space : (TransferSpace) -> (Result);
