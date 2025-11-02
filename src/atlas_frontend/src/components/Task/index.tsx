@@ -157,11 +157,13 @@ const Task = () => {
     ? getUsersSubmissions(currentTask.tasks)
     : new UserSubmissions({});
 
-  if (!user?.principal) return <></>;
-  const isAccepted = usersSubmissions.isAccepted(user.principal.toText());
-  const userAlreadyRewarded = currentTask.rewarded
-      .map((p) => p.toText())
-      .includes(user.principal.toText());
+  const userPrincipal = user?.principal?.toText() ?? null;
+  const isAccepted = userPrincipal
+    ? usersSubmissions.isAccepted(userPrincipal)
+    : false;
+  const userAlreadyRewarded = userPrincipal
+    ? currentTask.rewarded.map((p) => p.toText()).includes(userPrincipal)
+    : false;
 
   const withdraw = async () => {
     if (!authAtlasSpace) {
