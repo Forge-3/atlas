@@ -121,6 +121,12 @@ type Submission = variant {
   List : record { items : vec text };
   Text : record { content : text };
   Discord : record { username : text; user_id : nat64 };
+  Twitter : record {
+    created_at : text;
+    x_user_id : nat64;
+    x_username : text;
+    x_name : text;
+  };
 };
 type SubmissionData = record {
   state : SubmissionState;
@@ -143,6 +149,7 @@ type TaskContent = variant {
   TwitterTask : record {
     task_description : text;
     task_title : text;
+    x_post_link : text;
     allow_resubmit : bool;
   };
   DiscordTask : record {
@@ -184,6 +191,7 @@ service : (SpaceArgs) -> {
   edit_space : (EditSpaceArgs) -> (Result);
   edit_task : (EditTaskArgs) -> (Result);
   exchange_code_for_token : (text, text) -> (Result_3);
+  fetch_x_post_likes : (text, text) -> (Result_2);
   fetch_x_user_info : (text) -> (Result_3);
   force_expire_task : (nat64) -> (Result);
   get_closed_tasks : (GetTasksArgs) -> (Result_4) query;

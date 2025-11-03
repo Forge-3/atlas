@@ -70,6 +70,7 @@ export const idlFactory = ({ IDL }) => {
     'TwitterTask' : IDL.Record({
       'task_description' : IDL.Text,
       'task_title' : IDL.Text,
+      'x_post_link' : IDL.Text,
       'allow_resubmit' : IDL.Bool,
     }),
     'DiscordTask' : IDL.Record({
@@ -123,6 +124,12 @@ export const idlFactory = ({ IDL }) => {
     'List' : IDL.Record({ 'items' : IDL.Vec(IDL.Text) }),
     'Text' : IDL.Record({ 'content' : IDL.Text }),
     'Discord' : IDL.Record({ 'username' : IDL.Text, 'user_id' : IDL.Nat64 }),
+    'Twitter' : IDL.Record({
+      'created_at' : IDL.Text,
+      'x_user_id' : IDL.Nat64,
+      'x_username' : IDL.Text,
+      'x_name' : IDL.Text,
+    }),
   });
   const SubmissionData = IDL.Record({
     'state' : SubmissionState,
@@ -209,6 +216,7 @@ export const idlFactory = ({ IDL }) => {
     'edit_space' : IDL.Func([EditSpaceArgs], [Result], []),
     'edit_task' : IDL.Func([EditTaskArgs], [Result], []),
     'exchange_code_for_token' : IDL.Func([IDL.Text, IDL.Text], [Result_3], []),
+    'fetch_x_post_likes' : IDL.Func([IDL.Text, IDL.Text], [Result_2], []),
     'fetch_x_user_info' : IDL.Func([IDL.Text], [Result_3], []),
     'force_expire_task' : IDL.Func([IDL.Nat64], [Result], []),
     'get_closed_tasks' : IDL.Func([GetTasksArgs], [Result_4], ['query']),

@@ -4,6 +4,7 @@ import type { ActorSubclass } from "@dfinity/agent";
 import { Principal } from "@dfinity/principal";
 import {
   acceptSubtaskSubmission,
+  fetch_x_post_likes,
   getSpaceTasks,
   rejectSubtaskSubmission,
 } from "../../canisters/atlasSpace/api";
@@ -18,6 +19,7 @@ import toast from "react-hot-toast";
 import type { RootState } from "../../store/store";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { runWithLoading } from "../../utils/loading";
+import { useTwitterAuth, type LikingUsersResponse } from "../../hooks/useTwitterAuth";
 
 type GenericTaskType = Extract<TaskType, { GenericTask: unknown }>['GenericTask'];
 type DiscordTaskType = Extract<TaskType, { DiscordTask: unknown }>['DiscordTask'];
@@ -50,6 +52,25 @@ const getDiscordAccountCreationDate = (userId: string): Date => {
   return new Date(Number(timestamp));
 };
 
+const extractPostIdFromUrl = (url: string): string | null => {
+  if (!url) return null;
+  try {
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/');
+    
+    const statusIndex = pathParts.indexOf('status');
+    
+    if (statusIndex !== -1 && pathParts.length > statusIndex + 1) {
+      const postId = pathParts[statusIndex + 1];
+      return postId.split('?')[0]; 
+    }
+    return null;
+  } catch (error) {
+    console.error("Invalid URL for parsing post ID:", error);
+    return null;
+  }
+};
+
 const TaskSummation = ({
   task,
   submission,
@@ -65,6 +86,9 @@ const TaskSummation = ({
   const userPrincipal = Principal.from(user);
   const isLoading = useSelector((state: RootState) => state.app.isLoading);
   const [showRejectPopup, setShowRejectPopup] = useState(false);
+  const [loggingIn, setIsLoggingIn] = useState(false);
+  const [loggedIn, setIsLoggedIn] = useState(false);
+  const { signIn, accessToken } = useTwitterAuth();
 
   const { register, handleSubmit } = useForm<SubtaskSubmission>();
   const onSubmit: SubmitHandler<SubtaskSubmission> = async (data) => {
@@ -119,6 +143,67 @@ const TaskSummation = ({
     }, dispatch);
   };
 
+  const handleXSignIn = async () => {
+      await runWithLoading(async () => {
+        setIsLoggingIn(true);
+        setIsLoggedIn(false);
+        await signIn();
+      }, dispatch, () => 
+        setIsLoggingIn(false));
+        setIsLoggedIn(true);
+    };
+
+  const handleCheckPostLikes = async () => {
+    if (!accessToken) {
+      toast.error("You must be logged in to X to check post likes.");
+      return;
+    }
+
+    if ("TwitterTask" in task.task_content) {
+      const postUrl = task.task_content.TwitterTask.x_post_link;
+      const postId = extractPostIdFromUrl(postUrl);
+      if (!postId) {
+        toast.error("Invalid X post link.");
+        return;
+      }
+    
+    await runWithLoading(async () => {
+      let likesResponse: unknown;
+      try {
+        likesResponse = await fetch_x_post_likes({
+          authAtlasSpace,
+          accessToken,
+          postId: postId,
+        });
+      } catch (error) {
+        console.error("Error fetching post likes:", error);
+        toast.error("Failed to fetch post likes. Please try again.");
+        return;
+      }
+
+      try {
+        const responseString: string =
+          typeof likesResponse === "string" ? likesResponse : String(likesResponse);
+        const parsedResponse: LikingUsersResponse = JSON.parse(responseString);
+        
+        if('Twitter' in submission.submissionData.submission) {
+          const { x_user_id, x_name } = submission.submissionData.submission.Twitter
+          const userFound = parsedResponse.data.some(likingUser => likingUser.id === x_user_id.toString() )
+        if (userFound) {
+          toast.success(`Verification Success: @${x_name} liked the post!`);
+        } else {
+          toast.error(`Verification Failed: @${x_name} did NOT like the post.`);
+        }
+        }
+      } catch (error) {
+        console.error("Error parsing likes response:", error);
+        toast.error("Failed to parse post likes. Please try again.");
+        return;
+      }
+      }, dispatch);
+    }
+  };
+
   const singleSubmissionState = Object.keys(submission.submissionData.state)[0];
 
   const renderTitleAndDescription = () => {
@@ -170,6 +255,37 @@ const TaskSummation = ({
             <div>
               <p>Username: {username}</p>
               <p>Account Creation Date: {creationDate.toLocaleDateString()}</p>
+            </div>
+        </div>
+      );
+    }
+    if ('Twitter' in submission.submissionData.submission) {
+      const { x_username, x_name, created_at} = submission.submissionData.submission.Twitter;
+      const creationDate = new Date(created_at);
+      return (
+        <div>
+            <div>
+              <p>Username: @{x_username}</p>
+              <p>Name: {x_name}</p>
+              <p>Account Creation Date: {creationDate.toLocaleDateString()}</p>
+              {!loggedIn && 
+              <Button
+                onClick={handleXSignIn}
+                disabled={loggingIn}
+                className="w-half"
+                >
+                Sign in with X
+              </Button>
+              }
+              {loggedIn &&
+              <Button
+                onClick={handleCheckPostLikes}
+                disabled={loggingIn}
+                className="w-half"
+                >
+                Check X Post
+              </Button>              
+              }
             </div>
         </div>
       );

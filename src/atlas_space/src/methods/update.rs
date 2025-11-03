@@ -500,11 +500,37 @@ pub async fn exchange_code_for_token(
             return Err(message);
         }
     };
-    match fetch_x_user_info(&access_token).await {
-        Ok(user_info_json) => Ok(user_info_json),
+    Ok(access_token)
+}
+
+#[update]
+pub async fn fetch_x_post_likes(access_token: String, post_id: String) -> Result<String, String> {
+    let url = format!("https://api.twitter.com/2/tweets/{}/liking_users", post_id);
+
+    let request_headers = vec![HttpHeader {
+        name: "Authorization".to_string(),
+        value: format!("Bearer {}", access_token),
+    }];
+
+    let request = HttpRequestArgs {
+        url: url.clone(),
+        max_response_bytes: None,
+        method: HttpMethod::GET,
+        headers: request_headers,
+        body: None,
+        transform: None,
+    };
+
+    match http_request(&request).await {
+        Ok(result) => Ok(String::from_utf8(result.body)
+            .unwrap_or_else(|_| "Error decoding UTF-8 from X API".to_string())),
         Err(e) => {
-            ic_cdk::println!("Fatal Error Fetching User Info: {}", e);
-            Err(format!("User veryfication failed {}", e))
+            let message = format!(
+                "Error GET /tweets/{{id}}/liking_users: RejectionCode: {:?}",
+                e
+            );
+            ic_cdk::println!("{}", &message);
+            Err(message)
         }
     }
 }

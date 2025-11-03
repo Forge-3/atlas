@@ -36,6 +36,17 @@ pub enum Submission {
         #[n(1)]
         user_id: u64,
     },
+    #[n(4)]
+    Twitter {
+        #[n(0)]
+        x_name: String,
+        #[n(1)]
+        x_username: String,
+        #[n(2)]
+        x_user_id: u64,
+        #[n(3)]
+        created_at: String,
+    },
 }
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType)]

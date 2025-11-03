@@ -5,9 +5,6 @@ import type {
   TaskType,
 } from "../../../../../declarations/atlas_space/atlas_space.did";
 import Button from "../../Shared/Button";
-import { useForm, type SubmitHandler } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import * as yup from "yup";
 import {
   getSpaceTasks,
   submitSubtaskSubmission,
@@ -30,6 +27,8 @@ import {
   selectUserBlockchainData,
   type StorableUser,
 } from "../../../store/slices/userSlice";
+import { useTwitter } from "../../../hooks/useTwitter";
+import { useAuthAtlasSpaceActor } from "../../../hooks/identityKit";
 
 type TwitterTaskType = Extract<
   TaskType,
@@ -64,60 +63,34 @@ const TwitterTask = ({
   isAdmin = false,
 }: TwitterTaskProps) => {
   const dispatch = useDispatch();
-  const { user, connect } = useAuth();
-  const { signIn } = useTwitterAuth();
-  const [openSubmission, setSubmission] = useState(false);
-  const [openReview, SetReview] = useState(false);
+  const { user } = useAuth();
+  const { signIn, fetchXUserInfo, xUser, loggedIn } = useTwitterAuth();
+  const [ , setSubmission] = useState(false);
+  const [loggingIn, setIsLoggingIn] = useState(false);
+  const { connect } = useAuth();
+  const {isOpen, setIsOpen, openPost} = useTwitter();
 
-  const maxTextLength = 254;
-
-  const textSchema = yup.object({
-    taskSubmission: yup
-      .string()
-      .trim()
-      .min(2)
-      .max(maxTextLength)
-      .required("Field is required"),
-  });
-
-  const textForm = useForm<TextFormData>({
-    resolver: yupResolver(textSchema),
-    defaultValues: {
-      taskSubmission: "",
-    },
-  });
-
-  const userBlockchainData = deserialize<StorableUser>(
-    useSelector(selectUserBlockchainData)
-  );
-  const userInfo = userBlockchainData
-    ? new BlockchainUser(userBlockchainData)
-    : null;
-  const isUserAdmin =
-    isAdmin || (userInfo?.canAdministrate(spacePrincipal) ?? false);
-
-  const copyPrincipal = (user: string) => {
-    navigator.clipboard.writeText(user);
-    toast.success("Copied full principal");
-  };
-
-  const onSubmitText: SubmitHandler<TextFormData> = async ({
-    taskSubmission,
-  }) => {
+  const handleSubmit = async () => {
     if (!authAtlasSpace || !unAuthAtlasSpace) return;
-    await runWithLoading(
-      async () => {
-        const call = submitSubtaskSubmission({
-          authAtlasSpace,
-          taskId: BigInt(taskId),
-          subtaskId: BigInt(subtaskId),
-          submission: { Text: { content: taskSubmission } },
-        });
-        await toast.promise(call, {
-          loading: "Submitting response...",
-          success: "Submitted response.",
-          error: getErrorWithInfoToast("Failed to submit response."),
-        });
+    console.log("Successfully logged in and retrieved user X's data.");
+    console.log("Full user object:", xUser);
+    console.log("User ID:", xUser!.data.id);
+    console.log("Username:", xUser!.data.username);
+    console.log("Name:", xUser!.data.name);
+    console.log("Created at:", xUser!.data.created_at);
+    
+    await runWithLoading(async () => {
+      const call = submitSubtaskSubmission({
+        authAtlasSpace,
+        taskId: BigInt(taskId),
+        subtaskId: BigInt(subtaskId),
+        submission: { Twitter: { created_at: xUser?.data.created_at?? "", x_user_id:  BigInt(xUser?.data.id?? ""), x_username: xUser?.data.username?? "", x_name: xUser?.data.name?? ""} },
+      });
+      await toast.promise(call, {
+        loading: "Submitting response...",
+        success: "Submitted response.",
+        error: getErrorWithInfoToast("Failed to submit response."),
+      });
 
         setSubmission(false);
         await getSpaceTasks({
@@ -181,6 +154,20 @@ const TwitterTask = ({
   const resize = (el: HTMLTextAreaElement) => {
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`;
+  };
+
+  const xPostLink = 'TwitterTask' in twitterTask.task_content ? twitterTask.task_content.TwitterTask.x_post_link : undefined;
+
+  const handleXSignIn = async () => {
+    await runWithLoading(async () => {
+      setIsLoggingIn(true);
+      const token = await signIn();
+      console.log("X access token:", token);
+      if (token) {
+        await fetchXUserInfo(token);
+      }
+    }, dispatch, () => 
+      setIsLoggingIn(false));
   };
 
   return (
@@ -247,53 +234,32 @@ const TwitterTask = ({
         {canSubmit && openSubmission && !disabled && (
           <form onSubmit={textForm.handleSubmit(onSubmitText)}>
             <div>
-              <p className="flex flex-col w-full text-xs md:text-base text-light font-semibold mb-1">
-                Submit response:
-              </p>
-              <textarea
-                {...textForm.register("taskSubmission")}
-                className="border-2 border-primary/20 outline-none resize-none overflow-hidden p-2 md:p-4 rounded-xl w-full mb-2 bg-primary/20 text-light"
-                maxLength={maxTextLength}
-                onInput={(e) => resize(e.currentTarget)}
-              />
-              {textForm.formState.errors.taskSubmission && (
-                <p className="text-sm text-red-300 font-montserrat font-medium mt-1">
-                  {textForm.formState.errors.taskSubmission.message}
-                </p>
-              )}
-              <div className="flex justify-between items-center flex-wrap gap-2">
-                <Button
-                  onClick={signIn}
-                  variant="vivid"
-                  className="text-[12px] md:text-base font-medium px-2 rounded-md"
+              {canSubmit && !isOpen && xPostLink &&
+              <Button onClick={() => {
+                openPost(xPostLink);
+                setIsOpen(true);
+              }}>
+                Open X post
+              </Button>
+              }
+              {isOpen && !loggedIn &&
+              <Button
+                onClick={handleXSignIn}
+                disabled={loggingIn}
+                className="w-half"
                 >
-                  Sign in with X
+                Sign in with X
                 </Button>
-                <Button
-                  variant="vivid"
-                  className="text-[12px] md:text-base font-medium px-2 rounded-md sm:mb-4"
-                >
-                  Submit
-                </Button>
-              </div>
+                //TODO: Consider auto submitting task after a successful login and user data recived
+              }
             </div>
-          </form>
-        )}
-
-        {canSubmit && !openSubmission && !disabled && (
-          <div className="flex md:py-2">
-            <Button
-              onClick={() => setSubmission(true)}
-              variant="vivid"
-              className="text-[12px] md:text-base font-medium px-2 rounded-md"
-            >
-              {submissionState === "Rejected"
-                ? "Re-submit message"
-                : "Submit message"}
-            </Button>
-          </div>
-        )}
-
+            {canSubmit && loggedIn && (
+            <div className="flex justify-end">
+              <Button
+              onClick={handleSubmit}
+              className="text-[14px] px-2 py-1 rounded-xl">Submit</Button>
+            </div>
+            )}
         {!user && (
           <div className="flex">
             <Button onClick={() => connect()}>Connect</Button>
@@ -380,5 +346,6 @@ const TwitterTask = ({
     </div>
   );
 };
+
 
 export default TwitterTask;

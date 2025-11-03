@@ -75,6 +75,8 @@ pub enum TaskContent {
         #[n(1)]
         task_description: String,
         #[n(2)]
+        x_post_link: String,
+        #[n(3)]
         allow_resubmit: bool,
     },
 }
@@ -130,6 +132,7 @@ impl TaskContent {
             TaskContent::TwitterTask {
                 task_title,
                 task_description,
+                x_post_link,
                 allow_resubmit: _,
             } => {
                 if task_title.trim().len() > 50 {
@@ -192,11 +195,13 @@ impl From<&TaskContent> for TaskType {
             TaskContent::TwitterTask {
                 task_title,
                 task_description,
+                x_post_link,
                 allow_resubmit,
             } => Self::TwitterTask {
                 task_content: TaskContent::TwitterTask {
                     task_title: task_title.clone(),
                     task_description: task_description.clone(),
+                    x_post_link: x_post_link.clone(),
                     allow_resubmit: *allow_resubmit,
                 },
                 submission: Default::default(),
@@ -316,8 +321,18 @@ impl TaskType {
                 }
             }
             TaskType::TwitterTask { .. } => {
-                if let Submission::Text { content } = &submission {
-                    if content.trim().is_empty() {
+                if let Submission::Twitter {
+                    created_at,
+                    x_user_id,
+                    x_username,
+                    x_name,
+                } = &submission
+                {
+                    if created_at.trim().is_empty()
+                        || *x_user_id == 0
+                        || x_username.trim().is_empty()
+                        || x_name.trim().is_empty()
+                    {
                         return Err(Error::InvalidTaskContent(
                             "Submission cannot be empty".into(),
                         ));

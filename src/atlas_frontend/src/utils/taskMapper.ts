@@ -14,6 +14,7 @@ export type TaskInput = {
   description: string;
   guildId?: string;
   inviteLink?: string;
+  xPostLink?: string;
   allowResubmit: boolean;
   answerFormat?: string;
 };
@@ -37,6 +38,7 @@ export interface DiscordTaskContent extends BaseTaskContent {
 
 export interface TwitterTaskContent extends BaseTaskContent {
   task_type: "twitter";
+  x_post_link: string;
 };
 
 type TaskContent = GenericTaskContent | DiscordTaskContent | TwitterTaskContent;
@@ -80,7 +82,8 @@ const taskMappers: Record<TaskType, MapperFn> = {
     task_type: "twitter",
     title: task.title,
     description: task.description,
-    allow_resubmit: task.allowResubmit,
+    x_post_link: task.xPostLink!,
+    allow_resubmit: task.allowresubmit,
   }),
 };
 

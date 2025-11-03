@@ -131,7 +131,15 @@ export interface State {
 export type Submission = { 'Empty' : null } |
   { 'List' : { 'items' : Array<string> } } |
   { 'Text' : { 'content' : string } } |
-  { 'Discord' : { 'username' : string, 'user_id' : bigint } };
+  { 'Discord' : { 'username' : string, 'user_id' : bigint } } |
+  {
+    'Twitter' : {
+      'created_at' : string,
+      'x_user_id' : bigint,
+      'x_username' : string,
+      'x_name' : string,
+    }
+  };
 export interface SubmissionData {
   'state' : SubmissionState,
   'rejection_reason' : [] | [string],
@@ -155,6 +163,7 @@ export type TaskContent = {
     'TwitterTask' : {
       'task_description' : string,
       'task_title' : string,
+      'x_post_link' : string,
       'allow_resubmit' : boolean,
     }
   } |
@@ -207,6 +216,7 @@ export interface _SERVICE {
   'edit_space' : ActorMethod<[EditSpaceArgs], Result>,
   'edit_task' : ActorMethod<[EditTaskArgs], Result>,
   'exchange_code_for_token' : ActorMethod<[string, string], Result_3>,
+  'fetch_x_post_likes' : ActorMethod<[string, string], Result_2>,
   'fetch_x_user_info' : ActorMethod<[string], Result_3>,
   'force_expire_task' : ActorMethod<[bigint], Result>,
   'get_closed_tasks' : ActorMethod<[GetTasksArgs], Result_4>,

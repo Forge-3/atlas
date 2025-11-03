@@ -107,6 +107,7 @@ export const createNewTask = async ({
           TwitterTask: {
             task_title: arg.title,
             task_description: arg.description,
+            x_post_link: arg.x_post_link,
             allow_resubmit: arg.allow_resubmit,
           },
         };
@@ -492,3 +493,46 @@ export const exchange_code_for_token = async ({
     errMsg: "Failed to exchange Twitter code for token",
   });
 };
+
+interface FetchXUserInfoArgs {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  accessToken: string;
+}
+
+export const fetch_x_user_info = async ({
+  authAtlasSpace,
+  accessToken
+}: FetchXUserInfoArgs) => {
+  const call = authAtlasSpace.fetch_x_user_info(
+    accessToken
+  );
+  
+  return unwrapCall<String>({
+    call,
+    errMsg: "Failed to fetch X user info",
+  });
+}
+
+interface FetchXPostLikesArgs {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  accessToken: string;
+  postId: string;
+}
+
+export const fetch_x_post_likes = async ({
+  authAtlasSpace,
+  accessToken,
+  postId
+}: FetchXPostLikesArgs) => {
+  const call = authAtlasSpace.fetch_x_post_likes(
+    accessToken,
+    postId
+  );
+  
+  return unwrapCall<String>({
+    call,
+    errMsg: "Failed to fetch X post likes",
+  });
+};
+
+

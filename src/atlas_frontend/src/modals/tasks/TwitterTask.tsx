@@ -12,6 +12,7 @@ interface TwitterTaskProps<TFormValues extends FieldValues> {
   index: number;
   maxTitleLength?: number;
   maxDescriptionLength?: number;
+  xPostLink?: string;
 }
 
 const TwitterTask = <TFormValues extends FieldValues>({
