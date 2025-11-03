@@ -361,7 +361,12 @@ const listForm = useForm<ListFormData>({
         )}
         {!user && (
           <div className="flex">
-            <Button onClick={() => connect()}>Connect</Button>
+             <Button
+               onClick={() => connect()}
+               className="px-4"
+             >
+               Connect
+             </Button>
           </div>
         )}
         {user && !isUserAdmin && submissionData && (
