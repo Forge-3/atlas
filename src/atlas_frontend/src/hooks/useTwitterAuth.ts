@@ -5,6 +5,8 @@ import { exchange_code_for_token, fetch_x_post_likes, fetch_x_user_info } from "
 import { useAuthAtlasSpaceActor } from "./identityKit";
 import { useParams } from "react-router-dom";
 import { Principal } from "@dfinity/principal";
+import type { ActorSubclass } from "@dfinity/agent";
+import type { _SERVICE } from "../../../declarations/atlas_space/atlas_space.did";
 
 export type XUser = {
   data: {
@@ -128,7 +130,11 @@ export const useTwitterAuth = () => {
     }
   }, [authAtlasSpace]);
 
-  const getPostLikes = useCallback(async (accessToken: string, postId: string) => {
+  const getPostLikes = useCallback(async (
+    authAtlasSpace: ActorSubclass<_SERVICE>,
+    accessToken: string,
+    postId: string
+    ) => {
     if (!authAtlasSpace) {
       toast.error("Authentication details are missing.");
       return null;
@@ -140,7 +146,6 @@ export const useTwitterAuth = () => {
         accessToken,
         postId});
       
-      console.log("Fetched post likes:", likesResponse);
       setLoading(false);
       return likesResponse;
     } catch (err) {

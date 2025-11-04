@@ -191,7 +191,7 @@ service : (SpaceArgs) -> {
   edit_space : (EditSpaceArgs) -> (Result);
   edit_task : (EditTaskArgs) -> (Result);
   exchange_code_for_token : (text, text) -> (Result_3);
-  fetch_x_post_likes : (text, text) -> (Result_2);
+  fetch_x_post_likes : (text, text) -> (Result_3);
   fetch_x_user_info : (text) -> (Result_3);
   force_expire_task : (nat64) -> (Result);
   get_closed_tasks : (GetTasksArgs) -> (Result_4) query;

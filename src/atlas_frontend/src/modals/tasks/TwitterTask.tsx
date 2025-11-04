@@ -40,7 +40,7 @@ const TwitterTask = <TFormValues extends FieldValues>({
           className={`w-full p-3 rounded-lg bg-primary/20 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50 ${
             titleError ? "ring-2 ring-red-500" : ""
           }`}
-          placeholder="Enter task title"
+          placeholder="Enter task title."
         />
         {titleError && (
           <p className="text-sm text-red-300 font-montserrat font-medium mt-1">
@@ -67,6 +67,13 @@ const TwitterTask = <TFormValues extends FieldValues>({
             {descriptionError.toString()}
           </p>
         )}
+        <p className="block text-white font-montserrat text-base sm:text-lg font-semibold mb-1">X post link:</p>
+      <input
+        type="text"
+        {...register(`tasks.${index}.xPostLink` as Path<TFormValues>)}
+        className="w-full p-3 rounded-lg bg-primary/20 text-white resize-none md:overflow-hidden placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/50"
+        placeholder="Link to x post."
+      />
       </div>
     </>
   );

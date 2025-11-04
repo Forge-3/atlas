@@ -17,6 +17,7 @@ import type { ActorSubclass } from "@dfinity/agent";
 import { getErrorWithInfoToast } from "../../../utils/errors";
 import { runWithLoading } from "../../../utils/loading";
 import { useTwitterAuth } from "../../../hooks/useTwitterAuth";
+import { useTwitter } from "../../../hooks/useTwitter";
 import { FaCaretRight } from "react-icons/fa6";
 import { shortPrincipal } from "../../../utils/icp";
 import { FiCopy } from "react-icons/fi";
@@ -27,8 +28,6 @@ import {
   selectUserBlockchainData,
   type StorableUser,
 } from "../../../store/slices/userSlice";
-import { useTwitter } from "../../../hooks/useTwitter";
-import { useAuthAtlasSpaceActor } from "../../../hooks/identityKit";
 
 type TwitterTaskType = Extract<
   TaskType,
@@ -47,10 +46,6 @@ interface TwitterTaskProps {
   isAdmin?: boolean;
 }
 
-interface TextFormData {
-  taskSubmission: string;
-}
-
 const TwitterTask = ({
   twitterTask,
   spacePrincipal,
@@ -63,34 +58,51 @@ const TwitterTask = ({
   isAdmin = false,
 }: TwitterTaskProps) => {
   const dispatch = useDispatch();
-  const { user } = useAuth();
+  const { user, connect } = useAuth();
+  const [openReview, SetReview] = useState(false);
+
   const { signIn, fetchXUserInfo, xUser, loggedIn } = useTwitterAuth();
-  const [ , setSubmission] = useState(false);
+  const [, setSubmission] = useState(false);
   const [loggingIn, setIsLoggingIn] = useState(false);
-  const { connect } = useAuth();
-  const {isOpen, setIsOpen, openPost} = useTwitter();
+  const { isOpen, setIsOpen, openPost } = useTwitter();
+
+  const userBlockchainData = deserialize<StorableUser>(
+    useSelector(selectUserBlockchainData)
+  );
+  const userInfo = userBlockchainData
+    ? new BlockchainUser(userBlockchainData)
+    : null;
+  const isUserAdmin =
+    isAdmin || (userInfo?.canAdministrate(spacePrincipal) ?? false);
+
+  const copyPrincipal = (user: string) => {
+    navigator.clipboard.writeText(user);
+    toast.success("Copied full principal");
+  };
 
   const handleSubmit = async () => {
     if (!authAtlasSpace || !unAuthAtlasSpace) return;
-    console.log("Successfully logged in and retrieved user X's data.");
-    console.log("Full user object:", xUser);
-    console.log("User ID:", xUser!.data.id);
-    console.log("Username:", xUser!.data.username);
-    console.log("Name:", xUser!.data.name);
-    console.log("Created at:", xUser!.data.created_at);
-    
-    await runWithLoading(async () => {
-      const call = submitSubtaskSubmission({
-        authAtlasSpace,
-        taskId: BigInt(taskId),
-        subtaskId: BigInt(subtaskId),
-        submission: { Twitter: { created_at: xUser?.data.created_at?? "", x_user_id:  BigInt(xUser?.data.id?? ""), x_username: xUser?.data.username?? "", x_name: xUser?.data.name?? ""} },
-      });
-      await toast.promise(call, {
-        loading: "Submitting response...",
-        success: "Submitted response.",
-        error: getErrorWithInfoToast("Failed to submit response."),
-      });
+
+    await runWithLoading(
+      async () => {
+        const call = submitSubtaskSubmission({
+          authAtlasSpace,
+          taskId: BigInt(taskId),
+          subtaskId: BigInt(subtaskId),
+          submission: {
+            Twitter: {
+              created_at: xUser?.data.created_at ?? "",
+              x_user_id: BigInt(xUser?.data.id ?? ""),
+              x_username: xUser?.data.username ?? "",
+              x_name: xUser?.data.name ?? "",
+            },
+          },
+        });
+        await toast.promise(call, {
+          loading: "Submitting response...",
+          success: "Submitted response.",
+          error: getErrorWithInfoToast("Failed to submit response."),
+        });
 
         setSubmission(false);
         await getSpaceTasks({
@@ -101,6 +113,25 @@ const TwitterTask = ({
       },
       dispatch,
       () => setSubmission(false)
+    );
+  };
+
+  const xPostLink =
+    "TwitterTask" in twitterTask.task_content
+      ? twitterTask.task_content.TwitterTask.x_post_link
+      : undefined;
+
+  const handleXSignIn = async () => {
+    await runWithLoading(
+      async () => {
+        setIsLoggingIn(true);
+        const token = await signIn();
+        if (token) {
+          await fetchXUserInfo(token);
+        }
+      },
+      dispatch,
+      () => setIsLoggingIn(false)
     );
   };
 
@@ -150,25 +181,6 @@ const TwitterTask = ({
     )[s ?? ""]);
 
   const userState = Object.keys(submissionData?.state ?? {})[0];
-
-  const resize = (el: HTMLTextAreaElement) => {
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  };
-
-  const xPostLink = 'TwitterTask' in twitterTask.task_content ? twitterTask.task_content.TwitterTask.x_post_link : undefined;
-
-  const handleXSignIn = async () => {
-    await runWithLoading(async () => {
-      setIsLoggingIn(true);
-      const token = await signIn();
-      console.log("X access token:", token);
-      if (token) {
-        await fetchXUserInfo(token);
-      }
-    }, dispatch, () => 
-      setIsLoggingIn(false));
-  };
 
   return (
     <div className="flex mt-8">
@@ -230,42 +242,48 @@ const TwitterTask = ({
               : "N/A"}
           </p>
         </div>
-
-        {canSubmit && openSubmission && !disabled && (
-          <form onSubmit={textForm.handleSubmit(onSubmitText)}>
-            <div>
-              {canSubmit && !isOpen && xPostLink &&
-              <Button onClick={() => {
-                openPost(xPostLink);
-                setIsOpen(true);
-              }}>
+        {canSubmit && !disabled && (
+          <div className="flex flex-col items-start gap-3 md:py-2">
+            {!isOpen && xPostLink && (
+              <Button
+                onClick={() => {
+                  openPost(xPostLink);
+                  setIsOpen(true);
+                }}
+                variant="vivid"
+                className="text-[12px] md:text-base font-medium px-2 rounded-md"
+              >
                 Open X post
               </Button>
-              }
-              {isOpen && !loggedIn &&
+            )}
+            {(isOpen || !xPostLink) && !loggedIn && (
               <Button
                 onClick={handleXSignIn}
                 disabled={loggingIn}
-                className="w-half"
-                >
+                variant="vivid"
+                className="text-[12px] md:text-base font-medium px-2 rounded-md"
+              >
                 Sign in with X
-                </Button>
-                //TODO: Consider auto submitting task after a successful login and user data recived
-              }
-            </div>
-            {canSubmit && loggedIn && (
-            <div className="flex justify-end">
-              <Button
-              onClick={handleSubmit}
-              className="text-[14px] px-2 py-1 rounded-xl">Submit</Button>
-            </div>
+              </Button>
             )}
-        {!user && (
-          <div className="flex">
-            <Button onClick={() => connect()}>Connect</Button>
+            {loggedIn && (
+              <Button
+                onClick={handleSubmit}
+                variant="vivid"
+                className="text-[12px] md:text-base font-medium px-2 rounded-md"
+              >
+                {submissionState === "Rejected" ? "Re-submit" : "Submit"}
+              </Button>
+            )}
           </div>
         )}
-
+        {!user && (
+          <div className="flex">
+            <Button onClick={() => connect()} variant="vivid">
+              Connect
+            </Button>
+          </div>
+        )}
         {isUserAdmin &&
           allSubmissions.length > 0 &&
           authAtlasSpace &&
@@ -322,8 +340,8 @@ const TwitterTask = ({
                               unAuthAtlasSpace,
                               dispatch,
                             });
-                          }}
-                        />
+                          }} task={twitterTask}                       
+                          />
                       </div>
                     );
                   })}
@@ -331,7 +349,6 @@ const TwitterTask = ({
               )}
             </div>
           )}
-
         {isUserAdmin && allSubmissions.length === 0 && (
           <div className="pt-4 border-t border-white/20">
             <h4 className="text-white font-semibold mb-2">
@@ -346,6 +363,5 @@ const TwitterTask = ({
     </div>
   );
 };
-
 
 export default TwitterTask;

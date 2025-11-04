@@ -83,7 +83,7 @@ const taskMappers: Record<TaskType, MapperFn> = {
     title: task.title,
     description: task.description,
     x_post_link: task.xPostLink!,
-    allow_resubmit: task.allowresubmit,
+    allow_resubmit: task.allowResubmit,
   }),
 };
 

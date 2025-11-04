@@ -23,7 +23,6 @@ function randomState(bytes = 24) {
 
 async function buildAuthorizeUrl(opts: PopupOptions, state: string) {
 const codeVerifier = Array.from(crypto.getRandomValues(new Uint8Array(64)), b => ("0"+b.toString(16)).slice(-2)).join("");
-  console.log("codeVerifier: ", codeVerifier);
 const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(codeVerifier));
 const codeChallenge = btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
   const url = new URL(AUTHORIZE_URL);

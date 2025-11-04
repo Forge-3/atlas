@@ -216,7 +216,7 @@ export interface _SERVICE {
   'edit_space' : ActorMethod<[EditSpaceArgs], Result>,
   'edit_task' : ActorMethod<[EditTaskArgs], Result>,
   'exchange_code_for_token' : ActorMethod<[string, string], Result_3>,
-  'fetch_x_post_likes' : ActorMethod<[string, string], Result_2>,
+  'fetch_x_post_likes' : ActorMethod<[string, string], Result_3>,
   'fetch_x_user_info' : ActorMethod<[string], Result_3>,
   'force_expire_task' : ActorMethod<[bigint], Result>,
   'get_closed_tasks' : ActorMethod<[GetTasksArgs], Result_4>,

@@ -216,7 +216,7 @@ export const idlFactory = ({ IDL }) => {
     'edit_space' : IDL.Func([EditSpaceArgs], [Result], []),
     'edit_task' : IDL.Func([EditTaskArgs], [Result], []),
     'exchange_code_for_token' : IDL.Func([IDL.Text, IDL.Text], [Result_3], []),
-    'fetch_x_post_likes' : IDL.Func([IDL.Text, IDL.Text], [Result_2], []),
+    'fetch_x_post_likes' : IDL.Func([IDL.Text, IDL.Text], [Result_3], []),
     'fetch_x_user_info' : IDL.Func([IDL.Text], [Result_3], []),
     'force_expire_task' : IDL.Func([IDL.Nat64], [Result], []),
     'get_closed_tasks' : IDL.Func([GetTasksArgs], [Result_4], ['query']),

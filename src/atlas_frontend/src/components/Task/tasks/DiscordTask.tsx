@@ -327,7 +327,7 @@ const DiscordTask = ({
                               unAuthAtlasSpace,
                               dispatch,
                             });
-                          }}
+                          }} task={discordTask}
                         />
                       </div>
                     );

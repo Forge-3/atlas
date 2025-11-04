@@ -496,7 +496,7 @@ const GenericTask = ({
                               unAuthAtlasSpace,
                               dispatch,
                             });
-                          }}
+                          }} task={genericTask}
                         />
                       </div>
                     );

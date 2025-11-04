@@ -562,6 +562,7 @@ const CreateNewTaskModal = () => {
                         TwitterTask: {
                           task_title: task.title,
                           task_description: task.description,
+                          x_post_link: task.x_post_link,
                           allow_resubmit: task.allow_resubmit,
                         },
                       },
@@ -719,9 +720,9 @@ const CreateNewTaskModal = () => {
           <div className="w-full h-[1px] bg-white/40 mb-3 my-3" />
 
           <form onSubmit={handleSubmit(onSubmit, (errors) => {
-    console.log("Yup validation errors:", errors);
-    toast.error("Form validation failed — check console");
-  })}
+            console.log("Yup validation errors:", errors);
+            toast.error("Form validation failed — check console");
+          })}
           >
             <h2 className="text-white font-medium font-montserrat text-xl sm:text-2xl mb-4">
               {title}
