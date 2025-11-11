@@ -9,6 +9,7 @@ export const EDIT_TASK_PATH = TASK_PATH + "/edit";
 export const SPACE_BUILDER_PATH = SPACES_PATH + "/builder";
 export const SPACE_EDIT_PATH = SPACE_BUILDER_PATH + "/:spacePrincipal";
 export const DISCORD_CALLBACK_PATH = "/auth/discord/callback";
+export const TWITTER_CALLBACK_PATH = "/auth/x/callback";
 export const WALLET_PATH = "/wallet";
 export const HELP_PATH = "/help";
 export const ADMIN_PATH = "/admin";

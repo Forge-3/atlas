@@ -1,7 +1,9 @@
 use crate::tasks::task::validate_task_time_edit;
 use crate::tasks::task::EditTaskArgs;
 use crate::tasks::task::Task;
+use crate::tasks::task::TwitterTaskType;
 use crate::tasks::task_types::TaskType;
+use crate::tasks::task_types::TwitterTokenResponse;
 use crate::tasks::timer_logic;
 use crate::update_helpers::{accept_expired_subtask_submission, accept_open_subtask_submission};
 use crate::CreateTaskArgs;
@@ -14,12 +16,16 @@ use crate::{
     state::EditSpaceArgs,
     tasks::closed_task::ClosedTask,
 };
+use base64::Engine;
 use candid::Principal;
+use ic_cdk::management_canister::http_request;
+use ic_cdk::management_canister::{HttpHeader, HttpMethod, HttpRequestArgs};
 use ic_cdk::update;
 use ic_cdk_timers::TimerId;
 use ic_stable_structures::Storable;
 use sha2::Digest;
 use std::collections::BTreeMap;
+use std::env;
 
 #[update]
 pub async fn set_space_name(name: String) -> Result<(), Error> {
@@ -400,4 +406,144 @@ pub async fn clean_up_space_before_deletion() -> Result<(), String> {
     }
 
     Ok(())
+}
+
+#[update]
+async fn fetch_x_user_info(access_token: &str) -> Result<String, String> {
+    let url = "https://api.twitter.com/2/users/me?user.fields=created_at".to_string();
+
+    let request_headers = vec![HttpHeader {
+        name: "Authorization".to_string(),
+        value: format!("Bearer {}", access_token),
+    }];
+
+    let request = HttpRequestArgs {
+        url: url.clone(),
+        max_response_bytes: None,
+        method: HttpMethod::GET,
+        headers: request_headers,
+        body: None,
+        transform: None,
+    };
+
+    match http_request(&request).await {
+        Ok(result) => Ok(String::from_utf8(result.body)
+            .unwrap_or_else(|_| "Error decoding UTF-8 from X API".to_string())),
+        Err(e) => {
+            let message = format!("Error GET /users/me: RejectionCode: {:?}", e);
+            ic_cdk::println!("{}", &message);
+            Err(message)
+        }
+    }
+}
+
+#[update]
+pub async fn exchange_code_for_token(
+    auth_code: String,
+    code_verifier: String,
+) -> Result<String, String> {
+    const CLIENT_ID: &str = env!("PUBLIC_X_CLIENT_ID");
+    const CLIENT_SECRET: &str = env!("CLIENT_SECRET");
+    const REDIRECT_URI: &str = env!("PUBLIC_X_REDIRECT_URI");
+
+    let client_id = CLIENT_ID;
+    let client_secret = CLIENT_SECRET;
+    let redirect_uri = REDIRECT_URI;
+
+    ic_cdk::println!("Loaded CLIENT_ID: {}", client_id);
+    ic_cdk::println!("Loaded REDIRECT_URI: {}", redirect_uri);
+    ic_cdk::println!("Loaded CLIENT_SECRET: {}", &client_secret[..4]);
+
+    let url = "https://api.twitter.com/2/oauth2/token".to_string();
+
+    let request_headers = vec![
+        HttpHeader {
+            name: "Content-Type".to_string(),
+            value: "application/x-www-form-urlencoded".to_string(),
+        },
+        HttpHeader {
+            name: "Authorization".to_string(),
+            value: format!(
+                "Basic {}",
+                base64::engine::general_purpose::STANDARD
+                    .encode(format!("{}:{}", client_id, client_secret))
+            ),
+        },
+    ];
+
+    let request_body_data = format!(
+        "code={}&grant_type=authorization_code&client_id={}&redirect_uri={}&code_verifier={}",
+        auth_code, client_id, redirect_uri, code_verifier
+    );
+    let request_body: Option<Vec<u8>> = Some(request_body_data.into_bytes());
+
+    let request = HttpRequestArgs {
+        url: url.clone(),
+        max_response_bytes: None,
+        method: HttpMethod::POST,
+        headers: request_headers,
+        body: request_body,
+        transform: None,
+    };
+
+    let access_token: String = match http_request(&request).await {
+        Ok(result) => {
+            let str_body = String::from_utf8(result.body)
+                .map_err(|_| "Response body is not valid UTF-8".to_string())?;
+            let token_data: TwitterTokenResponse = serde_json::from_str(&str_body)
+                .map_err(|e| format!("Failed to parse JSON response: {}", e))?;
+            ic_cdk::println!("Received twitter answer: {}", str_body);
+            token_data.access_token
+        }
+        Err(e) => {
+            let message = format!("HTTP Error during Token Exchange: {:?}", e);
+            ic_cdk::println!("{}", &message);
+            return Err(message);
+        }
+    };
+    Ok(access_token)
+}
+
+#[update]
+pub async fn fetch_x_tweet_activity(
+    access_token: String,
+    post_id: String,
+    task_type: TwitterTaskType,
+) -> Result<String, String> {
+    let path_segment = match task_type {
+        TwitterTaskType::Like => "liking_users",
+        TwitterTaskType::Retweet => "retweeted_by",
+    };
+
+    let url = format!(
+        "https://api.twitter.com/2/tweets/{}/{}",
+        post_id, path_segment
+    );
+
+    let request_headers = vec![HttpHeader {
+        name: "Authorization".to_string(),
+        value: format!("Bearer {}", access_token),
+    }];
+
+    let request = HttpRequestArgs {
+        url: url.clone(),
+        max_response_bytes: None,
+        method: HttpMethod::GET,
+        headers: request_headers,
+        body: None,
+        transform: None,
+    };
+
+    match http_request(&request).await {
+        Ok(result) => Ok(String::from_utf8(result.body)
+            .unwrap_or_else(|_| "Error decoding UTF-8 from X API".to_string())),
+        Err(e) => {
+            let message = format!(
+                "Error GET /tweets/{}/{}: RejectionCode: {:?}",
+                post_id, path_segment, e
+            );
+            ic_cdk::println!("{}", &message);
+            Err(message)
+        }
+    }
 }

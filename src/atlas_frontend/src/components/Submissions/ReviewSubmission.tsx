@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { _SERVICE } from "../../../../declarations/atlas_space/atlas_space.did";
+import type { _SERVICE, TaskType } from "../../../../declarations/atlas_space/atlas_space.did";
 import type { TaskData } from "../../canisters/atlasSpace/types";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
@@ -14,8 +14,14 @@ import type { ActorSubclass } from "@dfinity/agent";
 import toast from "react-hot-toast";
 import { runWithLoading } from "../../utils/loading";
 import Button from "../Shared/Button";
+import { useTwitterAuth, type TweetActivityType, type UsersResponse } from "../../hooks/useTwitterAuth";
+
+type GenericTaskType = Extract<TaskType, { GenericTask: unknown }>['GenericTask'];
+type DiscordTaskType = Extract<TaskType, { DiscordTask: unknown }>['DiscordTask'];
+type TwitterTaskType = Extract<TaskType, { TwitterTask: unknown }>['TwitterTask'];
 
 interface ReviewSubmissionProps {
+  task: GenericTaskType | DiscordTaskType | TwitterTaskType;
   submission: TaskData;
   authAtlasSpace: ActorSubclass<_SERVICE>;
   taskId: string;
@@ -34,7 +40,27 @@ interface SubtaskSubmission {
   reason: string | null;
 }
 
+const extractPostIdFromUrl = (url: string): string | null => {
+  if (!url) return null;
+  try {
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/');
+    
+    const statusIndex = pathParts.indexOf('status');
+    
+    if (statusIndex !== -1 && pathParts.length > statusIndex + 1) {
+      const postId = pathParts[statusIndex + 1];
+      return postId.split('?')[0]; 
+    }
+    return null;
+  } catch (error) {
+    console.error("Invalid URL for parsing post ID:", error);
+    return null;
+  }
+};
+
 const ReviewSubmission = ({
+  task,
   submission,
   authAtlasSpace,
   taskId,
@@ -49,6 +75,9 @@ const ReviewSubmission = ({
   const isLoading = useSelector((state: RootState) => state.app.isLoading);
   
   const { register, handleSubmit } = useForm<SubtaskSubmission>();
+  const [loggingIn, setIsLoggingIn] = useState(false);
+  const [loggedIn, setIsLoggedIn] = useState(false);
+  const { signIn, accessToken, getTweetActivity } = useTwitterAuth();
   
   const onSubmit: SubmitHandler<SubtaskSubmission> = async (data) => {
     const rawReason = data.reason?.trim();
@@ -109,6 +138,88 @@ const ReviewSubmission = ({
   };
 
   const singleSubmissionState = Object.keys(submission.submissionData.state)[0];
+
+  const handleXSignIn = async () => {
+        await runWithLoading(async () => {
+          setIsLoggingIn(true);
+          setIsLoggedIn(false);
+          await signIn();
+        }, dispatch, () => 
+          setIsLoggingIn(false));
+          setIsLoggedIn(true);
+      };
+  
+  const handleCheckTwitterTask = async () => {
+    if (!accessToken) {
+      toast.error("You must be logged in to X to check post.");
+      return;
+    }
+
+    if (!("TwitterTask" in task.task_content)) {
+      return;
+    }
+
+    const xTaskType = task.task_content.TwitterTask.x_answer_format;
+
+    let activityType: TweetActivityType;
+    let activityVerb: string;
+
+    if ('Like' in xTaskType) {
+        activityType = "Like";
+        activityVerb = "liked";
+    } else if ('Repost' in xTaskType) {
+        activityType = "Retweet";
+        activityVerb = "reposted";
+    } else {
+        toast.error("Unknown Twitter task type defined in task.");
+        return;
+    }
+
+    const postUrl = task.task_content.TwitterTask.x_post_link;
+    const postId = extractPostIdFromUrl(postUrl);
+    if (!postId) {
+      toast.error("Invalid X post link.");
+      return;
+    }
+    
+    await runWithLoading(
+      async () => {
+        const response = await getTweetActivity(
+          authAtlasSpace,
+          accessToken,
+          postId,
+          activityType
+        );
+
+        if (response === null) {
+          toast.error("Failed to fetch post likes.");
+          return;
+        }
+
+        try {
+          const responseString = String(response);
+          const parsedResponse: UsersResponse = JSON.parse(responseString);
+
+          if ("Twitter" in submission.submissionData.submission) {
+            const { x_user_id, x_name } = submission.submissionData.submission.Twitter;
+            const userFound = parsedResponse.data.some(
+              (User) => User.id === x_user_id.toString()
+            );
+
+            if (userFound) {
+              toast.success(`Verification Success: @${x_name} ${activityVerb} the post!`);
+            } else {
+              toast.error(`Verification Failed: @${x_name} did NOT ${activityVerb} the post.`);
+            }
+          }
+        } catch (error) {
+          console.error("Error parsing x post response:", error);
+          toast.error("Failed to parse post activity. Please try again.");
+        }
+      },
+      dispatch
+    );
+  };
   
   if (singleSubmissionState !== "WaitingForReview") {
     return (
@@ -148,6 +259,36 @@ const ReviewSubmission = ({
             ))}
           </ul>
         )}
+        {"Twitter" in submission.submissionData.submission && (() => {
+          const { x_username, x_name, created_at} = submission.submissionData.submission.Twitter;
+          const creationDate = new Date(created_at);
+          return (
+          <div className="border-2 border-dark/10 p-3 rounded w-full mb-4 bg-primary/20 text-white break-words">
+            <p>Username: @{x_username}</p>
+            <p>Name: {x_name}</p>
+            <p>Account Creation Date: {creationDate.toLocaleDateString()}</p>
+            {!loggedIn && 
+              <Button
+                onClick={handleXSignIn}
+                disabled={loggingIn}
+                className="mt-4 px-2"
+              >
+                Sign in with X
+              </Button>
+              }
+              {loggedIn &&
+              <Button
+                onClick={handleCheckTwitterTask}
+                disabled={loggingIn}
+                className="mt-4 px-2"
+              >
+                Check X Post
+              </Button>              
+              }
+          </div>
+          );
+        })()}
+      
         <div className="flex flex-col justify-end gap-2">
           <div className="flex gap-2 justify-end">
             <Button

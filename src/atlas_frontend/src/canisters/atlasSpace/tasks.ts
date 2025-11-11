@@ -1,32 +1,30 @@
+import type { Principal } from "@dfinity/principal";
 import type {
+  SubmissionData,
   SubmissionState,
   TaskType,
 } from "../../../../declarations/atlas_space/atlas_space.did";
 import type { UserSubmissionsData } from "./types";
 
-export const getUsersSubmissions = (tasks: TaskType[]) => {
-  const data = tasks.reduce((acc, task, index) => {
-    if ("GenericTask" in task) {
-      const genericTask = task.GenericTask;
-      genericTask.submission.forEach(([principal, submissionData]) => {
-        const principalText = principal.toText();
-        if (!acc[principalText]) {
-          acc[principalText] = {};
-        }
-        if (!acc[principalText][`${index}`]) {
-          acc[principalText][`${index}`] = {
-            submissionData,
-            taskType: "GenericTask",
-          };
-        }
-      });
-      return acc;
-    }
+export const getUsersSubmissions = (tasks: { [key: string]: TaskType }) => {
+  const data = Object.entries(tasks).reduce((acc, [subtaskIdStr, task]) => {
+    const foundType = Object.keys(task)[0] as keyof TaskType;
+    const taskData = task[foundType] as { submission: [Principal, SubmissionData][] };
+
+    taskData.submission.forEach(([principal, submissionData]) => {
+      const principalText = principal.toText();
+      if (!acc[principalText]) {
+        acc[principalText] = {};
+      }
+      acc[principalText][subtaskIdStr] = {
+        submissionData,
+        taskType: foundType,
+      };
+    });
     return acc;
   }, {} as UserSubmissionsData);
-
   return new UserSubmissions(data);
-};
+}
 
 export class UserSubmissions {
   constructor(public userSubmissionsData: UserSubmissionsData) {}

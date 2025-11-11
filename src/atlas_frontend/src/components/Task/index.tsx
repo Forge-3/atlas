@@ -19,7 +19,6 @@ import {
   type AnyTask,
   type ExpiredTask,
 } from "../../canisters/atlasSpace/api";
-import GenericTask from "./tasks/GenericTask";
 import TimeRemaining from "./TimeRemaining";
 import { useAuth } from "@nfid/identitykit/react";
 import {
@@ -44,13 +43,14 @@ import {
   nowInSeconds,
 } from "../../utils/date";
 import Calendar from "../../icons/calendar.svg?react";
-import { getTaskType } from "../../utils/tasks";
 import InfoBox from "../Space/TaskCard/InfoBox";
 import { runWithLoading } from "../../utils/loading";
 import { RiWalletFill } from "react-icons/ri";
 import { formatUnits } from "ethers";
 import { DECIMALS } from "../../canisters/ckUsdcLedger/constans";
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa6";
+import TaskRenderer from "./TaskRenderer";
+import { getTaskType } from "../../utils/tasks";
 
 const Task = () => {
   const { spacePrincipal, taskId } = useParams();
@@ -154,7 +154,11 @@ const Task = () => {
   const taskClosed = isClosedTask(currentTask);
 
   const usersSubmissions = currentTask?.tasks
-    ? getUsersSubmissions(currentTask.tasks)
+    ? getUsersSubmissions(
+        Object.fromEntries(
+          currentTask.tasks.map((task, idx) => [idx.toString(), task])
+        )
+      )
     : new UserSubmissions({});
 
   if (!user?.principal) return <></>;
@@ -445,20 +449,21 @@ const Task = () => {
             <div>
               <div>
                 <div className="mt-8">
-                  {currentTask.tasks.map((task, key) => (
-                    <GenericTask
-                      key={key}
-                      genericTask={task.GenericTask}
-                      spacePrincipal={parsedSpacePrincipal}
-                      taskId={taskId}
-                      subtaskId={key}
-                      unAuthAtlasSpace={unAuthAtlasSpace}
-                      isUserInHub={isUserInHub}
-                      disabled={taskDisabled}
-                      authAtlasSpace={authAtlasSpace}
-                      isAdmin={didUserCanAdministrate}
-                    />
-                  ))}
+                {Object.entries(currentTask.tasks).map(
+                    ([subtaskId, taskData], i) => (
+                      <TaskRenderer
+                        key={i}
+                        task={[Number(subtaskId), taskData]}
+                        spacePrincipal={parsedSpacePrincipal}
+                        taskId={taskId}
+                        unAuthAtlasSpace={unAuthAtlasSpace}
+                        isUserInHub={isUserInHub}
+                        disabled={taskDisabled}
+                        authAtlasSpace={authAtlasSpace}
+                        isAdmin={didUserCanAdministrate}
+                      />
+                    )
+                  )}
                 </div>
                 <div className="flex mt-4 sm:mt-8 items-start justify-center">
                   <div className="mr-2 md:mr-8">

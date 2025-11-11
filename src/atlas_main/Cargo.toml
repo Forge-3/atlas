@@ -10,6 +10,7 @@ crate-type = ["cdylib"]
 candid = { workspace = true }
 hex = { workspace = true }
 ic-cdk = { workspace = true }
+ic-management-canister-types = { workspace = true }
 ic-stable-structures = { workspace = true }
 minicbor = { workspace = true }
 minicbor-derive = { workspace = true }

@@ -3,9 +3,11 @@ members = ["src/atlas_main", "src/atlas_space", "src/shared"]
 resolver = "2"
 
 [workspace.dependencies]
-candid = "0.10"
-ic-cdk = "0.18.5"
+candid = "0.10.19"
+ic-cdk = "0.18.7"
+ic-management-canister-types = "0.3.1"
 serde = "1.0.219"
+serde_json = "1.0.140"
 hex = "0.4.3"
 ic-stable-structures = "0.6.8"
 minicbor = { version = "0.26.4", features = ["alloc", "derive"] }

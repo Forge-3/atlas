@@ -1,7 +1,6 @@
 import type { ActorSubclass } from "@dfinity/agent";
 import type {
   _SERVICE,
-  AnswerFormat,
   ClosedTask,
   EditTaskArgs,
   State,
@@ -9,6 +8,7 @@ import type {
   SubmissionData,
   Task,
   TaskContent,
+  TwitterTaskType,
 } from "../../../../declarations/atlas_space/atlas_space.did.js";
 import { unwrapCall } from "../delegatedCall.js";
 import { setSpace, setTasks } from "../../store/slices/spacesSlice.js";
@@ -16,17 +16,16 @@ import type { Dispatch } from "react";
 import type { UnknownAction } from "@reduxjs/toolkit";
 import type { Principal } from "@dfinity/principal";
 import type { ExternalLinks } from "./types.js";
+import type { DiscordTaskContent, GenericTaskContent, TwitterTaskContent } from "../../utils/taskMapper.js";
+import type { DiscordGuild, DiscordInviteApiResponse } from "../../components/Integrations/discord/types.js";
+
 export interface ExpiredTask extends Task {
   expired: true;
 }
+import { validateDiscordInvite as validateInvite } from "../../components/Integrations/discord/inviteLink.js";
+import { getUserGuilds } from "../../components/Integrations/discord/userGuilds.js";
 
-interface CreateSubtaskArg {
-  task_type: string;
-  title: string;
-  description: string;
-  allow_resubmit: boolean;
-  answer_format: AnswerFormat
-}
+type CreateSubtaskArg = GenericTaskContent | DiscordTaskContent | TwitterTaskContent;
 
 interface GetAtlasSpaceArgs {
   unAuthAtlasSpace: ActorSubclass<_SERVICE>;
@@ -92,14 +91,38 @@ export const createNewTask = async ({
   startTime,
   endTime,
 }: CreateNewSpaceTaskArgs) => {
-  const transformedTasks: TaskContent[] = tasks.map((arg) => ({
-    TitleAndDescription: {
-      task_title: arg.title,
-      task_description: arg.description,
-      allow_resubmit: arg.allow_resubmit,
-      answer_format: arg.answer_format
-    },
-  }));
+  const transformedTasks: TaskContent[] = tasks.map((arg) => {
+    if (arg.task_type === "discord") {
+      return {
+        DiscordTask: {
+          task_title: arg.title,
+          task_description: arg.description,
+          guild_id: arg.guild_id,
+          invite_link: arg.invite_link,
+          allow_resubmit: arg.allow_resubmit,
+        },
+      };
+    } else if (arg.task_type === "twitter") {
+        return {
+          TwitterTask: {
+            task_title: arg.title,
+            task_description: arg.description,
+            x_post_link: arg.x_post_link,
+            allow_resubmit: arg.allow_resubmit,
+            x_answer_format: arg.x_answer_format,
+          },
+        };
+    } else {
+      return {
+        TitleAndDescription: {
+          task_title: arg.title,
+          task_description: arg.description,
+          allow_resubmit: arg.allow_resubmit,
+          answer_format: arg.answer_format,
+        },
+      };
+    }
+  });
 
   const call = authAtlasSpaceActor.create_task({
     task_title: taskTitle,
@@ -436,3 +459,90 @@ export const deleteClosedTask = async ({
     errMsg: "Failed to delete closed task",
   });
 };
+
+export const getDiscordGuilds = async (
+  accessToken: string
+): Promise<DiscordGuild[]> => {
+  return await getUserGuilds(accessToken);
+};
+
+export const validateDiscordInvite = async (
+  inviteCode: string,
+  expectedGuildId: string
+): Promise<DiscordInviteApiResponse> => {
+  return await validateInvite(inviteCode, expectedGuildId);
+};
+
+interface ExchangeCodeForTokenArgs {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  code: string;
+  codeVerifier: string;
+}
+
+export const exchange_code_for_token = async ({
+  authAtlasSpace,
+  code,
+  codeVerifier
+}: ExchangeCodeForTokenArgs) => {
+  const call = authAtlasSpace.exchange_code_for_token(
+    code,
+    codeVerifier
+  );
+
+  return unwrapCall<String>({
+    call,
+    errMsg: "Failed to exchange Twitter code for token",
+  });
+};
+
+interface FetchXUserInfoArgs {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  accessToken: string;
+}
+
+export const fetch_x_user_info = async ({
+  authAtlasSpace,
+  accessToken
+}: FetchXUserInfoArgs) => {
+  const call = authAtlasSpace.fetch_x_user_info(
+    accessToken
+  );
+  
+  return unwrapCall<String>({
+    call,
+    errMsg: "Failed to fetch X user info",
+  });
+}
+
+interface FetchXPostLikesArgs {
+  authAtlasSpace: ActorSubclass<_SERVICE>;
+  accessToken: string;
+  postId: string;
+}
+
+export async function fetch_x_tweet_activity(
+  args: FetchXPostLikesArgs,
+  taskType: TwitterTaskType
+) {
+  const { authAtlasSpace, accessToken, postId } = args;
+
+  const call = authAtlasSpace.fetch_x_tweet_activity(
+    accessToken,
+    postId,
+    taskType
+  );
+  
+  return unwrapCall<String>({
+    call,
+    errMsg: `Failed to fetch X post ${Object.keys(taskType)[0]}`,
+  });
+}
+
+export const fetch_x_post_likes = async (args: FetchXPostLikesArgs) => {
+  return fetch_x_tweet_activity(args, { 'Like' : null });
+};
+
+export const fetch_x_post_retweets = async (args: FetchXPostLikesArgs) => {
+  return fetch_x_tweet_activity(args, { 'Retweet' : null });
+};
+

@@ -60,6 +60,7 @@ export const idlFactory = ({ IDL }) => {
   const TokenReward = IDL.Variant({
     'CkUsdc' : IDL.Record({ 'amount' : IDL.Nat }),
   });
+  const XAnswerFormat = IDL.Variant({ 'Like' : IDL.Null, 'Repost' : IDL.Null });
   const AnswerFormat = IDL.Variant({
     'Small' : IDL.Null,
     'List' : IDL.Null,
@@ -67,6 +68,20 @@ export const idlFactory = ({ IDL }) => {
     'Paragraph' : IDL.Null,
   });
   const TaskContent = IDL.Variant({
+    'TwitterTask' : IDL.Record({
+      'task_description' : IDL.Text,
+      'x_answer_format' : XAnswerFormat,
+      'task_title' : IDL.Text,
+      'x_post_link' : IDL.Text,
+      'allow_resubmit' : IDL.Bool,
+    }),
+    'DiscordTask' : IDL.Record({
+      'task_description' : IDL.Text,
+      'task_title' : IDL.Text,
+      'invite_link' : IDL.Text,
+      'guild_id' : IDL.Text,
+      'allow_resubmit' : IDL.Bool,
+    }),
     'TitleAndDescription' : IDL.Record({
       'answer_format' : AnswerFormat,
       'task_description' : IDL.Text,
@@ -99,6 +114,11 @@ export const idlFactory = ({ IDL }) => {
     'start_time' : IDL.Opt(IDL.Nat64),
     'number_of_uses' : IDL.Opt(IDL.Nat64),
   });
+  const Result_3 = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
+  const TwitterTaskType = IDL.Variant({
+    'Like' : IDL.Null,
+    'Retweet' : IDL.Null,
+  });
   const GetTasksArgs = IDL.Record({ 'count' : IDL.Nat64, 'start' : IDL.Nat64 });
   const SubmissionState = IDL.Variant({
     'Rejected' : IDL.Null,
@@ -109,6 +129,13 @@ export const idlFactory = ({ IDL }) => {
     'Empty' : IDL.Null,
     'List' : IDL.Record({ 'items' : IDL.Vec(IDL.Text) }),
     'Text' : IDL.Record({ 'content' : IDL.Text }),
+    'Discord' : IDL.Record({ 'username' : IDL.Text, 'user_id' : IDL.Nat64 }),
+    'Twitter' : IDL.Record({
+      'created_at' : IDL.Text,
+      'x_user_id' : IDL.Nat64,
+      'x_username' : IDL.Text,
+      'x_name' : IDL.Text,
+    }),
   });
   const SubmissionData = IDL.Record({
     'state' : SubmissionState,
@@ -116,6 +143,14 @@ export const idlFactory = ({ IDL }) => {
     'submission' : Submission,
   });
   const TaskType = IDL.Variant({
+    'TwitterTask' : IDL.Record({
+      'task_content' : TaskContent,
+      'submission' : IDL.Vec(IDL.Tuple(IDL.Principal, SubmissionData)),
+    }),
+    'DiscordTask' : IDL.Record({
+      'task_content' : TaskContent,
+      'submission' : IDL.Vec(IDL.Tuple(IDL.Principal, SubmissionData)),
+    }),
     'GenericTask' : IDL.Record({
       'task_content' : TaskContent,
       'submission' : IDL.Vec(IDL.Tuple(IDL.Principal, SubmissionData)),
@@ -136,7 +171,7 @@ export const idlFactory = ({ IDL }) => {
     'tasks' : IDL.Vec(IDL.Tuple(IDL.Nat64, ClosedTask)),
     'tasks_count' : IDL.Nat64,
   });
-  const Result_3 = IDL.Variant({ 'Ok' : GetClosedTasksRes, 'Err' : Error });
+  const Result_4 = IDL.Variant({ 'Ok' : GetClosedTasksRes, 'Err' : Error });
   const CkUsdcLedger = IDL.Record({
     'fee' : IDL.Opt(IDL.Nat),
     'principal' : IDL.Principal,
@@ -162,7 +197,7 @@ export const idlFactory = ({ IDL }) => {
     'tasks' : IDL.Vec(IDL.Tuple(IDL.Nat64, Task)),
     'tasks_count' : IDL.Nat64,
   });
-  const Result_4 = IDL.Variant({ 'Ok' : GetTasksRes, 'Err' : Error });
+  const Result_5 = IDL.Variant({ 'Ok' : GetTasksRes, 'Err' : Error });
   const State = IDL.Record({
     'external_links' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text)),
     'space_symbol' : IDL.Opt(IDL.Text),
@@ -186,12 +221,19 @@ export const idlFactory = ({ IDL }) => {
     'delete_closed_task' : IDL.Func([IDL.Nat64], [Result], []),
     'edit_space' : IDL.Func([EditSpaceArgs], [Result], []),
     'edit_task' : IDL.Func([EditTaskArgs], [Result], []),
+    'exchange_code_for_token' : IDL.Func([IDL.Text, IDL.Text], [Result_3], []),
+    'fetch_x_tweet_activity' : IDL.Func(
+        [IDL.Text, IDL.Text, TwitterTaskType],
+        [Result_3],
+        [],
+      ),
+    'fetch_x_user_info' : IDL.Func([IDL.Text], [Result_3], []),
     'force_expire_task' : IDL.Func([IDL.Nat64], [Result], []),
-    'get_closed_tasks' : IDL.Func([GetTasksArgs], [Result_3], ['query']),
+    'get_closed_tasks' : IDL.Func([GetTasksArgs], [Result_4], ['query']),
     'get_config' : IDL.Func([], [Config], ['query']),
     'get_current_bytecode_version' : IDL.Func([], [IDL.Nat64], ['query']),
-    'get_expired_tasks' : IDL.Func([GetTasksArgs], [Result_4], ['query']),
-    'get_open_tasks' : IDL.Func([GetTasksArgs], [Result_4], ['query']),
+    'get_expired_tasks' : IDL.Func([GetTasksArgs], [Result_5], ['query']),
+    'get_open_tasks' : IDL.Func([GetTasksArgs], [Result_5], ['query']),
     'get_space_info' : IDL.Func([], [SpaceInfo], ['query']),
     'get_state' : IDL.Func([], [State], ['query']),
     'reject_subtask_submission' : IDL.Func(
