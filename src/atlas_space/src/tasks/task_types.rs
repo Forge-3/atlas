@@ -43,6 +43,14 @@ pub enum AnswerFormat {
 }
 
 #[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType, Deserialize)]
+pub enum XAnswerFormat {
+    #[n(0)]
+    Like,
+    #[n(1)]
+    Repost,
+}
+
+#[derive(Eq, PartialEq, Debug, Decode, Encode, Clone, CandidType, Deserialize)]
 pub enum TaskContent {
     #[n(0)]
     TitleAndDescription {
@@ -78,6 +86,8 @@ pub enum TaskContent {
         x_post_link: String,
         #[n(3)]
         allow_resubmit: bool,
+        #[n(4)]
+        x_answer_format: XAnswerFormat,
     },
 }
 
@@ -132,8 +142,9 @@ impl TaskContent {
             TaskContent::TwitterTask {
                 task_title,
                 task_description,
-                x_post_link,
+                x_post_link: _,
                 allow_resubmit: _,
+                x_answer_format: _,
             } => {
                 if task_title.trim().len() > 50 {
                     return Err(Error::InvalidTaskContent(
@@ -197,12 +208,14 @@ impl From<&TaskContent> for TaskType {
                 task_description,
                 x_post_link,
                 allow_resubmit,
+                x_answer_format,
             } => Self::TwitterTask {
                 task_content: TaskContent::TwitterTask {
                     task_title: task_title.clone(),
                     task_description: task_description.clone(),
                     x_post_link: x_post_link.clone(),
                     allow_resubmit: *allow_resubmit,
+                    x_answer_format: x_answer_format.clone(),
                 },
                 submission: Default::default(),
             },

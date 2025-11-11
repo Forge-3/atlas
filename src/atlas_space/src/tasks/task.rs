@@ -22,6 +22,12 @@ pub struct CreateTaskArgs {
     pub end_time: u64,
 }
 
+#[derive(CandidType, Deserialize)]
+pub enum TwitterTaskType {
+    Like,
+    Retweet,
+}
+
 impl CreateTaskArgs {
     pub fn validate(&self) -> Result<(), Error> {
         validate_task_title(&self.task_title)?;

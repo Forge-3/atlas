@@ -1,12 +1,14 @@
 import { useCallback, useState } from "react";
 import toast from "react-hot-toast";
 import { openTwitterLoginPopup } from "../components/Integrations/twitter/twitter";
-import { exchange_code_for_token, fetch_x_post_likes, fetch_x_user_info } from "../canisters/atlasSpace/api";
+import { exchange_code_for_token, fetch_x_post_likes, fetch_x_post_retweets, fetch_x_user_info } from "../canisters/atlasSpace/api";
 import { useAuthAtlasSpaceActor } from "./identityKit";
 import { useParams } from "react-router-dom";
 import { Principal } from "@dfinity/principal";
 import type { ActorSubclass } from "@dfinity/agent";
 import type { _SERVICE } from "../../../declarations/atlas_space/atlas_space.did";
+
+export type TweetActivityType = "Like" | "Retweet";
 
 export type XUser = {
   data: {
@@ -17,14 +19,14 @@ export type XUser = {
   };
 }
 
-interface LikingUser {
+interface User {
   id: string;
   name: string;
   username: string;
 }
 
-export type LikingUsersResponse = {
-  data: LikingUser[];
+export type UsersResponse = {
+  data: User[];
 }
 
 export const useTwitterAuth = () => {
@@ -130,36 +132,51 @@ export const useTwitterAuth = () => {
     }
   }, [authAtlasSpace]);
 
-  const getPostLikes = useCallback(async (
+  const getTweetActivity = useCallback(async (
     authAtlasSpace: ActorSubclass<_SERVICE>,
     accessToken: string,
-    postId: string
+    postId: string,
+    taskType: TweetActivityType
     ) => {
     if (!authAtlasSpace) {
       toast.error("Authentication details are missing.");
       return null;
     }
     setLoading(true);
+
+    const args = {
+          authAtlasSpace: authAtlasSpace,
+          accessToken,
+          postId
+        };
+
     try {
-      const likesResponse = await fetch_x_post_likes({
-        authAtlasSpace: authAtlasSpace,
-        accessToken,
-        postId});
-      
-      setLoading(false);
-      return likesResponse;
+      let response: String | null = null;
+
+      if (taskType === "Like") {
+        response = await fetch_x_post_likes(args);
+      } else if (taskType === "Retweet") {
+        response = await fetch_x_post_retweets(args);
+      } else {
+        console.error("Invalid task type:", taskType);
+        toast.error("Invalid task type specified.");
+        setLoading(false);
+        return null;
+      }
+      return response;
     } catch (err) {
-      console.error("Failed to fetch post likes:", err);
-      toast.error("Failed to fetch post likes. Please try again.");
-      setLoading(false);
+      console.error(`Failed to fetch post ${taskType}:`, err);
+      toast.error(`Failed to fetch post ${taskType}. Please try again.`);
       return null;
+    } finally {
+      setLoading(false);
     }
   }, [authAtlasSpace]);
 
   return {
     signIn,
     fetchXUserInfo,
-    getPostLikes,
+    getTweetActivity,
     xUser,
     loading,
     loggedIn,

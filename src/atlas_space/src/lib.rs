@@ -19,7 +19,7 @@ use crate::methods::query::{GetClosedTasksRes, GetTasksArgs, GetTasksRes, SpaceI
 use crate::state::{EditSpaceArgs, State};
 use crate::tasks::{
     submission::Submission,
-    task::{CreateTaskArgs, EditTaskArgs},
+    task::{CreateTaskArgs, EditTaskArgs, TwitterTaskType},
     task_types::TaskId,
 };
 

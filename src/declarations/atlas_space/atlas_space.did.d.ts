@@ -162,6 +162,7 @@ export interface Task {
 export type TaskContent = {
     'TwitterTask' : {
       'task_description' : string,
+      'x_answer_format' : XAnswerFormat,
       'task_title' : string,
       'x_post_link' : string,
       'allow_resubmit' : boolean,
@@ -203,7 +204,11 @@ export type TaskType = {
     }
   };
 export type TokenReward = { 'CkUsdc' : { 'amount' : bigint } };
+export type TwitterTaskType = { 'Like' : null } |
+  { 'Retweet' : null };
 export interface WalletReceiveResult { 'accepted' : bigint }
+export type XAnswerFormat = { 'Like' : null } |
+  { 'Repost' : null };
 export interface _SERVICE {
   'accept_subtask_submission' : ActorMethod<
     [Principal, bigint, bigint],
@@ -216,7 +221,10 @@ export interface _SERVICE {
   'edit_space' : ActorMethod<[EditSpaceArgs], Result>,
   'edit_task' : ActorMethod<[EditTaskArgs], Result>,
   'exchange_code_for_token' : ActorMethod<[string, string], Result_3>,
-  'fetch_x_post_likes' : ActorMethod<[string, string], Result_3>,
+  'fetch_x_tweet_activity' : ActorMethod<
+    [string, string, TwitterTaskType],
+    Result_3
+  >,
   'fetch_x_user_info' : ActorMethod<[string], Result_3>,
   'force_expire_task' : ActorMethod<[bigint], Result>,
   'get_closed_tasks' : ActorMethod<[GetTasksArgs], Result_4>,

@@ -5,6 +5,14 @@ import type {
   Path,
   UseFormRegister,
 } from "react-hook-form";
+import type { XAnswerFormat } from "../../../../declarations/atlas_space/atlas_space.did";
+
+const getXAnswerFormatKey = (format: XAnswerFormat): string =>
+  Object.keys(format)[0];
+const answerFormatDescriptions: Record<string, string> = {
+  Like: "User have to like the post",
+  Repost: "User have to repost the post",
+};
 
 interface TwitterTaskProps<TFormValues extends FieldValues> {
   register: UseFormRegister<TFormValues>;
@@ -13,7 +21,13 @@ interface TwitterTaskProps<TFormValues extends FieldValues> {
   maxTitleLength?: number;
   maxDescriptionLength?: number;
   xPostLink?: string;
+  xAnswerFormat?: string;
 }
+
+const xAnswerFormats: XAnswerFormat[] = [
+  { Like: null },
+  { Repost: null },
+];
 
 const TwitterTask = <TFormValues extends FieldValues>({
   register,
@@ -67,6 +81,27 @@ const TwitterTask = <TFormValues extends FieldValues>({
             {descriptionError.toString()}
           </p>
         )}
+        <label className="text-white text-base sm:text-lg font-montserrat font-semibold flex-shrink-0 mr-2">
+          X task type:
+        </label>
+        <select
+          {...register(`tasks.${index}.xAnswerFormat` as Path<TFormValues>)}
+          className="w-full p-3 pr-10 mb-1 rounded-lg bg-primary text-white font-montserrat cursor-pointer appearance-none focus:outline-none"
+        >
+          {xAnswerFormats.map((format) => {
+            const key = getXAnswerFormatKey(format);
+            return (
+              <option
+                key={key}
+                value={key}
+                className="bg-primary text-white"
+              >
+                {key} –{" "}
+                {answerFormatDescriptions[key]}
+              </option>
+            );
+          })}
+        </select>
         <p className="block text-white font-montserrat text-base sm:text-lg font-semibold mb-1">X post link:</p>
       <input
         type="text"

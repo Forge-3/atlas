@@ -1,6 +1,7 @@
 use crate::tasks::task::validate_task_time_edit;
 use crate::tasks::task::EditTaskArgs;
 use crate::tasks::task::Task;
+use crate::tasks::task::TwitterTaskType;
 use crate::tasks::task_types::TaskType;
 use crate::tasks::task_types::TwitterTokenResponse;
 use crate::tasks::timer_logic;
@@ -504,8 +505,20 @@ pub async fn exchange_code_for_token(
 }
 
 #[update]
-pub async fn fetch_x_post_likes(access_token: String, post_id: String) -> Result<String, String> {
-    let url = format!("https://api.twitter.com/2/tweets/{}/liking_users", post_id);
+pub async fn fetch_x_tweet_activity(
+    access_token: String,
+    post_id: String,
+    task_type: TwitterTaskType,
+) -> Result<String, String> {
+    let path_segment = match task_type {
+        TwitterTaskType::Like => "liking_users",
+        TwitterTaskType::Retweet => "retweeted_by",
+    };
+
+    let url = format!(
+        "https://api.twitter.com/2/tweets/{}/{}",
+        post_id, path_segment
+    );
 
     let request_headers = vec![HttpHeader {
         name: "Authorization".to_string(),
@@ -526,8 +539,8 @@ pub async fn fetch_x_post_likes(access_token: String, post_id: String) -> Result
             .unwrap_or_else(|_| "Error decoding UTF-8 from X API".to_string())),
         Err(e) => {
             let message = format!(
-                "Error GET /tweets/{{id}}/liking_users: RejectionCode: {:?}",
-                e
+                "Error GET /tweets/{}/{}: RejectionCode: {:?}",
+                post_id, path_segment, e
             );
             ic_cdk::println!("{}", &message);
             Err(message)

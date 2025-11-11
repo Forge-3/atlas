@@ -564,6 +564,7 @@ const CreateNewTaskModal = () => {
                           task_description: task.description,
                           x_post_link: task.x_post_link,
                           allow_resubmit: task.allow_resubmit,
+                          x_answer_format: task.x_answer_format
                         },
                       },
                     ];
@@ -893,7 +894,7 @@ const CreateNewTaskModal = () => {
                                   </label>
                                   <select
                                     {...register(`tasks.${index}.answerFormat`)}
-                                    className="w-full p-3 pr-10 rounded-lg bg-primary text-white font-montserrat cursor-pointer appearance-none"
+                                    className="w-full p-3 pr-10 rounded-lg bg-primary text-white font-montserrat cursor-pointer appearance-none focus:outline-none"
                                   >
                                     {answerFormats.map((format) => {
                                       const key = getAnswerFormatKey(format);

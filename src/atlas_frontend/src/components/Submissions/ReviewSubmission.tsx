@@ -14,7 +14,7 @@ import type { ActorSubclass } from "@dfinity/agent";
 import toast from "react-hot-toast";
 import { runWithLoading } from "../../utils/loading";
 import Button from "../Shared/Button";
-import { useTwitterAuth, type LikingUsersResponse } from "../../hooks/useTwitterAuth";
+import { useTwitterAuth, type TweetActivityType, type UsersResponse } from "../../hooks/useTwitterAuth";
 
 type GenericTaskType = Extract<TaskType, { GenericTask: unknown }>['GenericTask'];
 type DiscordTaskType = Extract<TaskType, { DiscordTask: unknown }>['DiscordTask'];
@@ -77,7 +77,7 @@ const ReviewSubmission = ({
   const { register, handleSubmit } = useForm<SubtaskSubmission>();
   const [loggingIn, setIsLoggingIn] = useState(false);
   const [loggedIn, setIsLoggedIn] = useState(false);
-  const { signIn, accessToken, getPostLikes } = useTwitterAuth();
+  const { signIn, accessToken, getTweetActivity } = useTwitterAuth();
   
   const onSubmit: SubmitHandler<SubtaskSubmission> = async (data) => {
     const rawReason = data.reason?.trim();
@@ -149,51 +149,77 @@ const ReviewSubmission = ({
           setIsLoggedIn(true);
       };
   
-  const handleCheckPostLikes = async () => {
-      if (!accessToken) {
-        toast.error("You must be logged in to X to check post likes.");
+  const handleCheckTwitterTask = async () => {
+    if (!accessToken) {
+      toast.error("You must be logged in to X to check post.");
+      return;
+    }
+
+    if (!("TwitterTask" in task.task_content)) {
+      return;
+    }
+
+    const xTaskType = task.task_content.TwitterTask.x_answer_format;
+
+    let activityType: TweetActivityType;
+    let activityVerb: string;
+
+    if ('Like' in xTaskType) {
+        activityType = "Like";
+        activityVerb = "liked";
+    } else if ('Repost' in xTaskType) {
+        activityType = "Retweet";
+        activityVerb = "reposted";
+    } else {
+        toast.error("Unknown Twitter task type defined in task.");
         return;
-      }
-  
-      if ("TwitterTask" in task.task_content) {
-        const postUrl = task.task_content.TwitterTask.x_post_link;
-        const postId = extractPostIdFromUrl(postUrl);
-        if (!postId) {
-          toast.error("Invalid X post link.");
-          return;
-        }
-      
-      await runWithLoading(async () => {
-        const likesResponse = await getPostLikes(
+    }
+
+    const postUrl = task.task_content.TwitterTask.x_post_link;
+    const postId = extractPostIdFromUrl(postUrl);
+    if (!postId) {
+      toast.error("Invalid X post link.");
+      return;
+    }
+    
+    await runWithLoading(
+      async () => {
+        const response = await getTweetActivity(
           authAtlasSpace,
           accessToken,
-          postId
+          postId,
+          activityType
         );
 
-        if (likesResponse === null) {
+        if (response === null) {
+          toast.error("Failed to fetch post likes.");
           return;
         }
+
         try {
-        const responseString = String(likesResponse);
-        const parsedResponse: LikingUsersResponse = JSON.parse(responseString);
-        
-        if('Twitter' in submission.submissionData.submission) {
-          const { x_user_id, x_name } = submission.submissionData.submission.Twitter;
-          const userFound = parsedResponse.data.some(likingUser => likingUser.id === x_user_id.toString());
-          
-          if (userFound) {
-            toast.success(`Verification Success: @${x_name} liked the post!`);
-          } else {
-            toast.error(`Verification Failed: @${x_name} did NOT like the post.`);
+          const responseString = String(response);
+          const parsedResponse: UsersResponse = JSON.parse(responseString);
+
+          if ("Twitter" in submission.submissionData.submission) {
+            const { x_user_id, x_name } = submission.submissionData.submission.Twitter;
+            const userFound = parsedResponse.data.some(
+              (User) => User.id === x_user_id.toString()
+            );
+
+            if (userFound) {
+              toast.success(`Verification Success: @${x_name} ${activityVerb} the post!`);
+            } else {
+              toast.error(`Verification Failed: @${x_name} did NOT ${activityVerb} the post.`);
+            }
           }
+        } catch (error) {
+          console.error("Error parsing x post response:", error);
+          toast.error("Failed to parse post activity. Please try again.");
         }
-      } catch (error) {
-        console.error("Error parsing likes response:", error);
-        toast.error("Failed to parse post likes. Please try again.");
-      }
-        }, dispatch);
-      }
-    };
+      },
+      dispatch
+    );
+  };
   
   if (singleSubmissionState !== "WaitingForReview") {
     return (
@@ -252,7 +278,7 @@ const ReviewSubmission = ({
               }
               {loggedIn &&
               <Button
-                onClick={handleCheckPostLikes}
+                onClick={handleCheckTwitterTask}
                 disabled={loggingIn}
                 className="mt-4 px-2"
               >

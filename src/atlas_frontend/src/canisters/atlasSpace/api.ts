@@ -1,7 +1,6 @@
 import type { ActorSubclass } from "@dfinity/agent";
 import type {
   _SERVICE,
-  AnswerFormat,
   ClosedTask,
   EditTaskArgs,
   State,
@@ -9,6 +8,7 @@ import type {
   SubmissionData,
   Task,
   TaskContent,
+  TwitterTaskType,
 } from "../../../../declarations/atlas_space/atlas_space.did.js";
 import { unwrapCall } from "../delegatedCall.js";
 import { setSpace, setTasks } from "../../store/slices/spacesSlice.js";
@@ -109,6 +109,7 @@ export const createNewTask = async ({
             task_description: arg.description,
             x_post_link: arg.x_post_link,
             allow_resubmit: arg.allow_resubmit,
+            x_answer_format: arg.x_answer_format,
           },
         };
     } else {
@@ -519,20 +520,29 @@ interface FetchXPostLikesArgs {
   postId: string;
 }
 
-export const fetch_x_post_likes = async ({
-  authAtlasSpace,
-  accessToken,
-  postId
-}: FetchXPostLikesArgs) => {
-  const call = authAtlasSpace.fetch_x_post_likes(
+export async function fetch_x_tweet_activity(
+  args: FetchXPostLikesArgs,
+  taskType: TwitterTaskType
+) {
+  const { authAtlasSpace, accessToken, postId } = args;
+
+  const call = authAtlasSpace.fetch_x_tweet_activity(
     accessToken,
-    postId
+    postId,
+    taskType
   );
   
   return unwrapCall<String>({
     call,
-    errMsg: "Failed to fetch X post likes",
+    errMsg: `Failed to fetch X post ${Object.keys(taskType)[0]}`,
   });
+}
+
+export const fetch_x_post_likes = async (args: FetchXPostLikesArgs) => {
+  return fetch_x_tweet_activity(args, { 'Like' : null });
 };
 
+export const fetch_x_post_retweets = async (args: FetchXPostLikesArgs) => {
+  return fetch_x_tweet_activity(args, { 'Retweet' : null });
+};
 

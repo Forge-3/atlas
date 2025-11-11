@@ -1,4 +1,4 @@
-import type { AnswerFormat } from "../../../declarations/atlas_space/atlas_space.did";
+import type { AnswerFormat, XAnswerFormat } from "../../../declarations/atlas_space/atlas_space.did";
 
 export const TaskType = {
   Generic: "generic",
@@ -17,6 +17,7 @@ export type TaskInput = {
   xPostLink?: string;
   allowResubmit: boolean;
   answerFormat?: string;
+  xAnswerFormat?: string;
 };
 
 interface BaseTaskContent  {
@@ -39,6 +40,7 @@ export interface DiscordTaskContent extends BaseTaskContent {
 export interface TwitterTaskContent extends BaseTaskContent {
   task_type: "twitter";
   x_post_link: string;
+  x_answer_format: XAnswerFormat;
 };
 
 type TaskContent = GenericTaskContent | DiscordTaskContent | TwitterTaskContent;
@@ -57,6 +59,17 @@ const toAnswerFormat = (key: string): AnswerFormat => {
       return { List: null };
     default:
       throw new Error(`Unknown AnswerFormat key: ${key}`);
+  }
+};
+
+const toXAnswerFormat = (key: string): XAnswerFormat => {
+  switch (key) {
+    case "Like":
+      return { Like: null };
+    case "Repost":
+      return { Repost: null };
+    default:
+      throw new Error(`Unknown XAnswerFormat key: ${key}`);
   }
 };
 
@@ -84,6 +97,7 @@ const taskMappers: Record<TaskType, MapperFn> = {
     description: task.description,
     x_post_link: task.xPostLink!,
     allow_resubmit: task.allowResubmit,
+    x_answer_format: toXAnswerFormat(task.xAnswerFormat!),
   }),
 };
 

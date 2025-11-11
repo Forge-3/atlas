@@ -60,6 +60,7 @@ export const idlFactory = ({ IDL }) => {
   const TokenReward = IDL.Variant({
     'CkUsdc' : IDL.Record({ 'amount' : IDL.Nat }),
   });
+  const XAnswerFormat = IDL.Variant({ 'Like' : IDL.Null, 'Repost' : IDL.Null });
   const AnswerFormat = IDL.Variant({
     'Small' : IDL.Null,
     'List' : IDL.Null,
@@ -69,6 +70,7 @@ export const idlFactory = ({ IDL }) => {
   const TaskContent = IDL.Variant({
     'TwitterTask' : IDL.Record({
       'task_description' : IDL.Text,
+      'x_answer_format' : XAnswerFormat,
       'task_title' : IDL.Text,
       'x_post_link' : IDL.Text,
       'allow_resubmit' : IDL.Bool,
@@ -113,6 +115,10 @@ export const idlFactory = ({ IDL }) => {
     'number_of_uses' : IDL.Opt(IDL.Nat64),
   });
   const Result_3 = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
+  const TwitterTaskType = IDL.Variant({
+    'Like' : IDL.Null,
+    'Retweet' : IDL.Null,
+  });
   const GetTasksArgs = IDL.Record({ 'count' : IDL.Nat64, 'start' : IDL.Nat64 });
   const SubmissionState = IDL.Variant({
     'Rejected' : IDL.Null,
@@ -216,7 +222,11 @@ export const idlFactory = ({ IDL }) => {
     'edit_space' : IDL.Func([EditSpaceArgs], [Result], []),
     'edit_task' : IDL.Func([EditTaskArgs], [Result], []),
     'exchange_code_for_token' : IDL.Func([IDL.Text, IDL.Text], [Result_3], []),
-    'fetch_x_post_likes' : IDL.Func([IDL.Text, IDL.Text], [Result_3], []),
+    'fetch_x_tweet_activity' : IDL.Func(
+        [IDL.Text, IDL.Text, TwitterTaskType],
+        [Result_3],
+        [],
+      ),
     'fetch_x_user_info' : IDL.Func([IDL.Text], [Result_3], []),
     'force_expire_task' : IDL.Func([IDL.Nat64], [Result], []),
     'get_closed_tasks' : IDL.Func([GetTasksArgs], [Result_4], ['query']),

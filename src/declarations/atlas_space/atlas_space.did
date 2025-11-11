@@ -148,6 +148,7 @@ type Task = record {
 type TaskContent = variant {
   TwitterTask : record {
     task_description : text;
+    x_answer_format : XAnswerFormat;
     task_title : text;
     x_post_link : text;
     allow_resubmit : bool;
@@ -181,7 +182,9 @@ type TaskType = variant {
   };
 };
 type TokenReward = variant { CkUsdc : record { amount : nat } };
+type TwitterTaskType = variant { Like; Retweet };
 type WalletReceiveResult = record { accepted : nat64 };
+type XAnswerFormat = variant { Like; Repost };
 service : (SpaceArgs) -> {
   accept_subtask_submission : (principal, nat64, nat64) -> (Result);
   clean_up_space_before_deletion : () -> (Result_1);
@@ -191,7 +194,7 @@ service : (SpaceArgs) -> {
   edit_space : (EditSpaceArgs) -> (Result);
   edit_task : (EditTaskArgs) -> (Result);
   exchange_code_for_token : (text, text) -> (Result_3);
-  fetch_x_post_likes : (text, text) -> (Result_3);
+  fetch_x_tweet_activity : (text, text, TwitterTaskType) -> (Result_3);
   fetch_x_user_info : (text) -> (Result_3);
   force_expire_task : (nat64) -> (Result);
   get_closed_tasks : (GetTasksArgs) -> (Result_4) query;
